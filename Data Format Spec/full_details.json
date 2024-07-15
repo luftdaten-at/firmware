@@ -1,0 +1,20 @@
+{
+    "board": "00112233AABB",
+    "battery": {
+        "voltage": 3.3,
+        "percentage": 100
+    },
+    "sensors": [
+        {
+            "model": "sen5x",
+            "product_type": "",
+            "serial": "123456",
+            "firmware": "1.0",
+            "hardware": "1.0",
+            "protocol": "1.0"
+        },
+        {
+            "model": "bme680"
+        }
+    ]
+}
