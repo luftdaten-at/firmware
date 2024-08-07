@@ -57,6 +57,16 @@ Drücke den Reset-Knopf am ESP32, um die Installation abzuschließen.
 
 Öffne die `settings.toml`-Datei im `CIRCUITPY`-Laufwerk und passe die Konfiguration an. Momentan ist es nur möglich, den Gerätetypen zu ändern. Setze dafür die Variable `model` auf `1` für Air aRound, `2` für Cube, `3` für Station und `4` für Badge (vgl. Konstanten in `modules/enums.py`).
 
+| ID | Modelname |
+| --- | --- |
+| -1 | Autoerkennung beim nächsten Start |
+| 1 | Air aRound |
+| 2 | Air Cube |
+| 3 | Air Station |
+| 4 | Air Badge |
+| 5 | Air Bike |
+
+
 ## 5 - Gerät initialisieren
 
 Starte das Gerät neu, während du den Button gedrückt hältst. Passe dabei auf, den Button über das Ende der türkisen LED-Phase hinaus gedrückt zu halten. Die LED zeigt nun Violett an und initialisiert sich. Achtung: Während der Initialisierung darf das Gerät nicht über USB verbunden sein.
