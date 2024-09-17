@@ -449,41 +449,27 @@ for sensor in sensors:
 
 # If a battery monitor is connected, indicate battery percentage
 if battery_monitor is not None:
+    print('show battery state in 2 seconds')
     time.sleep(2)
+    CRITICAL = 10
     percent = round(battery_monitor.cell_soc())
-    if percent < 10:
+    points = [25, 50, 75]
+    # critical
+    if percent < CRITICAL:
         status_led.fill(Color.RED)
         status_led.show()
         time.sleep(0.2)
         status_led.fill(Color.OFF)
         status_led.show()
     else:
-        status_led.fill(Color.GREEN)
-        status_led.show()
-        time.sleep(0.2)
-        status_led.fill(Color.OFF)
-        status_led.show()
-        if percent > 25:
-            time.sleep(0.2)
-            status_led.fill(Color.GREEN)
-            status_led.show()
-            time.sleep(0.2)
-            status_led.fill(Color.OFF)
-            status_led.show()
-            if percent > 50:
-                time.sleep(0.2)
+        for point in points:
+            if percent>point:
                 status_led.fill(Color.GREEN)
                 status_led.show()
-                time.sleep(0.2)
+                time.sleep(0.5)
                 status_led.fill(Color.OFF)
                 status_led.show()
-                if percent > 75:
-                    time.sleep(0.2)
-                    status_led.fill(Color.GREEN)
-                    status_led.show()
-                    time.sleep(0.2)
-                    status_led.fill(Color.OFF)
-                    status_led.show()
+                time.sleep(0.5)
     time.sleep(2)
 
 buf = bytearray(512)
