@@ -11,14 +11,23 @@ from led_controller import LedController
 import neopixel # type: ignore
 
 # Configuration
-SSID = "luftdaten.at"
-PASSWORD = "clientpassword"
-API_URL = "https://staging.datahub.luftdaten.at/api/device/status"
-FIRMWARE_MAJOR = 1
-FIRMWARE_MINOR = 2
-FIRMWARE_PATCH = 0
-PROTOCOL_VERSION = 2
+SSID = fetch('SSID') 
+PASSWORD = fetch('PASSWORD')
+API_URL = fetch('TEST_API_URL')
+FIRMWARE_MAJOR = fetch('FIRMWARE_MAJOR')
+FIRMWARE_MINOR = fetch('FIRMWARE_MAJOR')
+FIRMWARE_PATCH = fetch('FIRMWARE_PATCH')
+PROTOCOL_VERSION = fetch('PROTOCOL_VERSION')
 MODEL = fetch('model')
+
+print(f'{SSID=}')
+print(f'{PASSWORD=}')
+print(f'{API_URL=}')
+print(f'{FIRMWARE_MAJOR=}')
+print(f'{FIRMWARE_MINOR=}')
+print(f'{FIRMWARE_PATCH=}')
+print(f'{PROTOCOL_VERSION=}')
+print(f'{MODEL=}')
 
 # Initialize status LED(s) at GPIO8
 status_led = neopixel.NeoPixel(board.IO8, 5 if MODEL == LdProduct.AIR_CUBE else 1)
