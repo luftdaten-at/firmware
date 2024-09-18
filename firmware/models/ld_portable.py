@@ -1,6 +1,6 @@
 from models.ld_product_model import LdProductModel
 from led_controller import RepeatMode
-from enums import Color
+from enums import Color, BleCommands
 
 class LdPortable(LdProductModel): 
     def __init__(self, model, ble_service, sensors, battery_monitor, status_led):
@@ -10,10 +10,10 @@ class LdPortable(LdProductModel):
         self.ble_on = True
         
     def receive_command(self, command):
-        if(len(command) == 0):
+        if not command:
             return
         cmd = command[0]
-        if cmd == 0x01 or cmd == 0x02:
+        if cmd == BleCommands.READ_SENSOR_DATA or cmd == BleCommands.READ_SENSOR_DATA_AND_BATTERY_STATUS:
             self.update_ble_sensor_data()
             print("Sensor values updated")
             self.status_led.show_led({
@@ -23,7 +23,7 @@ class LdPortable(LdProductModel):
                     {'color': Color.BLUE, 'duration': 0.1},
                 ],
             })
-        if cmd == 0x02:
+        if cmd == BleCommands.READ_SENSOR_DATA_AND_BATTERY_STATUS:
             self.update_ble_battery_status()
             print("Battery status updated")
     

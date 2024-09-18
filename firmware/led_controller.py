@@ -1,6 +1,9 @@
 import time
+from enums import BleCommands, Color
 
 class LedController:
+    BRIGHTNESS_LEVELS = [1/5, 2/5, 3/5, 4/5, 1]
+
     def __init__(self, status_led, num_leds):
         self.num_leds = num_leds
         self.status_led = status_led
@@ -42,7 +45,7 @@ class LedController:
         print('Set LED', led_id, 'to pattern:', pattern)
         if pattern == self.current_patterns[led_id]:
             print('Pattern already set')
-            return
+
         self.patterns_started_at[led_id] = time.monotonic()
         self.current_patterns[led_id] = pattern
         self.time_in_patterns[led_id] = 0
@@ -51,8 +54,9 @@ class LedController:
             self._show_led(pattern['color'], led_id=led_id)
             
     def turn_off_led(self, led_id = 0):
-        self.current_patterns[led_id] = None
-        self._show_led((0, 0, 0), led_id=led_id)
+        self._show_led(Color.OFF, led_id=led_id)
+    def turn_on_led(self, led_id=0):
+        self._show_led(Color.CYAN, led_id=led_id) 
             
     def _show_led(self, color, led_id = 0):
         if led_id == -1:
@@ -61,6 +65,20 @@ class LedController:
             self.status_led[led_id] = color
         self.status_led.show()
     
+    def set_brightness(self, level):
+        self.status_led.brightness = LedController.BRIGHTNESS_LEVELS[level]
+    
+    def receive_command(self, command):
+        if not command:
+            return
+        cmd = command[0]
+        if cmd == BleCommands.UPDATE_BRIGHTNESS:
+            self.set_brightness(command[1])
+        elif cmd == BleCommands.TURN_OFF_STATUS_LIGHT:
+            self.turn_off_led()
+        elif cmd == BleCommands.TURN_ON_STATUS_LIGHT:
+            self.turn_on_led()
+
 class RepeatMode:
     FOREVER = 0
     TIMES = 1

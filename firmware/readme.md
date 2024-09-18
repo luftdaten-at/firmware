@@ -87,6 +87,13 @@ Schreibe `0x01` um neue Sensordaten auszulesen.
 Schreibe `0x02` um neue Sensordaten auszulesen und den Batteriestatus zu aktualisieren.
 Weitere Befehle hängen von Modell ab (siehe unten).
 
+Byte | Action
+--- | ---
+READ_SENSOR_DATA | 0x01
+READ_SENSOR_DATA_AND_BATTERY_STATUS | 0x02
+UPDATE_BRIGHTNESS | 0x03
+TURN_OFF_STATUS_LIGHT | 0x04
+TURN_ON_STATUS_LIGHT | 0x05
 
 ### Sensordaten auslesen (gleich wie v1)
 

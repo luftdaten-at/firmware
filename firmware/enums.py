@@ -58,3 +58,10 @@ class Color():
 class Quality():
     HIGH = 1
     LOW = 2
+
+class BleCommands:
+    READ_SENSOR_DATA = 0x01
+    READ_SENSOR_DATA_AND_BATTERY_STATUS = 0x02
+    UPDATE_BRIGHTNESS = 0x03 
+    TURN_OFF_STATUS_LIGHT = 0x04
+    TURN_ON_STATUS_LIGHT = 0x05

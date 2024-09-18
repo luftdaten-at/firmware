@@ -510,8 +510,8 @@ while True:
     if waiting_bytes > 0:
         command = service.trigger_reading_characteristic_2.read(waiting_bytes)
 
-        if len(command) > 0:
-            device.receive_command(command)
+        device.receive_command(command)
+        led_controller.receive_command(command)
 
     device.tick()
     
