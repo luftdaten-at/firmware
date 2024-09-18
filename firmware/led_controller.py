@@ -68,14 +68,13 @@ class LedController:
         if not command:
             return
         cmd = command[0]
-        match cmd:
-            case BleCommands.UPDATE_BRIGHTNESS:
-                level = command[1]
-                self.status_led.brightness = LedController.BRIGHTNESS_LEVELS[level]
-            case BleCommands.TURN_OFF_STATUS_LIGHT:
-                self.turn_off_led()
-            case BleCommands.TURN_ON_STATUS_LIGHT:
-                self.show_led()
+        if cmd == BleCommands.UPDATE_BRIGHTNESS:
+            level = command[1]
+            self.status_led.brightness = LedController.BRIGHTNESS_LEVELS[level]
+        elif cmd == BleCommands.TURN_OFF_STATUS_LIGHT:
+            self.turn_off_led()
+        elif cmd == BleCommands.TURN_ON_STATUS_LIGHT:
+            self.show_led()
 
 class RepeatMode:
     FOREVER = 0
