@@ -61,6 +61,12 @@ class LedController:
             self.status_led[led_id] = color
         self.status_led.show()
     
+    def receive_command(self, command):
+        if not command:
+            return
+        cmd = command[0]
+        if cmd == 
+    
 class RepeatMode:
     FOREVER = 0
     TIMES = 1

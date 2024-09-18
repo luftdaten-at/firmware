@@ -10,7 +10,7 @@ class LdPortable(LdProductModel):
         self.ble_on = True
         
     def receive_command(self, command):
-        if(len(command) == 0):
+        if not command:
             return
         cmd = command[0]
         if cmd == 0x01 or cmd == 0x02:
