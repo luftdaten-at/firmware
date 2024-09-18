@@ -1,6 +1,9 @@
 import time
+from enums import BleCommands
 
 class LedController:
+    BRIGHTNESS_LEVELS = [1/5, 2/5, 3/5, 4/5, 1]
+
     def __init__(self, status_led, num_leds):
         self.num_leds = num_leds
         self.status_led = status_led
@@ -65,7 +68,9 @@ class LedController:
         if not command:
             return
         cmd = command[0]
-        if cmd == 
+        if cmd == BleCommands.UPDATE_BRIGHTNESS:
+            level = command[1]
+            self.status_led.brightness = LedController.BRIGHTNESS_LEVELS[level]
     
 class RepeatMode:
     FOREVER = 0

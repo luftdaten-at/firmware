@@ -1,4 +1,3 @@
-from enum import Enum, auto
 class Dimension():
     PM0_1 = 1
     PM1_0 = 2
@@ -60,7 +59,7 @@ class Quality():
     HIGH = 1
     LOW = 2
 
-class BleCommands(Enum):
-    READ_SENSOR_DATA = auto()
-    READ_SENSOR_DATA_AND_BATTERY_STATUS = auto()
-    UPDATE_BRIGHTNESS = auto()
+class BleCommands:
+    READ_SENSOR_DATA = 0x01
+    READ_SENSOR_DATA_AND_BATTERY_STATUS = 0x02
+    UPDATE_BRIGHTNESS = 0x03 
