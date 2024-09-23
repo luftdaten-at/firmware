@@ -1,0 +1,18 @@
+[
+    {
+      "time": "2024-04-29T08:25:20.766Z",
+      "device": "string",
+      "location": {
+        "lat": 0,
+        "lon": 0,
+        "hight": 0
+      },
+      "measurements": [
+        {
+          "sen": "sensor name string",
+          "dim": "dimension enums string",
+          "val": 0
+        }
+      ]
+    }
+]
