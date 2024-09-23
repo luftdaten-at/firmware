@@ -4,6 +4,7 @@ import socketpool # type: ignore
 import adafruit_requests # type: ignore
 import json
 from lib.cptoml import put
+from storage import remount
 
 class WifiClient:
     def __init__(self, connection_callback: callable | None = None):
@@ -25,9 +26,11 @@ class WifiClient:
             pool = socketpool.SocketPool(wifi.radio)
             self.requests = adafruit_requests.Session(pool, ssl_context=context)
             print("SSL initialized & request session created")
-            print('Write credentials to settings.toml')
 
+            print('Write credentials to settings.toml')
+            print(f'write ssid: {ssid}, pwd: {password}')
             # write credentials to settings.toml 
+            remount('/', False)
             put('SSID', ssid, toml='/settings.toml')
             put('PASSWORD', password, toml='/settings.toml')
 

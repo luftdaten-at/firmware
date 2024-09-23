@@ -17,12 +17,13 @@ class AirStation(LdProductModel):
             return
 
         cmd, *data = command
-        print(cmd, data)
         if cmd == BleCommands.SET_WIFI_SSID:
             self.new_ssid = bytearray(data).decode('utf-8')
+            print(self.new_ssid)
 
         if cmd == BleCommands.SET_WIFI_PASSWORD:
             self.new_password = bytearray(data).decode('utf-8')
+            print(self.new_password)
 
         if self.new_ssid and self.new_password:
             self.wifi.connect(self.new_ssid, self.new_password)
