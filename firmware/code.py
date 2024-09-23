@@ -391,7 +391,7 @@ if MODEL == LdProduct.AIR_STATION:
     from wifi_client import WifiClient
     wifi = WifiClient()
     wifi.connect(SSID, PASSWORD)
-    device = AirStation(service, sensors, battery_monitor, led_controller)
+    device = AirStation(service, sensors, battery_monitor, led_controller, wifi)
 
 if device == None:
     print("Model not recognised")
