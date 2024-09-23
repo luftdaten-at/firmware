@@ -20,6 +20,8 @@ FIRMWARE_PATCH = fetch('FIRMWARE_PATCH')
 PROTOCOL_VERSION = fetch('PROTOCOL_VERSION')
 MODEL = fetch('model')
 
+
+# print settings
 print(f'{SSID=}')
 print(f'{PASSWORD=}')
 print(f'{API_URL=}')
@@ -45,7 +47,7 @@ time.sleep(1)
 #    - Send device status data to API. Reboot into normal mode.
 
 boot_mode = fetch('boot_into', toml="/boot.toml")
-if(boot_mode == 'transmit'):
+if boot_mode == 'transmit':
     status_led.fill(Color.ORANGE)
     status_led.show()
     # Relevant imports
@@ -76,7 +78,7 @@ if(boot_mode == 'transmit'):
     supervisor.reload()
     # This should never be reached
 
-if(boot_mode == 'detectmodel'):
+if boot_mode == 'detectmodel':
     # Try to connect to battery sensor, as that is part of criteria
     from sensors.max17048 import MAX17048
     i2c = busio.I2C(scl=board.IO5, sda=board.IO4, frequency=20000)
@@ -385,6 +387,9 @@ if MODEL == LdProduct.AIR_AROUND or MODEL == LdProduct.AIR_BADGE or MODEL == LdP
 if MODEL == LdProduct.AIR_CUBE:
     from models.air_cube import AirCube
     device = AirCube(service, sensors, battery_monitor, led_controller)
+if MODEL == LdProduct.AIR_STATION:
+    from models.air_station import AirStation
+    device = AirStation(service, sensors, battery_monitor, led_controller)
 
 if device == None:
     print("Model not recognised")
