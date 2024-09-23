@@ -1,17 +1,21 @@
 from models.ld_product_model import LdProductModel
-from enums import LdProduct, Color
+from enums import LdProduct, Color, BleCommands
 
 class AirStation(LdProductModel): 
     def __init__(self, ble_service, sensors, battery_monitor, status_led):
         super().__init__(ble_service, sensors, battery_monitor, status_led)
         self.polling_interval = 0.1  # TODO is this the best value?
         self.model_id = LdProduct.AIR_STATION
-        self.ble_on = False
+        self.ble_on = True 
         
     def receive_command(self, command):
-        if(len(command) == 0):
+        if len(command) == 0:
             return
-        # We should use this for sending configuration commands to the device
+        cmd, *data = command
+        print(cmd, data)
+        if cmd == BleCommands.SET_WIFI_SSID:
+            data = bytearray(data).decode('utf-8')
+            print(data)
     
     def receive_button_press(self):
         self.ble_on = not self.ble_on

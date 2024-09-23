@@ -1,6 +1,6 @@
 model=-1
-SSID="luftdaten.at"
-PASSWORD = "clientpassword"
+SSID="cableaerien"
+PASSWORD = "gestaltgeber"
 TEST_API_URL = "https://staging.datahub.luftdaten.at/api/device/status"
 API_URL = "https://datahub.luftdaten.at/api/device/status"
 FIRMWARE_MAJOR = 1

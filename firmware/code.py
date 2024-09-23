@@ -20,7 +20,6 @@ FIRMWARE_PATCH = fetch('FIRMWARE_PATCH')
 PROTOCOL_VERSION = fetch('PROTOCOL_VERSION')
 MODEL = fetch('model')
 
-
 # print settings
 print(f'{SSID=}')
 print(f'{PASSWORD=}')
@@ -389,6 +388,9 @@ if MODEL == LdProduct.AIR_CUBE:
     device = AirCube(service, sensors, battery_monitor, led_controller)
 if MODEL == LdProduct.AIR_STATION:
     from models.air_station import AirStation
+    from wifi_client import WifiClient
+    wifi = WifiClient()
+    wifi.connect(SSID, PASSWORD)
     device = AirStation(service, sensors, battery_monitor, led_controller)
 
 if device == None:
