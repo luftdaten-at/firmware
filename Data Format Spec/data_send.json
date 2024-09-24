@@ -1,18 +1,15 @@
-[
-    {
-      "time": "2024-04-29T08:25:20.766Z",
-      "device": "string",
-      "location": {
-        "lat": 0,
-        "lon": 0,
-        "hight": 0
-      },
-      "measurements": [
-        {
-          "sen": "sensor name string",
-          "dim": "dimension enums string",
-          "val": 0
+{
+    "station": {
+        "time": "2024-04-29T08:25:20.766Z",
+        "device": "00112233AABB",
+        "location": {
+            "lat": 48.20194899118805,
+            "lon": 16.337324948208195,
+            "height": "5"
         }
-      ]
+    },
+    "sensors": {
+        1: { "type": 1, "data": { 2: 5.0, 3: 6.0, 5: 7.0, 6: 0.67, 7: 20.0, 8: 100 }},
+        2: { "type": 6, "data": {6: 0.72, 7: 20.1 }}
     }
-]
+}
