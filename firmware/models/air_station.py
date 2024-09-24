@@ -1,6 +1,10 @@
 from models.ld_product_model import LdProductModel
 from enums import LdProduct, Color, BleCommands
 from wifi_client import WifiClient
+import adafruit_ntp
+import rtc
+import time
+import socketpool
 
 class AirStation(LdProductModel): 
     def __init__(self, ble_service, sensors, battery_monitor, status_led, wifi: WifiClient):
@@ -14,6 +18,8 @@ class AirStation(LdProductModel):
         self.longitude = None
         self.latitude = None
         self.hight = None
+        self.time_is_configured = False
+        self.clock = rtc.RTC()
         
     def receive_command(self, command):
         if len(command) == 0:
@@ -51,7 +57,15 @@ class AirStation(LdProductModel):
         self.status_led.show()
     
     def tick(self):
-        if not any(self.longitude, self.latitude, self.hight):
+        if not self.time_is_configured and self.wifi.connected():
+            # get current time
+            pool = socketpool.SocketPool(self.wifi.radio)
+            ntp = adafruit_ntp.NTP(pool, tz_offset=0) 
+            self.clock.datetime = ntp.datetime
+
+            self.time_is_configured = True
+
+        if not any(self.longitude, self.latitude, self.hight, self.time_is_configured):
             print('DATA CANNOT BE TRANSMITTED')
             print('Not all configurations have been made')
             return 
