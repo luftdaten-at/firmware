@@ -1,5 +1,5 @@
-from lib.cptoml import put
-from storage import remount, fetch
+from lib.cptoml import put, fetch
+from storage import remount
 
 class Util:
     @staticmethod

@@ -60,20 +60,7 @@ class AirStation(LdProductModel):
         self.status_led.show()
 
     def get_info(self):
-        # Get the current time from the RTC (real-time clock)
-        current_time = self.clock.datetime
-
-        # Format time as an ISO 8601 string (e.g., "2024-04-29T08:25:20.000Z")
-        time_str = "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.000Z".format(
-            current_time.tm_year,
-            current_time.tm_mon,
-            current_time.tm_mday,
-            current_time.tm_hour,
-            current_time.tm_min,
-            current_time.tm_sec
-        )
-
-        # Return device info with the actual values
+        pass
     
     def tick(self):
         if not Config.rtc_is_set or not Util.check_if_configs_are_set(['longitude', 'latitude', 'hight']):
