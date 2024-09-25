@@ -3,6 +3,9 @@ import board # type: ignore
 import digitalio # type: ignore
 import busio # type: ignore
 import gc
+from wifi_client import WifiUtil
+import wifi
+from config import Config
 
 from lib.cptoml import fetch
 from enums import LdProduct, SensorModel, Color
@@ -388,10 +391,8 @@ if MODEL == LdProduct.AIR_CUBE:
     device = AirCube(service, sensors, battery_monitor, led_controller)
 if MODEL == LdProduct.AIR_STATION:
     from models.air_station import AirStation
-    from wifi_client import WifiClient
-    wifi = WifiClient()
-    wifi.connect(SSID, PASSWORD)
-    device = AirStation(service, sensors, battery_monitor, led_controller, wifi)
+    WifiUtil.connect(SSID, PASSWORD)
+    device = AirStation(service, sensors, battery_monitor, led_controller)
 
 if device == None:
     print("Model not recognised")
@@ -489,6 +490,10 @@ ble_connected = False
 
 # Main loop
 while True:
+    # try to set RTC()
+    if not Config.rtc_is_set and wifi.radio.connected:
+        WifiUtil.set_RTC()
+
     if not ble.advertising and device.ble_on:
         ble.start_advertising(advertisement)
         print("Started advertising")

@@ -1,25 +1,25 @@
 from models.ld_product_model import LdProductModel
 from enums import LdProduct, Color, BleCommands
-from wifi_client import WifiClient
+from wifi_client import WifiUtil
+import wifi
 import adafruit_ntp
 import rtc
 import time
 import socketpool
 import ipaddress
+from config import Config
 
 class AirStation(LdProductModel): 
-    def __init__(self, ble_service, sensors, battery_monitor, status_led, wifi: WifiClient):
+    def __init__(self, ble_service, sensors, battery_monitor, status_led):
         super().__init__(ble_service, sensors, battery_monitor, status_led)
         self.polling_interval = 2  # TODO is this the best value?
         self.model_id = LdProduct.AIR_STATION
         self.ble_on = True 
-        self.wifi = wifi
         self.new_ssid = None
         self.new_password = None
         self.longitude = None
         self.latitude = None
         self.hight = None
-        self.time_is_configured = False
         self.clock = rtc.RTC()
         
     def receive_command(self, command):
@@ -44,6 +44,7 @@ class AirStation(LdProductModel):
 
         if self.new_ssid and self.new_password:
             self.wifi.connect(self.new_ssid, self.new_password)
+            WifiUtil.connect(self.new_ssid, self.new_password)
             self.new_ssid = None
             self.new_password = None
         
@@ -83,55 +84,7 @@ class AirStation(LdProductModel):
         }
     
     def tick(self):
-        #print('ping test')
-        #self.wifi.wifilib.radio.ping(ipaddress.IPv4Address('216.40.34.37'))
-        if not self.time_is_configured and self.wifi.connected():
-
-            # Display the assigned IP address
-            print(f"IP Address: {self.wifi.wifilib.radio.ipv4_address}")
-            
-            # Display the assigned gateway
-            print(f"Gateway: {self.wifi.wifilib.radio.ipv4_gateway}")
-            self.wifi.wifilib.radio.ipv4_dns = ipaddress.IPv4Address('8.8.8.8') 
-            # Display the assigned DNS server
-            print(f"DNS Server: {self.wifi.wifilib.radio.ipv4_dns}")
-
-            print(self.wifi.wifilib.radio.ping(ipaddress.IPv4Address('8.8.8.8')))
-
-            # get current time
-            hostname = 'ntp.pool.org'
-            pool = socketpool.SocketPool(self.wifi.wifilib.radio)
-        
-            # Try to resolve the IP address of the hostname
-            print(f"Resolving {hostname}...")
-            addr_info = pool.getaddrinfo(hostname, 80)  # Port 80 is used just for resolution
-            print(f"Address info: {addr_info}")
-            
-            # Extract the IP address from the resolved info
-            ip_address = addr_info[0][-1][0]
-            print(f"Resolved IP address of {hostname}: {ip_address}")
-
-            print(f'Connected? {self.wifi.connected()}')
-            pool = socketpool.SocketPool(self.wifi.wifilib.radio)
-            ntp = adafruit_ntp.NTP(pool, server="216.40.34.37", tz_offset=0, cache_seconds=3600)
-            # NOTE: This changes the system time so make sure you aren't assuming that time
-            # doesn't jump.
-            rtc.RTC().datetime = ntp.datetime
-
-            '''
-            pool = socketpool.SocketPool(self.wifi.wifilib.radio)
-            ntp = adafruit_ntp.NTP(pool, tz_offset=0)
-
-            self.wifi.wifilib.radio.ipv4_dns = ipaddress.ip_address("8.8.8.8")
-            print(f'NTP pool ip: {pool.getaddrinfo(ntp_server, 123)[0][-1]}')
-            print(ntp.datetime)
-            self.clock.datetime = ntp.datetime
-            '''
-
-            self.time_is_configured = True
-        
-
-        if not any([self.longitude, self.latitude, self.hight, self.time_is_configured]):
+        if not all([self.longitude, self.latitude, self.hight, Config.rtc_is_set]):
             print('DATA CANNOT BE TRANSMITTED')
             print('Not all configurations have been made')
             return 
@@ -153,7 +106,6 @@ class AirStation(LdProductModel):
         ]
         ] 
         '''
-
         sensor_values = {}
         for sensor in self.sensors:
             try:
