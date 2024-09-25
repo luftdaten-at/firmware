@@ -1,5 +1,8 @@
-model=-1
-SSID="cableaerien"
+hight = "0"
+longitude = ""
+latitude = " "
+model = 3
+SSID = "cableaerien"
 PASSWORD = "gestaltgeber"
 TEST_API_URL = "https://staging.datahub.luftdaten.at/api/device/status"
 API_URL = "https://datahub.luftdaten.at/api/device/status"

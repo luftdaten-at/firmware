@@ -12,7 +12,7 @@ from led_controller import LedController
 import neopixel # type: ignore
 
 # Configuration
-SSID = fetch('SSID') 
+SSID = fetch('SSID')
 PASSWORD = fetch('PASSWORD')
 API_URL = fetch('TEST_API_URL')
 FIRMWARE_MAJOR = fetch('FIRMWARE_MAJOR')

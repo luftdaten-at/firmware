@@ -6,6 +6,7 @@ import rtc
 import time
 from config import Config
 from util import Util
+import json
 
 class AirStation(LdProductModel): 
     def __init__(self, ble_service, sensors, battery_monitor, status_led):
@@ -83,6 +84,11 @@ class AirStation(LdProductModel):
         }
 
         return device_info
+
+    def save_data(self, data: dict):
+        file_name = data["station"]["time"].replace(':', '_').replace('.', '_')
+        with open(f'json_queue/{file_name}.json', 'w') as f:
+            json.dump(data, f)
     
     def tick(self):
         if not Config.rtc_is_set or not all(Util.get_from_settings(['latitude', 'longitude', 'hight']).values()):
@@ -105,7 +111,4 @@ class AirStation(LdProductModel):
         data = self.get_info()
         data["sensors"] = sensor_values
 
-        print(data)
-
-    def connection_update(self, connected):
-        pass
+        self.save_data(data)
