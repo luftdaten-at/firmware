@@ -60,41 +60,50 @@ class AirStation(LdProductModel):
         self.status_led.show()
 
     def get_info(self):
-        pass
+        # Get current time from RTC
+        current_time = time.localtime()
+
+        # Format the time into ISO 8601 string
+        formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
+
+        # Get latitude, longitude, and height from settings using Util
+        settings = Util.get_from_settings(['latitude', 'longitude', 'hight'])
+
+        # Construct the device information
+        device_info = {
+            "station": {
+                "time": formatted_time,  # ISO format date and time with Z for UTC
+                "device": self.model_id,  # Placeholder, replace with actual device ID
+                "location": {
+                    "lat": settings.get("latitude", "0"),  # Default to "0" if not set
+                    "lon": settings.get("longitude", "0"),  # Default to "0" if not set
+                    "height": settings.get("hight", "0")  # Default to "0" if not set
+                }
+            }
+        }
+
+        return device_info
     
     def tick(self):
-        if not Config.rtc_is_set or not Util.check_if_configs_are_set(['longitude', 'latitude', 'hight']):
+        if not Config.rtc_is_set or not all(Util.get_from_settings(['latitude', 'longitude', 'hight']).values()):
             print('DATA CANNOT BE TRANSMITTED')
             print('Not all configurations have been made')
             return 
-        '''
-        [
-        [
-            {
-                "time": "2024-04-29T08:25:20.766Z",
-                "device": "string",
-                "location": {
-                    "lat": 0,
-                    "lon": 0,
-                    "hight": 0
-            },
-            {
-                "sen1" : {"dim": "val", "dim2": "val2"},
-                "sen2" : {"dim": "val", "dim2": "val2"}
-            }
-        ]
-        ] 
-        '''
+
         sensor_values = {}
-        for sensor in self.sensors:
+        for id, sensor in enumerate(self.sensors):
             try:
                 sensor.read()
             except:
                 print(f"Error reading sensor {sensor.model_id}, using previous values")
 
-            sensor_values[sensor.model_id] = sensor.current_values
-        
-        data = [self.get_info()] + [sensor_values]
+            sensor_values[id] = {
+                "type": sensor.model_id,
+                "data": sensor.current_values
+            } 
+
+        data = self.get_info()
+        data["sensors"] = sensor_values
 
         print(data)
 

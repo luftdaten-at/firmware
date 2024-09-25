@@ -22,14 +22,20 @@ class WifiUtil:
                 'SSID': wifi_ssid,
                 'PASSWORD': wifi_password
             })
+
+            WifiUtil.set_RTC()
+
         except ConnectionError:
             print("Failed to connect to WiFi with provided credentials")
             return False 
         return True
+
     @staticmethod
     def set_RTC():
         try:
             print('Trying to set RTC via NTP...')
+            print(wifi.radio.enabled)
+            print(wifi.radio.connected)
             pool = socketpool.SocketPool(wifi.radio)
             ntp = adafruit_ntp.NTP(pool, tz_offset=0, cache_seconds=3600)
             rtc.RTC().datetime = ntp.datetime
