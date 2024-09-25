@@ -3,12 +3,11 @@ import ssl # type: ignore
 import socketpool # type: ignore
 import adafruit_requests # type: ignore
 import json
-from lib.cptoml import put
-from storage import remount
 import rtc
 import socketpool
 import adafruit_ntp
 from config import Config
+from util import Util
 
 # New wifi methods
 class WifiUtil:
@@ -19,9 +18,10 @@ class WifiUtil:
             wifi.radio.connect(wifi_ssid, wifi_password)
             print('Connection established')
             print('write credentials to settings.toml')
-            remount('/', False)
-            put('SSID', wifi_ssid, toml='/settings.toml')
-            put('PASSWORD', wifi_password, toml='/settings.toml')
+            Util.write_to_settings({
+                'SSID': wifi_ssid,
+                'PASSWORD': wifi_password
+            })
         except ConnectionError:
             print("Failed to connect to WiFi with provided credentials")
             return False 

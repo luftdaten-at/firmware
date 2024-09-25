@@ -2,12 +2,10 @@ from models.ld_product_model import LdProductModel
 from enums import LdProduct, Color, BleCommands
 from wifi_client import WifiUtil
 import wifi
-import adafruit_ntp
 import rtc
 import time
-import socketpool
-import ipaddress
 from config import Config
+from util import Util
 
 class AirStation(LdProductModel): 
     def __init__(self, ble_service, sensors, battery_monitor, status_led):
@@ -17,10 +15,7 @@ class AirStation(LdProductModel):
         self.ble_on = True 
         self.new_ssid = None
         self.new_password = None
-        self.longitude = None
-        self.latitude = None
         self.hight = None
-        self.clock = rtc.RTC()
         
     def receive_command(self, command):
         if len(command) == 0:
@@ -34,13 +29,19 @@ class AirStation(LdProductModel):
             self.new_password = bytearray(data).decode('utf-8')
 
         if cmd == BleCommands.SET_LONGITUDE:
-            self.longitude = bytearray(data).decode('utf-8')
+            Util.write_to_settings({
+                "longitude": bytearray(data).decode('utf-8')
+            })
 
         if cmd == BleCommands.SET_LATITUDE:
-            self.latitude = bytearray(data).decode('utf-8')
+            Util.write_to_settings({
+                "latitude": bytearray(data).decode('utf-8')
+            })
         
         if cmd == BleCommands.SET_HIGHT:
-            self.hight = bytearray(data).decode('utf-8')
+            Util.write_to_settings({
+                "hight": bytearray(data).decode('utf-8')
+            })
 
         if self.new_ssid and self.new_password:
             self.wifi.connect(self.new_ssid, self.new_password)
@@ -73,18 +74,9 @@ class AirStation(LdProductModel):
         )
 
         # Return device info with the actual values
-        return {
-            "time": time_str,
-            "device": self.model_id,  # Assuming the device name is "AirStation"
-            "location": {
-                "lat": self.latitude,
-                "lon": self.longitude,
-                "hight": self.hight
-            }
-        }
     
     def tick(self):
-        if not all([self.longitude, self.latitude, self.hight, Config.rtc_is_set]):
+        if not Config.rtc_is_set or not Util.check_if_configs_are_set(['longitude', 'latitude', 'hight']):
             print('DATA CANNOT BE TRANSMITTED')
             print('Not all configurations have been made')
             return 
