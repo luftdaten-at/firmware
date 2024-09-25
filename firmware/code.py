@@ -3,8 +3,6 @@ import board # type: ignore
 import digitalio # type: ignore
 import busio # type: ignore
 import gc
-from wifi_client import WifiUtil
-import wifi
 from config import Config
 
 from lib.cptoml import fetch
@@ -240,6 +238,7 @@ for model_id in [SensorModel.SEN5X,
                 from sensors.sensor_sen5x import Sen5xSensor
                 is_sen54 = fetch(str(model_id) + "_is_sen54", toml="/boot.toml")
                 listed_sensors.append(Sen5xSensor(is_sen54))
+                pass
             elif model_id == SensorModel.BME280:
                 from sensors.sensor_bme280 import BME280Sensor
                 listed_sensors.append(BME280Sensor())
@@ -391,6 +390,8 @@ if MODEL == LdProduct.AIR_CUBE:
     device = AirCube(service, sensors, battery_monitor, led_controller)
 if MODEL == LdProduct.AIR_STATION:
     from models.air_station import AirStation
+    from wifi_client import WifiUtil
+    import wifi
     WifiUtil.connect(SSID, PASSWORD)
     device = AirStation(service, sensors, battery_monitor, led_controller)
 
@@ -491,7 +492,7 @@ ble_connected = False
 # Main loop
 while True:
     # try to set RTC()
-    if not Config.rtc_is_set and wifi.radio.connected:
+    if device.model_id == LdProduct.AIR_STATION and not Config.rtc_is_set and wifi.radio.connected:
         WifiUtil.set_RTC()
 
     if not ble.advertising and device.ble_on:

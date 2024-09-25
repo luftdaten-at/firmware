@@ -16,7 +16,7 @@ class LdService(Service):
         uuid=VendorUUID("4b439140-73cb-4776-b1f2-8f3711b3bb4f"),
         properties=Characteristic.READ,
         initial_value=bytes([0]),
-        max_length=248,
+        max_length=512,
     )
 
     # For reading details about this device
@@ -24,7 +24,7 @@ class LdService(Service):
         uuid=VendorUUID("8d473240-13cb-1776-b1f2-823711b3ffff"),
         properties=Characteristic.READ,
         initial_value=bytes([0]),
-        max_length=248,
+        max_length=512,
     )
 
     # For reading this device's status
@@ -32,7 +32,7 @@ class LdService(Service):
         uuid=VendorUUID("77db81d9-9773-49b4-aa17-16a2f93e95f2"),
         properties=Characteristic.READ,
         initial_value=bytes([0, 0, 0, 0]),
-        max_length=248,
+        max_length=512,
     )
 
     # For reading details about this device's installed sensors
@@ -40,7 +40,7 @@ class LdService(Service):
         uuid=VendorUUID("13fa8751-57af-4597-a0bb-b202f6111ae6"),
         properties=Characteristic.READ,
         initial_value=bytes([0]),
-        max_length=248,
+        max_length=512,
     )
 
     # For requesting that the device take a new sensor reading
