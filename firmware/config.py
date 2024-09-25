@@ -1,2 +1,10 @@
 class Config:
     rtc_is_set = False
+    SSID = None
+    PASSWORD =None
+    API_URL =None
+    FIRMWARE_MAJOR =None
+    FIRMWARE_MINOR =None
+    FIRMWARE_PATCH =None
+    PROTOCOL_VERSION =None
+    MODEL = None 
