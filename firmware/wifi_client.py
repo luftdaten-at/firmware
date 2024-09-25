@@ -9,6 +9,7 @@ from storage import remount
 class WifiClient:
     def __init__(self, connection_callback: callable | None = None):
         self.connection_callback = connection_callback
+        self.wifilib = wifi
         
     def connect(self, ssid: str, password: str) -> bool | int:
         wifi.radio.enabled = True
@@ -61,6 +62,9 @@ class WifiClient:
         
     def connected(self) -> bool:
         return wifi.radio.connected
+    
+    def get_radio(self):
+        return wifi.radio
     
     most_recent_connection_status = False
     
