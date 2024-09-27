@@ -1,5 +1,5 @@
 from models.ld_product_model import LdProductModel
-from enums import LdProduct, Color, BleCommands
+from enums import LdProduct, Color, BleCommands, AutoUpdateMode, AirStationMeasurementInterval, BatterySaverMode
 from wifi_client import WifiUtil
 import wifi
 import rtc
@@ -11,20 +11,27 @@ import json
 class AirStation(LdProductModel): 
     def __init__(self, ble_service, sensors, battery_monitor, status_led):
         super().__init__(ble_service, sensors, battery_monitor, status_led)
-        self.polling_interval = 2  # TODO is this the best value?
         self.model_id = LdProduct.AIR_STATION
-        self.ble_on = True 
+        self.ble_on = True
+        self.polling_interval = 2
+
         data = Util.get_from_settings([
             'SSID',
             'PASSWORD',
             'longitude',
             'latitude',
-            'hight'
+            'hight',
+            'auto_update_mode',
+            'battery_save_mode',
+            'measurement_interval'
         ])
 
         self.longitude = data['longitude']
         self.latitude = data['latitude']
         self.hight = data['hight']
+        self.auto_update_mode = AutoUpdateMode.off if not data['auto_update_mode'] else data['auto_update_mode']
+        self.battery_save_mode = BatterySaverMode.off if not data['battery_save_mode'] else data['battery_save_mode']
+        self.measurement_interval = AirStationMeasurementInterval.sec30 if not data['measurement_interval'] else data['measurement_interval']
 
         Config.SSID = data['SSID']
         Config.PASSWORD = data['PASSWORD']

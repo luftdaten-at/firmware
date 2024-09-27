@@ -70,3 +70,23 @@ class BleCommands:
     SET_LONGITUDE = 0x08
     SET_LATITUDE = 0x09
     SET_HIGHT = 0x10
+
+class AirStationMeasurementInterval:
+    sec30 = 30
+    min1 = 60
+    min3 = 180
+    min5 = 300
+    min10 = 600
+    min15 = 900
+    min30 = 1800
+    h1 = 3600
+
+class AutoUpdateMode:
+    off = 0
+    critical = 2
+    on = 3
+    
+class BatterySaverMode:
+    off = 0
+    normal = 1
+    ultra = 3
