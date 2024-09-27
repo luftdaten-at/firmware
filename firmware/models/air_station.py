@@ -7,9 +7,10 @@ import time
 from config import Config
 from util import Util
 import json
+from ld_service import LdService
 
 class AirStation(LdProductModel): 
-    def __init__(self, ble_service, sensors, battery_monitor, status_led):
+    def __init__(self, ble_service: LdService, sensors, battery_monitor, status_led):
         super().__init__(ble_service, sensors, battery_monitor, status_led)
         self.model_id = LdProduct.AIR_STATION
         self.ble_on = True
@@ -37,6 +38,11 @@ class AirStation(LdProductModel):
         Config.PASSWORD = data['PASSWORD']
 
         WifiUtil.connect()
+
+        self.send_configuration()
+
+    def send_configuration(self):
+        self.ble_service.air_station_configuration = bytearray([self.auto_update_mode, self.battery_save_mode, self.measurement_interval])
         
     def receive_command(self, command):
         if len(command) == 0:
