@@ -11,6 +11,14 @@ class LdService(Service):
 
     # Define characteristics with their own UUIDs and properties
 
+    # For reading AirStation Configuration
+    sensor_values_characteristic = Characteristic(
+        uuid=VendorUUID("b47b0cdf-0ced-49a9-86a5-d78a03ea7674"),
+        properties=Characteristic.READ,
+        initial_value=bytes([0]),
+        max_length=512,
+    )
+
     # For reading sensor values
     sensor_values_characteristic = Characteristic(
         uuid=VendorUUID("4b439140-73cb-4776-b1f2-8f3711b3bb4f"),
