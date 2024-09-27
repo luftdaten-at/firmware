@@ -399,9 +399,6 @@ if MODEL == LdProduct.AIR_CUBE:
     device = AirCube(service, sensors, battery_monitor, led_controller)
 if MODEL == LdProduct.AIR_STATION:
     from models.air_station import AirStation
-    from wifi_client import WifiUtil
-    import wifi
-    WifiUtil.connect(SSID, PASSWORD)
     device = AirStation(service, sensors, battery_monitor, led_controller)
 
 if device == None:
@@ -501,9 +498,6 @@ ble_connected = False
 # Main loop
 while True:
     # try to set RTC()
-    if device.model_id == LdProduct.AIR_STATION and not Config.rtc_is_set and wifi.radio.connected:
-        WifiUtil.set_RTC()
-
     if not ble.advertising and device.ble_on:
         ble.start_advertising(advertisement)
         print("Started advertising")

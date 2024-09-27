@@ -7,4 +7,4 @@ class Config:
     FIRMWARE_MINOR =None
     FIRMWARE_PATCH =None
     PROTOCOL_VERSION =None
-    MODEL = None 
+    MODEL = None

@@ -14,42 +14,30 @@ class AirStation(LdProductModel):
         self.polling_interval = 2  # TODO is this the best value?
         self.model_id = LdProduct.AIR_STATION
         self.ble_on = True 
-        self.new_ssid = None
-        self.new_password = None
-        self.hight = None
+        data = Util.get_from_settings([
+            'SSID',
+            'PASSWORD',
+            'longitude',
+            'latitude',
+            'hight'
+        ])
+
+        self.longitude = data['longitude']
+        self.latitude = data['latitude']
+        self.hight = data['hight']
+
+        Config.SSID = data['SSID']
+        Config.PASSWORD = data['PASSWORD']
+
+        WifiUtil.connect()
         
     def receive_command(self, command):
         if len(command) == 0:
             return
 
         cmd, *data = command
-        if cmd == BleCommands.SET_WIFI_SSID:
-            self.new_ssid = bytearray(data).decode('utf-8')
-
-        if cmd == BleCommands.SET_WIFI_PASSWORD:
-            self.new_password = bytearray(data).decode('utf-8')
-
-        if cmd == BleCommands.SET_LONGITUDE:
-            Util.write_to_settings({
-                "longitude": bytearray(data).decode('utf-8')
-            })
-
-        if cmd == BleCommands.SET_LATITUDE:
-            Util.write_to_settings({
-                "latitude": bytearray(data).decode('utf-8')
-            })
-        
-        if cmd == BleCommands.SET_HIGHT:
-            Util.write_to_settings({
-                "hight": bytearray(data).decode('utf-8')
-            })
-
-        if self.new_ssid and self.new_password:
-            self.wifi.connect(self.new_ssid, self.new_password)
-            WifiUtil.connect(self.new_ssid, self.new_password)
-            self.new_ssid = None
-            self.new_password = None
-        
+        print(command)
+        print(cmd, data)
 
     def receive_button_press(self):
         self.ble_on = not self.ble_on
@@ -91,6 +79,9 @@ class AirStation(LdProductModel):
             json.dump(data, f)
     
     def tick(self):
+        if not Config.rtc_is_set:
+            WifiUtil.set_RTC()
+
         if not Config.rtc_is_set or not all(Util.get_from_settings(['latitude', 'longitude', 'hight']).values()):
             print('DATA CANNOT BE TRANSMITTED')
             print('Not all configurations have been made')

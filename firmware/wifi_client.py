@@ -12,16 +12,12 @@ from util import Util
 # New wifi methods
 class WifiUtil:
     @staticmethod
-    def connect(wifi_ssid: str, wifi_password: str) -> bool:
+    def connect() -> bool:
         try:
             print('Connecting to Wifi...')
-            wifi.radio.connect(wifi_ssid, wifi_password)
+            wifi.radio.connect(Config.SSID, Config.PASSWORD)
             print('Connection established')
             print('write credentials to settings.toml')
-            Util.write_to_settings({
-                'SSID': wifi_ssid,
-                'PASSWORD': wifi_password
-            })
 
             WifiUtil.set_RTC()
 

@@ -19,6 +19,7 @@ class Util:
             try:
                 data[k] = fetch(k, toml='settings.toml')
             except Exception as e:
+                data[k] = None
                 print(f"can't read {k}, form settings.toml")
                 print(e)
 
