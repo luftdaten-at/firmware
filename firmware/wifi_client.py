@@ -1,13 +1,9 @@
 import wifi # type: ignore
-import ssl # type: ignore
 import socketpool # type: ignore
-import adafruit_requests # type: ignore
-import json
 import rtc
 import socketpool
 import adafruit_ntp
 from config import Config
-from util import Util
 
 # New wifi methods
 class WifiUtil:
@@ -15,6 +11,7 @@ class WifiUtil:
     def connect() -> bool:
         try:
             print('Connecting to Wifi...')
+            print(Config.SSID, Config.PASSWORD)
             wifi.radio.connect(Config.SSID, Config.PASSWORD)
             print('Connection established')
             print('write credentials to settings.toml')

@@ -497,7 +497,6 @@ ble_connected = False
 
 # Main loop
 while True:
-    # try to set RTC()
     if not ble.advertising and device.ble_on:
         ble.start_advertising(advertisement)
         print("Started advertising")
@@ -522,9 +521,9 @@ while True:
         button_state = False
         print("Button released")
 
-    waiting_bytes = service.trigger_reading_characteristic_2.in_waiting
-    if waiting_bytes > 0:
-        command = service.trigger_reading_characteristic_2.read(waiting_bytes)
+    if service.trigger_reading_characteristic_2:
+        command = service.trigger_reading_characteristic_2
+        service.trigger_reading_characteristic_2 = bytearray()
 
         device.receive_command(command)
         led_controller.receive_command(command)

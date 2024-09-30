@@ -1,8 +1,6 @@
 from models.ld_product_model import LdProductModel
-from enums import LdProduct, Color, BleCommands, AutoUpdateMode, AirStationMeasurementInterval, BatterySaverMode
+from enums import LdProduct, Color, AutoUpdateMode, AirStationMeasurementInterval, BatterySaverMode, BleCommands
 from wifi_client import WifiUtil
-import wifi
-import rtc
 import time
 from config import Config
 from util import Util
@@ -51,6 +49,34 @@ class AirStation(LdProductModel):
         cmd, *data = command
         print(command)
         print(cmd, data)
+
+        if cmd == BleCommands.SET_AIR_STATION_CONFIGURATION:
+            self.auto_update_mode = data[0]
+            self.battery_save_mode = data[1]
+            measurement_interval_high_byte = data[2]
+            measurement_interval_low_byte = data[3]
+
+            self.measurement_interval = (measurement_interval_high_byte << 8) + measurement_interval_low_byte 
+
+            ssid_len = data[4]
+            Config.SSID = bytearray(data[5:5+ssid_len]).decode('utf-8')
+            pwd_len = data[5 + ssid_len]
+            Config.PASSWORD = bytearray(data[5 + ssid_len + 1: 5+ssid_len+1+pwd_len]).decode('utf-8')
+
+            print('Configure AirStation:')
+            print(self.auto_update_mode)
+            print(self.battery_save_mode)
+            print(self.measurement_interval)
+            print(Config.SSID)
+            print(Config.PASSWORD)
+
+            Util.write_to_settings({
+                'SSID': Config.SSID,
+                'PASSWORD': Config.PASSWORD,
+                'auto_update_mode': self.auto_update_mode,
+                'battery_save_mode': self.battery_save_mode,
+                'measurement_interval': self.measurement_interval
+            })
 
     def receive_button_press(self):
         self.ble_on = not self.ble_on
@@ -115,4 +141,4 @@ class AirStation(LdProductModel):
         data = self.get_info()
         data["sensors"] = sensor_values
 
-        self.save_data(data)
+        #self.save_data(data)

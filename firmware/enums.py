@@ -65,11 +65,7 @@ class BleCommands:
     UPDATE_BRIGHTNESS = 0x03 
     TURN_OFF_STATUS_LIGHT = 0x04
     TURN_ON_STATUS_LIGHT = 0x05
-    SET_WIFI_SSID = 0x06
-    SET_WIFI_PASSWORD = 0x07
-    SET_LONGITUDE = 0x08
-    SET_LATITUDE = 0x09
-    SET_HIGHT = 0x10
+    SET_AIR_STATION_CONFIGURATION = 0x06
 
 class AirStationMeasurementInterval:
     sec30 = 30
