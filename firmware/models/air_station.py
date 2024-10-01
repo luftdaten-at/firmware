@@ -4,8 +4,9 @@ from wifi_client import WifiUtil
 import time
 from config import Config
 from util import Util
-import json
+from json import dump, load
 from ld_service import LdService
+from os import listdir
 
 class AirStation(LdProductModel): 
     def __init__(self, ble_service: LdService, sensors, battery_monitor, status_led):
@@ -13,6 +14,7 @@ class AirStation(LdProductModel):
         self.model_id = LdProduct.AIR_STATION
         self.ble_on = True
         self.polling_interval = 2
+        self.last_measurement = None
 
         data = Util.get_from_settings([
             'SSID',
@@ -108,9 +110,9 @@ class AirStation(LdProductModel):
                 "time": formatted_time,  # ISO format date and time with Z for UTC
                 "device": self.model_id,  # Placeholder, replace with actual device ID
                 "location": {
-                    "lat": settings.get("latitude", "0"),  # Default to "0" if not set
-                    "lon": settings.get("longitude", "0"),  # Default to "0" if not set
-                    "height": settings.get("hight", "0")  # Default to "0" if not set
+                    "lat": settings.get("latitude", 0),  # Default to "0" if not set
+                    "lon": settings.get("longitude", 0),  # Default to "0" if not set
+                    "height": settings.get("hight", 0)  # Default to "0" if not set
                 }
             }
         }
@@ -119,34 +121,10 @@ class AirStation(LdProductModel):
 
     def save_data(self, data: dict):
         file_name = data["station"]["time"].replace(':', '_').replace('.', '_')
-        with open(f'json_queue/{file_name}.json', 'w') as f:
-            json.dump(data, f)
+        with open(f'{Config.JSON_QUEUE}/{file_name}.json', 'w') as f:
+            dump(data, f)
     
-    def tick(self):
-        # try to connect to wifi
-        if not WifiUtil.radio.connected:
-            WifiUtil.connect()
-
-        # if not connected status led should be red 
-        if not WifiUtil.radio.connected:
-            self.status_led.status_led.fill(Color.RED)
-            self.status_led.status_led.show()
-            time.sleep(2)
-            self.status_led.status_led.fill(Color.GREEN)
-            self.status_led.status_led.show()
-
-        if not Config.rtc_is_set:
-            WifiUtil.set_RTC()
-
-        if not Config.rtc_is_set or not all(Util.get_from_settings(['latitude', 'longitude', 'hight']).values()):
-            print('DATA CANNOT BE TRANSMITTED')
-            print('Not all configurations have been made')
-            self.status_led.status_led.fill(Color.PURPLE)
-            self.status_led.status_led.show()
-            time.sleep(2)
-            self.status_led.status_led.fill(Color.GREEN)
-            self.status_led.status_led.show()
-
+    def get_json(self):
         sensor_values = {}
         for id, sensor in enumerate(self.sensors):
             try:
@@ -162,4 +140,52 @@ class AirStation(LdProductModel):
         data = self.get_info()
         data["sensors"] = sensor_values
 
-        #self.save_data(data)
+        return data
+    
+    def send_to_api(self):
+        for file_path in (f'{Config.JSON_QUEUE}/{f}' for f in listdir(Config.JSON_QUEUE)):
+            print(file_path)
+            with open(file_path, 'r') as f:
+                data = load(f)
+                print(data)
+                print('Send data: ')
+                print(WifiUtil.send_json_to_api(data))
+
+    def tick(self):
+        # try to connect to wifi
+        if not WifiUtil.radio.connected:
+            WifiUtil.connect()
+
+        # if not connected status led should be red 
+        if not WifiUtil.radio.connected:
+            self.status_led.status_led.fill(Color.RED)
+            self.status_led.status_led.show()
+            time.sleep(2)
+            self.status_led.status_led.fill(Color.GREEN)
+            self.status_led.status_led.show()
+
+        # set current time
+        if not Config.rtc_is_set and WifiUtil.radio.connected:
+            WifiUtil.set_RTC()
+
+        # check if all configurations wich are nessecary are set
+        if not Config.rtc_is_set or not all(Util.get_from_settings(['latitude', 'longitude', 'hight']).values()):
+            print('DATA CANNOT BE TRANSMITTED')
+            print('Not all configurations have been made')
+            self.status_led.status_led.fill(Color.PURPLE)
+            self.status_led.status_led.show()
+            time.sleep(2)
+            self.status_led.status_led.fill(Color.GREEN)
+            self.status_led.status_led.show()
+        else:
+            # ready to send data
+            cur_time = time.monotonic()
+            if not self.last_measurement or cur_time - self.last_measurement >= self.measurement_interval:
+                # make measurement
+                self.last_measurement = cur_time
+                data = self.get_json()
+                self.save_data(data)
+
+        if WifiUtil.radio.connected:
+            # send saved data
+            self.send_to_api()

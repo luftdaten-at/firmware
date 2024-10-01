@@ -12,9 +12,15 @@ from led_controller import LedController
 import neopixel # type: ignore
 
 # Configuration
+TEST_MODE = fetch('TEST_MODE')
 SSID = fetch('SSID')
 PASSWORD = fetch('PASSWORD')
-API_URL = fetch('TEST_API_URL')
+
+if TEST_MODE:
+    API_URL = fetch('TEST_API_URL')
+else:
+    API_URL = fetch('API_URL')
+
 FIRMWARE_MAJOR = fetch('FIRMWARE_MAJOR')
 FIRMWARE_MINOR = fetch('FIRMWARE_MAJOR')
 FIRMWARE_PATCH = fetch('FIRMWARE_PATCH')
@@ -497,6 +503,11 @@ ble_connected = False
 
 # Main loop
 while True:
+    # clean memory
+    print(f'Free memory: {gc.mem_free()}')
+    gc.collect()
+    print(f'Free memory after collect: {gc.mem_free()}')
+
     if not ble.advertising and device.ble_on:
         ble.start_advertising(advertisement)
         print("Started advertising")

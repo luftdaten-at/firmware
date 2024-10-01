@@ -8,3 +8,5 @@ class Config:
     FIRMWARE_PATCH =None
     PROTOCOL_VERSION =None
     MODEL = None
+    JSON_QUEUE = 'json_queue'
+    CERTIFICATE_PATH = 'certs/isrgrootx1.pem'

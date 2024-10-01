@@ -1,9 +1,11 @@
 import wifi # type: ignore
-import socketpool # type: ignore
 import rtc
-import socketpool
-import adafruit_ntp
+from socketpool import SocketPool
+from ssl import create_default_context
+from adafruit_ntp import NTP
+from adafruit_requests import Session
 from config import Config
+from gc import collect
 
 # New wifi methods
 class WifiUtil:
@@ -11,30 +13,40 @@ class WifiUtil:
     @staticmethod
     def connect() -> bool:
         try:
+            collect()
             print('Connecting to Wifi...')
             print(Config.SSID, Config.PASSWORD)
             wifi.radio.connect(Config.SSID, Config.PASSWORD)
             print('Connection established')
 
-            WifiUtil.set_RTC()
-
         except ConnectionError:
             print("Failed to connect to WiFi with provided credentials")
             return False 
+
+        WifiUtil.set_RTC()
+
         return True
 
     @staticmethod
     def set_RTC():
         try:
             print('Trying to set RTC via NTP...')
-            pool = socketpool.SocketPool(wifi.radio)
-            ntp = adafruit_ntp.NTP(pool, tz_offset=0, cache_seconds=3600)
+            pool = SocketPool(wifi.radio)
+            ntp = NTP(pool, tz_offset=0, cache_seconds=3600)
             rtc.RTC().datetime = ntp.datetime
             Config.rtc_is_set = True
             print('RTC sucessfully configured')
 
         except Exception as e:
             print(e)
+    
+    @staticmethod
+    def send_json_to_api(self, data):
+        pool = SocketPool(wifi.radio)
+        context = create_default_context()
+        context.load_verify_locations(Config.CERTIFICATE_PATH)
+        https = Session(pool, context)
+        return https.post(Config.API_URL, json=data)
 
 class ConnectionFailure:
     SSID_NOT_FOUND = 1
