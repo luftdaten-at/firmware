@@ -7,6 +7,7 @@ from config import Config
 
 # New wifi methods
 class WifiUtil:
+    radio = wifi.radio
     @staticmethod
     def connect() -> bool:
         try:
@@ -14,7 +15,6 @@ class WifiUtil:
             print(Config.SSID, Config.PASSWORD)
             wifi.radio.connect(Config.SSID, Config.PASSWORD)
             print('Connection established')
-            print('write credentials to settings.toml')
 
             WifiUtil.set_RTC()
 

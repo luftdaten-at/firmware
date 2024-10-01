@@ -78,6 +78,8 @@ class AirStation(LdProductModel):
                 'measurement_interval': self.measurement_interval
             })
 
+            WifiUtil.connect()
+
     def receive_button_press(self):
         self.ble_on = not self.ble_on
         # Possibly change polling interval?
@@ -118,6 +120,9 @@ class AirStation(LdProductModel):
             json.dump(data, f)
     
     def tick(self):
+        if not WifiUtil.radio.connected:
+            WifiUtil.connect()
+
         if not Config.rtc_is_set:
             WifiUtil.set_RTC()
 
