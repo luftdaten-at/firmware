@@ -94,6 +94,21 @@ READ_SENSOR_DATA_AND_BATTERY_STATUS | 0x02
 UPDATE_BRIGHTNESS | 0x03
 TURN_OFF_STATUS_LIGHT | 0x04
 TURN_ON_STATUS_LIGHT | 0x05
+SET_AIR_STATION_CONFIGURATION | 0x06
+
+### SET_AIR_STATION_CONFIGURATION Byte Structure Overview
+
+| Byte Position      | Description                          | Data Type        | Notes                                             |
+|--------------------|--------------------------------------|------------------|---------------------------------------------------|
+| `0`                | Command Identifier                   | `uint8`          | `0x06`: Indicates this is the **Set Air Station Configuration** command. |
+| `1`                | Auto Update Mode                     | `uint8`          | 1 byte: Auto-update mode setting.                 |
+| `2`                | Battery Save Mode                    | `uint8`          | 1 byte: Battery save mode setting.                |
+| `3`                | Measurement Interval (High Byte)     | `uint8`          | High byte of the measurement interval.            |
+| `4`                | Measurement Interval (Low Byte)      | `uint8`          | Low byte of the measurement interval.             |
+| `5`                | SSID Length                          | `uint8`          | Length (in bytes) of the SSID.                    |
+| `6 to (6 + n)`     | SSID                                 | `string` (UTF-8) | SSID, length determined by SSID Length (`n` bytes).|
+| Next Byte          | Password Length                      | `uint8`          | Length (in bytes) of the Wi-Fi password.          |
+| Following Bytes    | Password                             | `string` (UTF-8) | Password, length determined by Password Length.   |
 
 ### Sensordaten auslesen (gleich wie v1)
 
