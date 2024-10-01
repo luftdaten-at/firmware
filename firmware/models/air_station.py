@@ -35,12 +35,13 @@ class AirStation(LdProductModel):
         Config.SSID = data['SSID']
         Config.PASSWORD = data['PASSWORD']
 
-        WifiUtil.connect()
-
         self.send_configuration()
+        self.status_led.status_led.fill(Color.GREEN)
+        self.status_led.status_led.show()
+
 
     def send_configuration(self):
-        self.ble_service.air_station_configuration = bytearray([self.auto_update_mode, self.battery_save_mode, self.measurement_interval])
+        self.ble_service.air_station_configuration = bytearray([self.auto_update_mode, self.battery_save_mode, self.measurement_interval >> 8, self.measurement_interval & ((1<<8)-1)])
         
     def receive_command(self, command):
         if len(command) == 0:
@@ -84,9 +85,11 @@ class AirStation(LdProductModel):
         self.ble_on = not self.ble_on
         # Possibly change polling interval?
         if self.ble_on:
-            self.status_led.fill(Color.BLUE)
+            self.status_led.status_led.fill(Color.BLUE)
+            self.status_led.status_led.show()
         else:
-            self.status_led.fill(Color.OFF)
+            self.status_led.status_led.fill(Color.OFF)
+            self.status_led.status_led.show()
         self.status_led.show()
 
     def get_info(self):
@@ -120,8 +123,17 @@ class AirStation(LdProductModel):
             json.dump(data, f)
     
     def tick(self):
+        # try to connect to wifi
         if not WifiUtil.radio.connected:
             WifiUtil.connect()
+
+        # if not connected status led should be red 
+        if not WifiUtil.radio.connected:
+            self.status_led.status_led.fill(Color.RED)
+            self.status_led.status_led.show()
+            time.sleep(2)
+            self.status_led.status_led.fill(Color.GREEN)
+            self.status_led.status_led.show()
 
         if not Config.rtc_is_set:
             WifiUtil.set_RTC()
@@ -129,7 +141,11 @@ class AirStation(LdProductModel):
         if not Config.rtc_is_set or not all(Util.get_from_settings(['latitude', 'longitude', 'hight']).values()):
             print('DATA CANNOT BE TRANSMITTED')
             print('Not all configurations have been made')
-            return 
+            self.status_led.status_led.fill(Color.PURPLE)
+            self.status_led.status_led.show()
+            time.sleep(2)
+            self.status_led.status_led.fill(Color.GREEN)
+            self.status_led.status_led.show()
 
         sensor_values = {}
         for id, sensor in enumerate(self.sensors):
