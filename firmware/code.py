@@ -504,9 +504,7 @@ ble_connected = False
 # Main loop
 while True:
     # clean memory
-    print(f'Free memory: {gc.mem_free()}')
     gc.collect()
-    print(f'Free memory after collect: {gc.mem_free()}')
 
     if not ble.advertising and device.ble_on:
         ble.start_advertising(advertisement)

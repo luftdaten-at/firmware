@@ -1,11 +1,6 @@
 import wifi # type: ignore
-import rtc
-from socketpool import SocketPool
-from ssl import create_default_context
-from adafruit_ntp import NTP
-from adafruit_requests import Session
 from config import Config
-from gc import collect
+import gc
 
 # New wifi methods
 class WifiUtil:
@@ -13,7 +8,6 @@ class WifiUtil:
     @staticmethod
     def connect() -> bool:
         try:
-            collect()
             print('Connecting to Wifi...')
             print(Config.SSID, Config.PASSWORD)
             wifi.radio.connect(Config.SSID, Config.PASSWORD)
@@ -29,6 +23,10 @@ class WifiUtil:
 
     @staticmethod
     def set_RTC():
+        from adafruit_ntp import NTP
+        import rtc
+        from socketpool import SocketPool
+
         try:
             print('Trying to set RTC via NTP...')
             pool = SocketPool(wifi.radio)
@@ -41,10 +39,28 @@ class WifiUtil:
             print(e)
     
     @staticmethod
-    def send_json_to_api(self, data):
+    def send_json_to_api(data):
+        from socketpool import SocketPool
+        from ssl import create_default_context
+        from adafruit_requests import Session
+
+
         pool = SocketPool(wifi.radio)
         context = create_default_context()
-        context.load_verify_locations(Config.CERTIFICATE_PATH)
+
+        with open(Config.CERTIFICATE_PATH, 'r') as f:
+            context.load_verify_locations(cadata=f.read())
+
+
+        print(locals())
+        gc.collect()
+        print(f'Free mem before API: {gc.mem_free()}')
+        del locals()['buf']
+        gc.collect()
+        print(locals())
+        print(f'Free mem before API: {gc.mem_free()}')
+
+
         https = Session(pool, context)
         return https.post(Config.API_URL, json=data)
 

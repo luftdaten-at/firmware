@@ -6,7 +6,7 @@ from config import Config
 from util import Util
 from json import dump, load
 from ld_service import LdService
-from os import listdir
+from os import listdir, remove
 
 class AirStation(LdProductModel): 
     def __init__(self, ble_service: LdService, sensors, battery_monitor, status_led):
@@ -149,7 +149,11 @@ class AirStation(LdProductModel):
                 data = load(f)
                 print(data)
                 print('Send data: ')
-                print(WifiUtil.send_json_to_api(data))
+                response = WifiUtil.send_json_to_api(data)
+                print(f'Response: {response}')
+                # TODO: if sent sucessfully
+                if True:
+                    remove(file_path) 
 
     def tick(self):
         # try to connect to wifi
