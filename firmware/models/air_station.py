@@ -34,8 +34,8 @@ class AirStation(LdProductModel):
         self.battery_save_mode = BatterySaverMode.off if not data['battery_save_mode'] else data['battery_save_mode']
         self.measurement_interval = AirStationMeasurementInterval.sec30 if not data['measurement_interval'] else data['measurement_interval']
 
-        Config.SSID = data['SSID']
-        Config.PASSWORD = data['PASSWORD']
+            Config.SSID = data['SSID']
+            Config.PASSWORD = data['PASSWORD']
 
         self.send_configuration()
         self.status_led.status_led.fill(Color.GREEN)
