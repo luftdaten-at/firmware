@@ -335,57 +335,6 @@ for sensor in listed_sensors:
         ])
         sensors.append(sensor)
 
-# -----------------------------------------------------------
-def create_device_status():
-    """Create the JSON data containing device information."""
-    data = {
-        "wifi_mac": wifi.radio.mac_address,
-        "battery_voltage_mv": battery_monitor.cell_soc(),
-        "sensors": {
-            "sen5x_product": sen5x_device.get_product_name(),
-            "sen5x_serial": sen5x_device.get_serial_number()
-        }
-    }
-    return json.dumps(data)
-
-def send_data(json_data):
-    """Send the JSON data to the specified API."""
-    headers = {"Content-Type": "application/json"}
-    try:
-        response = requests.post(API_URL, data=json_data, headers=headers)
-        print("Response:", response.text)
-    except Exception as e:
-        print("Failed to send data:", e)
-
-# Check if the button is pressed during boot
-if button.value and False:
-    print("Button pressed! Sending status data...")
-    status_led.fill((0, 255, 0))  # Set color to green
-    status_led.show()
-
-    # Setup Wi-Fi connection
-    print("Connecting to Wi-Fi...")
-    wifi.radio.connect(SSID, PASSWORD)
-    print("Connected to Wi-Fi!")
-
-    # Load the root CA certificate
-    with open("/certs/isrgrootx1.pem", "rb") as f:
-        root_ca = f.read()
-
-    # Create an SSL context
-    context = ssl.create_default_context()  # No path, as we load directly
-    context.load_verify_locations(cadata=root_ca)
-
-    # Create a request session
-    pool = socketpool.SocketPool(wifi.radio)
-    requests = adafruit_requests.Session(pool, ssl_context=context)
-
-    device_status_json = create_device_status()
-    send_data(device_status_json)
-    time.sleep(5)  # Prevent rapid resending
-
-# -----------------------------------------------------------
-
 # Initialize BLE, define custom service
 ble = BLERadio()
 service = LdService()
@@ -493,7 +442,7 @@ if battery_monitor is not None:
                 time.sleep(0.5)
     time.sleep(2)
 
-buf = bytearray(512)
+#buf = bytearray(512)
 
 button_state = False
 
