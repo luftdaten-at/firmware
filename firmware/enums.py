@@ -67,6 +67,16 @@ class BleCommands:
     TURN_ON_STATUS_LIGHT = 0x05
     SET_AIR_STATION_CONFIGURATION = 0x06
 
+class AirstationConfigFlags:
+    AUTO_UPDATE_MODE = 0  # Bit 0
+    BATTERY_SAVE_MODE = 1  # Bit 1
+    MEASUREMENT_INTERVAL = 2  # Bit 2
+    LONGITUDE = 3  # Bit 3
+    LATITUDE = 4  # Bit 4
+    HEIGHT = 5  # Bit 5
+    SSID = 6  # Bit 6
+    PASSWORD = 7  # Bit 7
+
 class AirStationMeasurementInterval:
     sec30 = 30
     min1 = 60

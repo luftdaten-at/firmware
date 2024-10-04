@@ -98,29 +98,33 @@ SET_AIR_STATION_CONFIGURATION | 0x06
 
 ### SET_AIR_STATION_CONFIGURATION Byte Structure Overview
 
-| Byte Position      | Description                          | Data Type        | Notes                                             |
-|--------------------|--------------------------------------|------------------|---------------------------------------------------|
-| `0`                | Command Identifier                   | `uint8`          | `0x06`: Indicates this is the **Set Air Station Configuration** command. |
-| `1`                | Auto Update Mode                     | `uint8`          | 1 byte: Auto-update mode setting.                 |
-| `2`                | Battery Save Mode                    | `uint8`          | 1 byte: Battery save mode setting.                |
-| `3`                | Measurement Interval (High Byte)     | `uint8`          | High byte of the measurement interval.            |
-| `4`                | Measurement Interval (Low Byte)      | `uint8`          | Low byte of the measurement interval.             |
-| `5`                | SSID Length                          | `uint8`          | Length (in bytes) of the SSID.                    |
-| `6 to (6 + n)`     | SSID                                 | `string` (UTF-8) | SSID, length determined by SSID Length (`n` bytes).|
-| Next Byte          | Password Length                      | `uint8`          | Length (in bytes) of the Wi-Fi password.          |
-| Following Bytes    | Password                             | `string` (UTF-8) | Password, length determined by Password Length.   |
+### Packet Breakdown
 
-0x06 Set Airstation Config
-Package Bytes: [0x06, flage, length, ...lenght bytes, flage...]
-Flags:
-    0: Auto Update Mode
-    1: Battery Save Mode
-    2: Measurement Interval
-    3: long
-    4: lat
-    5: hight
-    6: ssid
-    7: pwd
+- **Command Byte**: `0x06` - This byte indicates the start of the configuration command.
+- **Flag Byte**: A bitwise combination of flags indicating the specific configurations to be set. Each bit represents a different configuration option.
+- **Length Byte**: Indicates the number of bytes that follow the flag for the specific configuration being set.
+- **Data Bytes**: Actual configuration data corresponding to the flags set.
+
+## Flags
+
+The following flags are used to indicate which configurations can be set:
+
+| Flag Bit | Configuration            | Description                            |
+|----------|--------------------------|----------------------------------------|
+| 0        | AUTO_UPDATE_MODE         | Enable or disable automatic updates.   |
+| 1        | BATTERY_SAVE_MODE        | Enable or disable battery-saving mode. |
+| 2        | MEASUREMENT_INTERVAL      | Set the interval for measurements.     |
+| 3        | LONGITUDE                | Set the longitude (double value).      |
+| 4        | LATITUDE                 | Set the latitude (double value).       |
+| 5        | HEIGHT                   | Set the height (double value).         |
+| 6        | SSID                     | Set the SSID (string value).           |
+| 7        | PASSWORD                 | Set the password (string value).       |
+
+## Data Types
+
+- **Integer Values**: Represented as a 4-byte integer in big-endian format (e.g., for measurement intervals).
+- **Double Values**: Represented as an 8-byte double in big-endian format (e.g., for longitude, latitude, height).
+- **Strings**: Represented as UTF-8 encoded byte arrays for SSID and password.
 
 ### Sensordaten auslesen (gleich wie v1)
 

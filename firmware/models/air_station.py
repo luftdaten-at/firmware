@@ -1,5 +1,5 @@
 from models.ld_product_model import LdProductModel
-from enums import LdProduct, Color, AutoUpdateMode, AirStationMeasurementInterval, BatterySaverMode, BleCommands
+from enums import LdProduct, Color, AutoUpdateMode, AirStationMeasurementInterval, BatterySaverMode, BleCommands, AirstationConfigFlags
 from wifi_client import WifiUtil
 import time
 from config import Config
@@ -7,6 +7,7 @@ from util import Util
 from json import dump, load
 from ld_service import LdService
 from os import listdir, remove
+import struct
 
 class AirStation(LdProductModel): 
     def __init__(self, ble_service: LdService, sensors, battery_monitor, status_led):
@@ -21,7 +22,7 @@ class AirStation(LdProductModel):
             'PASSWORD',
             'longitude',
             'latitude',
-            'hight',
+            'height',
             'auto_update_mode',
             'battery_save_mode',
             'measurement_interval'
@@ -29,7 +30,7 @@ class AirStation(LdProductModel):
 
         self.longitude = data['longitude']
         self.latitude = data['latitude']
-        self.hight = data['hight']
+        self.height = data['height']
         self.auto_update_mode = AutoUpdateMode.off if not data['auto_update_mode'] else data['auto_update_mode']
         self.battery_save_mode = BatterySaverMode.off if not data['battery_save_mode'] else data['battery_save_mode']
         self.measurement_interval = AirStationMeasurementInterval.sec30 if not data['measurement_interval'] else data['measurement_interval']
@@ -50,39 +51,62 @@ class AirStation(LdProductModel):
             return
 
         cmd, *data = command
+
         print(command)
         print(cmd, data)
-        '''
+
+        data = bytearray(data)
+        
         if cmd == BleCommands.SET_AIR_STATION_CONFIGURATION:
-            self.auto_update_mode = data[0]
-            self.battery_save_mode = data[1]
-            measurement_interval_high_byte = data[2]
-            measurement_interval_low_byte = data[3]
+            wifi_config_changed = False
+            idx = 0
+            while idx < len(data):
+                flag = data[idx]                
+                idx += 1
+                length = data[idx]
+                idx += 1
+                print(flag, length)
+                if flag == AirstationConfigFlags.AUTO_UPDATE_MODE:
+                    self.auto_update_mode = struct.unpack('>i', data[idx:idx + length])[0]
 
-            self.measurement_interval = (measurement_interval_high_byte << 8) + measurement_interval_low_byte 
+                if flag == AirstationConfigFlags.BATTERY_SAVE_MODE:
+                    self.battery_save_mode = struct.unpack('>i', data[idx:idx + length])[0]
 
-            ssid_len = data[4]
-            Config.SSID = bytearray(data[5:5+ssid_len]).decode('utf-8')
-            pwd_len = data[5 + ssid_len]
-            Config.PASSWORD = bytearray(data[5 + ssid_len + 1: 5+ssid_len+1+pwd_len]).decode('utf-8')
+                if flag == AirstationConfigFlags.MEASUREMENT_INTERVAL:
+                    self.measurement_interval = struct.unpack('>i', data[idx:idx + length])[0]
 
-            print('Configure AirStation:')
-            print(self.auto_update_mode)
-            print(self.battery_save_mode)
-            print(self.measurement_interval)
-            print(Config.SSID)
-            print(Config.PASSWORD)
+                if flag == AirstationConfigFlags.LONGITUDE:
+                    self.longitude = struct.unpack('>d', data[idx:idx + length])[0]  # Unpack as double
+
+                if flag == AirstationConfigFlags.LATITUDE:
+                    self.latitude = struct.unpack('>d', data[idx:idx + length])[0]  # Unpack as double
+
+                if flag == AirstationConfigFlags.HEIGHT:
+                    self.height = struct.unpack('>d', data[idx:idx + length])[0]  # Unpack as double
+
+                if flag == AirstationConfigFlags.SSID:
+                    Config.SSID = data[idx:idx + length].decode('utf-8')  # Decode as string
+                    wifi_config_changed = True
+
+                if flag == AirstationConfigFlags.PASSWORD:
+                    Config.PASSWORD = data[idx:idx + length].decode('utf-8')  # Decode as string
+                    wifi_config_changed = True
+                
+                idx += length
 
             Util.write_to_settings({
                 'SSID': Config.SSID,
                 'PASSWORD': Config.PASSWORD,
+                'longitude': self.longitude,
+                'latitude': self.latitude,
+                'height': self.height,
                 'auto_update_mode': self.auto_update_mode,
                 'battery_save_mode': self.battery_save_mode,
                 'measurement_interval': self.measurement_interval
             })
 
-            WifiUtil.connect()
-        '''
+            if wifi_config_changed:
+                WifiUtil.connect()
 
     def receive_button_press(self):
         self.ble_on = not self.ble_on
@@ -174,7 +198,7 @@ class AirStation(LdProductModel):
             WifiUtil.set_RTC()
 
         # check if all configurations wich are nessecary are set
-        if not Config.rtc_is_set or not all(Util.get_from_settings(['latitude', 'longitude', 'hight']).values()):
+        if not Config.rtc_is_set or any([self.longitude is None, self.latitude is None, self.height is None]):
             print('DATA CANNOT BE TRANSMITTED')
             print('Not all configurations have been made')
             self.status_led.status_led.fill(Color.PURPLE)
