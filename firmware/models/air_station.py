@@ -52,7 +52,7 @@ class AirStation(LdProductModel):
         cmd, *data = command
         print(command)
         print(cmd, data)
-
+        '''
         if cmd == BleCommands.SET_AIR_STATION_CONFIGURATION:
             self.auto_update_mode = data[0]
             self.battery_save_mode = data[1]
@@ -82,6 +82,7 @@ class AirStation(LdProductModel):
             })
 
             WifiUtil.connect()
+        '''
 
     def receive_button_press(self):
         self.ble_on = not self.ble_on
@@ -190,6 +191,6 @@ class AirStation(LdProductModel):
                 data = self.get_json()
                 self.save_data(data)
 
-        if WifiUtil.radio.connected:
+        if False and WifiUtil.radio.connected:
             # send saved data
             self.send_to_api()

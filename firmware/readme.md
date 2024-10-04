@@ -110,6 +110,18 @@ SET_AIR_STATION_CONFIGURATION | 0x06
 | Next Byte          | Password Length                      | `uint8`          | Length (in bytes) of the Wi-Fi password.          |
 | Following Bytes    | Password                             | `string` (UTF-8) | Password, length determined by Password Length.   |
 
+0x06 Set Airstation Config
+Package Bytes: [0x06, flage, length, ...lenght bytes, flage...]
+Flags:
+    0: Auto Update Mode
+    1: Battery Save Mode
+    2: Measurement Interval
+    3: long
+    4: lat
+    5: hight
+    6: ssid
+    7: pwd
+
 ### Sensordaten auslesen (gleich wie v1)
 
 Characteristic UUID: `4b439140-73cb-4776-b1f2-8f3711b3bb4f`
