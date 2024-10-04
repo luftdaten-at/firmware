@@ -94,6 +94,37 @@ READ_SENSOR_DATA_AND_BATTERY_STATUS | 0x02
 UPDATE_BRIGHTNESS | 0x03
 TURN_OFF_STATUS_LIGHT | 0x04
 TURN_ON_STATUS_LIGHT | 0x05
+SET_AIR_STATION_CONFIGURATION | 0x06
+
+### SET_AIR_STATION_CONFIGURATION Byte Structure Overview
+
+### Packet Breakdown
+
+- **Command Byte**: `0x06` - This byte indicates the start of the configuration command.
+- **Flag Byte**: A bitwise combination of flags indicating the specific configurations to be set. Each bit represents a different configuration option.
+- **Length Byte**: Indicates the number of bytes that follow the flag for the specific configuration being set.
+- **Data Bytes**: Actual configuration data corresponding to the flags set.
+
+## Flags
+
+The following flags are used to indicate which configurations can be set:
+
+| Flag Bit | Configuration            | Description                            |
+|----------|--------------------------|----------------------------------------|
+| 0        | AUTO_UPDATE_MODE         | Enable or disable automatic updates.   |
+| 1        | BATTERY_SAVE_MODE        | Enable or disable battery-saving mode. |
+| 2        | MEASUREMENT_INTERVAL      | Set the interval for measurements.     |
+| 3        | LONGITUDE                | Set the longitude (double value).      |
+| 4        | LATITUDE                 | Set the latitude (double value).       |
+| 5        | HEIGHT                   | Set the height (double value).         |
+| 6        | SSID                     | Set the SSID (string value).           |
+| 7        | PASSWORD                 | Set the password (string value).       |
+
+## Data Types
+
+- **Integer Values**: Represented as a 4-byte integer in big-endian format (e.g., for measurement intervals).
+- **Double Values**: Represented as an 8-byte double in big-endian format (e.g., for longitude, latitude, height).
+- **Strings**: Represented as UTF-8 encoded byte arrays for SSID and password.
 
 ### Sensordaten auslesen (gleich wie v1)
 

@@ -1,69 +1,68 @@
-import wifi # type: ignore
-import ssl # type: ignore
-import socketpool # type: ignore
-import adafruit_requests # type: ignore
-import json
+#import wifi # type: ignore
+from wifi import radio as wifi_radio
+from config import Config
+import gc
 
-class WifiClient:
-    def __init__(self, connection_callback: callable | None = None):
-        self.connection_callback = connection_callback
-        
-    def connect(self, ssid: str, password: str) -> bool | int:
-        wifi.radio.enabled = True
+# New wifi methods
+class WifiUtil:
+    radio = wifi_radio
+    @staticmethod
+    def connect() -> bool:
         try:
-            print("Connecting to Wi-Fi...")
-            wifi.radio.connect(ssid, password)
-            print("Connected to Wi-Fi")
-            # Load the root CA certificate
-            with open("/certs/isrgrootx1.pem", "rb") as f:
-                root_ca = f.read()
-            # Create an SSL context
-            context = ssl.create_default_context()
-            context.load_verify_locations(cadata=root_ca)
-            # Create a request session
-            pool = socketpool.SocketPool(wifi.radio)
-            self.requests = adafruit_requests.Session(pool, ssl_context=context)
-            print("SSL initialized & request session created")
-            return True
-        except ConnectionError as connection_error:
-            message: str = connection_error.errno
-            if message == "No network with that ssid":
-                print("SSID not found")
-                return ConnectionFailure.SSID_NOT_FOUND
-            elif message == "Authentication failure":
-                print("Password incorrect")
-                return ConnectionFailure.PASSWORD_INCORRECT
-        except ValueError as value_error:
-            message: str = value_error.args[0]
-            if message == "password length must be 8-64":
-                print("Password length must be 8-64 characters long")
-                return ConnectionFailure.PASSWORD_LENGTH
-            elif message == "Invalid BSSID":
-                print("Invalid BSSID")
-                return ConnectionFailure.INVALID_BSSID
-        except:
-            print("Unspecified error occurred while connecting to Wi-Fi")
-            return ConnectionFailure.OTHER
-        
-    def disconnect(self) -> None:
-        wifi.radio.enabled = False
-        print("Disconnected from Wi-Fi")
-        
-    def connected(self) -> bool:
-        return wifi.radio.connected
+            print('Connecting to Wifi...')
+            print(Config.SSID, Config.PASSWORD)
+            wifi_radio.connect(Config.SSID, Config.PASSWORD)
+            print('Connection established')
+
+        except ConnectionError:
+            print("Failed to connect to WiFi with provided credentials")
+            return False 
+
+        WifiUtil.set_RTC()
+
+        return True
+
+    @staticmethod
+    def set_RTC():
+        from adafruit_ntp import NTP
+        import rtc
+        from socketpool import SocketPool
+
+        try:
+            print('Trying to set RTC via NTP...')
+            pool = SocketPool(wifi_radio)
+            ntp = NTP(pool, tz_offset=0, cache_seconds=3600)
+            rtc.RTC().datetime = ntp.datetime
+            Config.rtc_is_set = True
+            print('RTC sucessfully configured')
+
+        except Exception as e:
+            print(e)
     
-    most_recent_connection_status = False
-    
-    def tick(self) -> None:
-        """Only needed when connection_callback is set."""
-        if self.connection_callback is not None:
-            if self.connected() != self.most_recent_connection_status:
-                self.most_recent_connection_status = self.connected()
-                self.connection_callback(self.connected())
-                
-    def post(self, url: str, jsonData: dict | None = None) -> adafruit_requests.Response:
-        headers = {"Content-Type": "application/json"}
-        return self.requests.post(url, data=json.dumps(jsonData), headers=headers)
+    @staticmethod
+    def send_json_to_api(data):
+        from socketpool import SocketPool
+        from ssl import create_default_context
+        from adafruit_requests import Session
+
+
+        pool = SocketPool(wifi_radio)
+        context = create_default_context()
+
+        '''
+        with open(Config.CERTIFICATE_PATH, 'r') as f:
+            context.load_verify_locations(cadata=f.read())
+        '''
+        gc.collect()
+        print(f'Mem requests: {gc.mem_free()}')
+
+        https = Session(pool, context)
+        print(f'Request API: {Config.API_URL}')
+        return https.request(
+            method='post',
+            url=Config.API_URL,
+            json=data
+        )
 
 class ConnectionFailure:
     SSID_NOT_FOUND = 1

@@ -3,6 +3,7 @@ import board # type: ignore
 import digitalio # type: ignore
 import busio # type: ignore
 import gc
+from config import Config
 
 from lib.cptoml import fetch
 from enums import LdProduct, SensorModel, Color
@@ -11,15 +12,31 @@ from led_controller import LedController
 import neopixel # type: ignore
 
 # Configuration
-SSID = fetch('SSID') 
+TEST_MODE = fetch('TEST_MODE')
+SSID = fetch('SSID')
 PASSWORD = fetch('PASSWORD')
-API_URL = fetch('TEST_API_URL')
+
+if TEST_MODE:
+    API_URL = fetch('TEST_API_URL')
+else:
+    API_URL = fetch('API_URL')
+
 FIRMWARE_MAJOR = fetch('FIRMWARE_MAJOR')
 FIRMWARE_MINOR = fetch('FIRMWARE_MAJOR')
 FIRMWARE_PATCH = fetch('FIRMWARE_PATCH')
 PROTOCOL_VERSION = fetch('PROTOCOL_VERSION')
 MODEL = fetch('model')
 
+Config.SSID = SSID
+Config.PASSWORD = PASSWORD
+Config.API_URL = API_URL
+Config.FIRMWARE_MAJOR = FIRMWARE_MAJOR
+Config.FIRMWARE_MINOR = FIRMWARE_MINOR
+Config.FIRMWARE_PATCH = FIRMWARE_PATCH
+Config.PROTOCOL_VERSION = PROTOCOL_VERSION
+Config.MODEL = MODEL
+
+# print settings
 print(f'{SSID=}')
 print(f'{PASSWORD=}')
 print(f'{API_URL=}')
@@ -45,7 +62,7 @@ time.sleep(1)
 #    - Send device status data to API. Reboot into normal mode.
 
 boot_mode = fetch('boot_into', toml="/boot.toml")
-if(boot_mode == 'transmit'):
+if boot_mode == 'transmit':
     status_led.fill(Color.ORANGE)
     status_led.show()
     # Relevant imports
@@ -76,7 +93,7 @@ if(boot_mode == 'transmit'):
     supervisor.reload()
     # This should never be reached
 
-if(boot_mode == 'detectmodel'):
+if boot_mode == 'detectmodel':
     # Try to connect to battery sensor, as that is part of criteria
     from sensors.max17048 import MAX17048
     i2c = busio.I2C(scl=board.IO5, sda=board.IO4, frequency=20000)
@@ -236,6 +253,7 @@ for model_id in [SensorModel.SEN5X,
                 from sensors.sensor_sen5x import Sen5xSensor
                 is_sen54 = fetch(str(model_id) + "_is_sen54", toml="/boot.toml")
                 listed_sensors.append(Sen5xSensor(is_sen54))
+                pass
             elif model_id == SensorModel.BME280:
                 from sensors.sensor_bme280 import BME280Sensor
                 listed_sensors.append(BME280Sensor())
@@ -317,57 +335,6 @@ for sensor in listed_sensors:
         ])
         sensors.append(sensor)
 
-# -----------------------------------------------------------
-def create_device_status():
-    """Create the JSON data containing device information."""
-    data = {
-        "wifi_mac": wifi.radio.mac_address,
-        "battery_voltage_mv": battery_monitor.cell_soc(),
-        "sensors": {
-            "sen5x_product": sen5x_device.get_product_name(),
-            "sen5x_serial": sen5x_device.get_serial_number()
-        }
-    }
-    return json.dumps(data)
-
-def send_data(json_data):
-    """Send the JSON data to the specified API."""
-    headers = {"Content-Type": "application/json"}
-    try:
-        response = requests.post(API_URL, data=json_data, headers=headers)
-        print("Response:", response.text)
-    except Exception as e:
-        print("Failed to send data:", e)
-
-# Check if the button is pressed during boot
-if button.value and False:
-    print("Button pressed! Sending status data...")
-    status_led.fill((0, 255, 0))  # Set color to green
-    status_led.show()
-
-    # Setup Wi-Fi connection
-    print("Connecting to Wi-Fi...")
-    wifi.radio.connect(SSID, PASSWORD)
-    print("Connected to Wi-Fi!")
-
-    # Load the root CA certificate
-    with open("/certs/isrgrootx1.pem", "rb") as f:
-        root_ca = f.read()
-
-    # Create an SSL context
-    context = ssl.create_default_context()  # No path, as we load directly
-    context.load_verify_locations(cadata=root_ca)
-
-    # Create a request session
-    pool = socketpool.SocketPool(wifi.radio)
-    requests = adafruit_requests.Session(pool, ssl_context=context)
-
-    device_status_json = create_device_status()
-    send_data(device_status_json)
-    time.sleep(5)  # Prevent rapid resending
-
-# -----------------------------------------------------------
-
 # Initialize BLE, define custom service
 ble = BLERadio()
 service = LdService()
@@ -385,6 +352,9 @@ if MODEL == LdProduct.AIR_AROUND or MODEL == LdProduct.AIR_BADGE or MODEL == LdP
 if MODEL == LdProduct.AIR_CUBE:
     from models.air_cube import AirCube
     device = AirCube(service, sensors, battery_monitor, led_controller)
+if MODEL == LdProduct.AIR_STATION:
+    from models.air_station import AirStation
+    device = AirStation(service, sensors, battery_monitor, led_controller)
 
 if device == None:
     print("Model not recognised")
@@ -472,7 +442,7 @@ if battery_monitor is not None:
                 time.sleep(0.5)
     time.sleep(2)
 
-buf = bytearray(512)
+#buf = bytearray(512)
 
 button_state = False
 
@@ -482,6 +452,9 @@ ble_connected = False
 
 # Main loop
 while True:
+    # clean memory
+    gc.collect()
+
     if not ble.advertising and device.ble_on:
         ble.start_advertising(advertisement)
         print("Started advertising")
@@ -506,9 +479,9 @@ while True:
         button_state = False
         print("Button released")
 
-    waiting_bytes = service.trigger_reading_characteristic_2.in_waiting
-    if waiting_bytes > 0:
-        command = service.trigger_reading_characteristic_2.read(waiting_bytes)
+    if service.trigger_reading_characteristic_2:
+        command = service.trigger_reading_characteristic_2
+        service.trigger_reading_characteristic_2 = bytearray()
 
         device.receive_command(command)
         led_controller.receive_command(command)
