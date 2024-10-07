@@ -53,7 +53,7 @@ class AirStation(LdProductModel):
         cmd, *data = command
 
         data = bytearray(data)
-        
+        print(cmd, data) 
         if cmd == BleCommands.SET_AIR_STATION_CONFIGURATION:
             wifi_config_changed = False
             idx = 0
@@ -62,6 +62,7 @@ class AirStation(LdProductModel):
                 idx += 1
                 length = data[idx]
                 idx += 1
+                print(flag, length)
                 if flag == AirstationConfigFlags.AUTO_UPDATE_MODE:
                     self.auto_update_mode = struct.unpack('>i', data[idx:idx + length])[0]
 
@@ -83,10 +84,12 @@ class AirStation(LdProductModel):
                 if flag == AirstationConfigFlags.SSID:
                     Config.SSID = data[idx:idx + length].decode('utf-8')  # Decode as string
                     wifi_config_changed = True
+                    print(Config.SSID)
 
                 if flag == AirstationConfigFlags.PASSWORD:
                     Config.PASSWORD = data[idx:idx + length].decode('utf-8')  # Decode as string
                     wifi_config_changed = True
+                    print(Config.PASSWORD)
                 
                 idx += length
 
@@ -123,7 +126,7 @@ class AirStation(LdProductModel):
         formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
 
         # Get latitude, longitude, and height from settings using Util
-        settings = Util.get_from_settings(['latitude', 'longitude', 'hight'])
+        settings = Util.get_from_settings(['latitude', 'longitude', 'height'])
 
         # Construct the device information
         device_info = {
@@ -133,7 +136,7 @@ class AirStation(LdProductModel):
                 "location": {
                     "lat": settings.get("latitude", 0),  # Default to "0" if not set
                     "lon": settings.get("longitude", 0),  # Default to "0" if not set
-                    "height": settings.get("hight", 0)  # Default to "0" if not set
+                    "height": settings.get("height", 0)  # Default to "0" if not set
                 }
             }
         }
@@ -211,6 +214,6 @@ class AirStation(LdProductModel):
                 data = self.get_json()
                 self.save_data(data)
 
-        if False and WifiUtil.radio.connected:
+        if WifiUtil.radio.connected:
             # send saved data
             self.send_to_api()

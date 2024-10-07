@@ -1,9 +1,6 @@
-hight = 10
-longitude = 20
-latitude = 30
 model = 3
-SSID = "cableaerien"
-PASSWORD = "gestaltgeber"
+SSID = ""
+PASSWORD = ""
 TEST_API_URL = "https://staging.api.luftdaten.at/v1/station/data/"
 API_URL = "https://staging.api.luftdaten.at/v1/station/data/"
 FIRMWARE_MAJOR = 1

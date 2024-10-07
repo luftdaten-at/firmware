@@ -8,6 +8,8 @@ class WifiUtil:
     radio = wifi_radio
     @staticmethod
     def connect() -> bool:
+        if not Config.SSID or not Config.PASSWORD:
+            return False
         try:
             print('Connecting to Wifi...')
             print(Config.SSID, Config.PASSWORD)
