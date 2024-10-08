@@ -8,6 +8,7 @@ from json import dump, load
 from ld_service import LdService
 from os import listdir, remove, uname
 import struct
+from lib.cptoml import fetch
 
 class AirStation(LdProductModel): 
     def __init__(self, ble_service: LdService, sensors, battery_monitor, status_led):
@@ -28,6 +29,7 @@ class AirStation(LdProductModel):
             'measurement_interval'
         ])
 
+        self.device_id = fetch('device_id', toml='/boot.toml')
         self.longitude = data['longitude']
         self.latitude = data['latitude']
         self.height = data['height']
@@ -130,7 +132,7 @@ class AirStation(LdProductModel):
         device_info = {
             "station": {
                 "time": formatted_time,  # ISO format date and time with Z for UTC
-                "device": str(self.model_id),  # Placeholder, replace with actual device ID
+                "device": f'{self.model_id}-{uname()[0]}-{self.device_id}',  # Placeholder, replace with actual device ID
                 "firmware": uname()[3],
                 "apikey": "string",
                 "source": 1,
