@@ -128,9 +128,6 @@ class AirStation(LdProductModel):
             data.append(len(value_bytes) if isinstance(value, str) else struct.calcsize('>i'))
             data.extend(value_bytes)
         
-        print('SEND DATA')
-        print(data)
-
         return data
 
     def receive_button_press(self):
