@@ -74,13 +74,13 @@ class AirStation(LdProductModel):
                     self.measurement_interval = struct.unpack('>i', data[idx:idx + length])[0]
 
                 if flag == AirstationConfigFlags.LONGITUDE:
-                    self.longitude = struct.unpack('>d', data[idx:idx + length])[0]  # Unpack as double
+                    self.longitude = data[idx:idx + length].decode('utf-8')  # Decode as string
 
                 if flag == AirstationConfigFlags.LATITUDE:
-                    self.latitude = struct.unpack('>d', data[idx:idx + length])[0]  # Unpack as double
+                    self.latitude = data[idx:idx + length].decode('utf-8')  # Decode as string
 
                 if flag == AirstationConfigFlags.HEIGHT:
-                    self.height = struct.unpack('>d', data[idx:idx + length])[0]  # Unpack as double
+                    self.height = data[idx:idx + length].decode('utf-8')  # Decode as string
 
                 if flag == AirstationConfigFlags.SSID:
                     Config.SSID = data[idx:idx + length].decode('utf-8')  # Decode as string
