@@ -71,6 +71,9 @@ class AirStation(LdProductModel):
             if wifi_config_changed:
                 WifiUtil.connect()
 
+            # update Characteristic with new data
+            self.send_configuration()
+
     def decode_configuration(self, data):
         wifi_config_changed = False
         idx = 0
@@ -118,14 +121,15 @@ class AirStation(LdProductModel):
             (AirstationConfigFlags.LONGITUDE, self.longitude),
             (AirstationConfigFlags.LATITUDE, self.latitude),
             (AirstationConfigFlags.HEIGHT, self.height),
-            (AirstationConfigFlags.SSID, Config.SSID),
-            (AirstationConfigFlags.PASSWORD, Config.PASSWORD),
             (AirstationConfigFlags.DEVICE_ID, self.device_id)
         ]:
             value_bytes = value.encode('utf-8') if isinstance(value, str) else struct.pack('>i', value)
             data.append(flag)
             data.append(len(value_bytes) if isinstance(value, str) else struct.calcsize('>i'))
             data.extend(value_bytes)
+        
+        print('SEND DATA')
+        print(data)
 
         return data
 
@@ -223,7 +227,7 @@ class AirStation(LdProductModel):
             WifiUtil.set_RTC()
 
         # check if all configurations wich are nessecary are set
-        if not Config.rtc_is_set or any([self.longitude is None, self.latitude is None, self.height is None]):
+        if not Config.rtc_is_set or not all([self.longitude, self.latitude, self.height]):
             print('DATA CANNOT BE TRANSMITTED')
             print('Not all configurations have been made')
             self.status_led.status_led.fill(Color.PURPLE)

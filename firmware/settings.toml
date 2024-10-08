@@ -1,6 +1,9 @@
 model = -1
 SSID = ""
 PASSWORD = ""
+longitude = ""
+latitude = ""
+height = ""
 MANUFACTURE_ID = "AAA"
 TEST_API_URL = "https://staging.api.luftdaten.at/v1/station/data"
 API_URL = "https://api.luftdaten.at/v1/station/data"
