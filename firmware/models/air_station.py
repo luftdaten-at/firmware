@@ -54,7 +54,6 @@ class AirStation(LdProductModel):
         cmd, *data = command
 
         data = bytearray(data)
-        print(cmd, data) 
         if cmd == BleCommands.SET_AIR_STATION_CONFIGURATION:
             wifi_config_changed = False
             idx = 0
@@ -63,7 +62,6 @@ class AirStation(LdProductModel):
                 idx += 1
                 length = data[idx]
                 idx += 1
-                print(flag, length)
                 if flag == AirstationConfigFlags.AUTO_UPDATE_MODE:
                     self.auto_update_mode = struct.unpack('>i', data[idx:idx + length])[0]
 
