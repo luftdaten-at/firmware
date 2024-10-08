@@ -8,6 +8,7 @@ from config import Config
 from lib.cptoml import fetch
 from enums import LdProduct, SensorModel, Color
 from led_controller import LedController
+import os
 
 import neopixel # type: ignore
 
@@ -26,6 +27,7 @@ FIRMWARE_MINOR = fetch('FIRMWARE_MAJOR')
 FIRMWARE_PATCH = fetch('FIRMWARE_PATCH')
 PROTOCOL_VERSION = fetch('PROTOCOL_VERSION')
 MODEL = fetch('model')
+Config.MANUFACTURE_ID = fetch('MANUFACTURE_ID')
 
 Config.SSID = SSID
 Config.PASSWORD = PASSWORD
@@ -87,6 +89,8 @@ if boot_mode == 'transmit':
     remount("/", False)
     put('boot_into', next_boot_mode, toml="/boot.toml")
     put('mac', mac, toml="/boot.toml")
+    # save device id
+    put('device_id', f'{os.uname()[0]}-{mac}-{Config.MANUFACTURE_ID}', toml='/boot.toml')
     remount("/", True)
     # Reboot
     import supervisor # type: ignore

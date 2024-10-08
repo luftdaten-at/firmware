@@ -7,10 +7,7 @@ class Util:
         remount('/', False)
         for k, v in data.items():
             try:
-                if k in ('height', 'longitude', 'latitude'):
-                    put(k, str(v), toml='settings.toml')
-                else:
-                    put(k, v, toml='settings.toml')
+                put(k, v, toml='settings.toml')
             except Exception as e:
                 print(f"can't write {k}: {v}, to settings.toml")
                 print(e)
@@ -21,9 +18,6 @@ class Util:
         for k in keys:
             try:
                 data[k] = fetch(k, toml='settings.toml')
-
-                if k in ('height', 'longitude', 'latitude'):
-                    data[k] = float(data[k])
             except Exception as e:
                 data[k] = None
                 print(f"can't read {k}, form settings.toml")
