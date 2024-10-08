@@ -84,12 +84,10 @@ class AirStation(LdProductModel):
                 if flag == AirstationConfigFlags.SSID:
                     Config.SSID = data[idx:idx + length].decode('utf-8')  # Decode as string
                     wifi_config_changed = True
-                    print(Config.SSID)
 
                 if flag == AirstationConfigFlags.PASSWORD:
                     Config.PASSWORD = data[idx:idx + length].decode('utf-8')  # Decode as string
                     wifi_config_changed = True
-                    print(Config.PASSWORD)
                 
                 idx += length
 
@@ -137,9 +135,9 @@ class AirStation(LdProductModel):
                 "apikey": "string",
                 "source": 1,
                 "location": {
-                    "lat": f'{settings.get("latitude", None):.17g}',  # Default to "0" if not set
-                    "lon": f'{settings.get("longitude", None):.17g}',  # Default to "0" if not set
-                    "height": f'{settings.get("height", None):.17g}'  # Default to "0" if not set
+                    "lat": settings.get("latitude", None),  # Default to "0" if not set
+                    "lon": settings.get("longitude", None),  # Default to "0" if not set
+                    "height": settings.get("height", None)  # Default to "0" if not set
                 }
             }
         }
