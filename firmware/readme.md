@@ -109,16 +109,17 @@ SET_AIR_STATION_CONFIGURATION | 0x06
 
 The following flags are used to indicate which configurations can be set:
 
-| Flag Bit | Configuration            | Description                            |
-|----------|--------------------------|----------------------------------------|
-| 0        | AUTO_UPDATE_MODE         | Enable or disable automatic updates.   |
-| 1        | BATTERY_SAVE_MODE        | Enable or disable battery-saving mode. |
-| 2        | MEASUREMENT_INTERVAL      | Set the interval for measurements.     |
-| 3        | LONGITUDE                | Set the longitude (string value).      |
-| 4        | LATITUDE                 | Set the latitude (string value).       |
-| 5        | HEIGHT                   | Set the height (string value).         |
-| 6        | SSID                     | Set the SSID (string value).           |
-| 7        | PASSWORD                 | Set the password (string value).       |
+| Flag Bit | Configuration            | Description                               |
+|----------|--------------------------|-------------------------------------------|
+| 0        | AUTO_UPDATE_MODE         | Enable or disable automatic updates.      |
+| 1        | BATTERY_SAVE_MODE        | Enable or disable battery-saving mode.    |
+| 2        | MEASUREMENT_INTERVAL     | Set the interval for measurements.        |
+| 3        | LONGITUDE                | Set the longitude (string value).         |
+| 4        | LATITUDE                 | Set the latitude (string value).          |
+| 5        | HEIGHT                   | Set the height (string value).            |
+| 6        | SSID                     | Set the SSID (string value).              |
+| 7        | PASSWORD                 | Set the password (string value).          |
+| 8        | DEVICE_ID                | String: {Chip Name}-{MAC}-{ManufactureID} |
 
 ## Data Types
 

@@ -119,7 +119,8 @@ class AirStation(LdProductModel):
             (AirstationConfigFlags.LATITUDE, self.latitude),
             (AirstationConfigFlags.HEIGHT, self.height),
             (AirstationConfigFlags.SSID, Config.SSID),
-            (AirstationConfigFlags.PASSWORD, Config.PASSWORD)
+            (AirstationConfigFlags.PASSWORD, Config.PASSWORD),
+            (AirstationConfigFlags.DEVICE_ID, self.device_id)
         ]:
             value_bytes = value.encode('utf-8') if isinstance(value, str) else struct.pack('>i', value)
             data.append(flag)

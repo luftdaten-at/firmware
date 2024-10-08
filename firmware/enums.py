@@ -76,6 +76,7 @@ class AirstationConfigFlags:
     HEIGHT = 5  # Bit 5
     SSID = 6  # Bit 6
     PASSWORD = 7  # Bit 7
+    DEVICE_ID = 8
 
 class AirStationMeasurementInterval:
     sec30 = 30
