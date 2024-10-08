@@ -47,7 +47,7 @@ print(f'{PROTOCOL_VERSION=}')
 print(f'{MODEL=}')
 
 # Initialize status LED(s) at GPIO8
-status_led = neopixel.NeoPixel(board.IO8, 5 if MODEL == LdProduct.AIR_CUBE else 1)
+status_led = neopixel.NeoPixel(board.GPIO8, 5 if MODEL == LdProduct.AIR_CUBE else 1)
 status_led.fill(Color.CYAN)
 status_led.show()
 time.sleep(1)
@@ -96,7 +96,7 @@ if boot_mode == 'transmit':
 if boot_mode == 'detectmodel':
     # Try to connect to battery sensor, as that is part of criteria
     from sensors.max17048 import MAX17048
-    i2c = busio.I2C(scl=board.IO5, sda=board.IO4, frequency=20000)
+    i2c = busio.I2C(scl=board.GPIO5, sda=board.GPIO4, frequency=20000)
     battery_monitor = None
     for i in range(10):
         try:
@@ -162,12 +162,12 @@ if boot_mode == 'detectmodel':
     # This should never be reached
 
 # Initialize the button at GPIO9
-button_pin = board.IO9
+button_pin = board.GPIO9
 button = digitalio.DigitalInOut(button_pin)
 button.direction = digitalio.Direction.INPUT
 
 # Initialize I2C at GPIO4 and GPIO5
-i2c = busio.I2C(scl=board.IO5, sda=board.IO4, frequency=20000)
+i2c = busio.I2C(scl=board.GPIO5, sda=board.GPIO4, frequency=20000)
 
 # If button was pressed, check all sensors and save to boot.toml
 if button.value or MODEL == -1:

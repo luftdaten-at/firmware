@@ -2,10 +2,14 @@
 from wifi import radio as wifi_radio
 from config import Config
 import gc
+from socketpool import SocketPool
+from ssl import create_default_context
+from adafruit_requests import Session
 
 # New wifi methods
 class WifiUtil:
     radio = wifi_radio
+    pool = SocketPool(radio)
     @staticmethod
     def connect() -> bool:
         if not Config.SSID or not Config.PASSWORD:
@@ -43,28 +47,22 @@ class WifiUtil:
     
     @staticmethod
     def send_json_to_api(data):
-        from socketpool import SocketPool
-        from ssl import create_default_context
-        from adafruit_requests import Session
-
-
-        pool = SocketPool(wifi_radio)
         context = create_default_context()
 
-        '''
         with open(Config.CERTIFICATE_PATH, 'r') as f:
             context.load_verify_locations(cadata=f.read())
-        '''
+
         gc.collect()
         print(f'Mem requests: {gc.mem_free()}')
 
-        https = Session(pool, context)
+        https = Session(WifiUtil.pool, context)
         print(f'Request API: {Config.API_URL}')
-        return https.request(
-            method='post',
+        response = https.request(
+            method='POST',
             url=Config.API_URL,
             json=data
         )
+        return response
 
 class ConnectionFailure:
     SSID_NOT_FOUND = 1

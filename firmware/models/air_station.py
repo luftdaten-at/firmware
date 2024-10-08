@@ -6,7 +6,7 @@ from config import Config
 from util import Util
 from json import dump, load
 from ld_service import LdService
-from os import listdir, remove
+from os import listdir, remove, uname
 import struct
 
 class AirStation(LdProductModel): 
@@ -132,11 +132,14 @@ class AirStation(LdProductModel):
         device_info = {
             "station": {
                 "time": formatted_time,  # ISO format date and time with Z for UTC
-                "device": self.model_id,  # Placeholder, replace with actual device ID
+                "device": str(self.model_id),  # Placeholder, replace with actual device ID
+                "firmware": uname()[3],
+                "apikey": "string",
+                "source": 1,
                 "location": {
-                    "lat": settings.get("latitude", 0),  # Default to "0" if not set
-                    "lon": settings.get("longitude", 0),  # Default to "0" if not set
-                    "height": settings.get("height", 0)  # Default to "0" if not set
+                    "lat": f'{settings.get("latitude", None):.17g}',  # Default to "0" if not set
+                    "lon": f'{settings.get("longitude", None):.17g}',  # Default to "0" if not set
+                    "height": f'{settings.get("height", None):.17g}'  # Default to "0" if not set
                 }
             }
         }
@@ -174,7 +177,8 @@ class AirStation(LdProductModel):
                 print(data)
                 print('Send data: ')
                 response = WifiUtil.send_json_to_api(data)
-                print(f'Response: {response}')
+                print(f'Response: {response.status_code}')
+                print(f'Response: {response.text}')
                 # TODO: if sent sucessfully
                 if True:
                     remove(file_path) 
