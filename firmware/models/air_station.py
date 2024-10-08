@@ -45,7 +45,7 @@ class AirStation(LdProductModel):
         self.status_led.status_led.show()
 
     def send_configuration(self):
-        self.ble_service.air_station_configuration = bytearray([self.auto_update_mode, self.battery_save_mode, self.measurement_interval >> 8, self.measurement_interval & ((1<<8)-1)])
+        self.ble_service.air_station_configuration = self.encode_configurations()
         
     def receive_command(self, command):
         if len(command) == 0:
@@ -54,43 +54,8 @@ class AirStation(LdProductModel):
         cmd, *data = command
 
         data = bytearray(data)
-        print(cmd, data) 
         if cmd == BleCommands.SET_AIR_STATION_CONFIGURATION:
-            wifi_config_changed = False
-            idx = 0
-            while idx < len(data):
-                flag = data[idx]                
-                idx += 1
-                length = data[idx]
-                idx += 1
-                print(flag, length)
-                if flag == AirstationConfigFlags.AUTO_UPDATE_MODE:
-                    self.auto_update_mode = struct.unpack('>i', data[idx:idx + length])[0]
-
-                if flag == AirstationConfigFlags.BATTERY_SAVE_MODE:
-                    self.battery_save_mode = struct.unpack('>i', data[idx:idx + length])[0]
-
-                if flag == AirstationConfigFlags.MEASUREMENT_INTERVAL:
-                    self.measurement_interval = struct.unpack('>i', data[idx:idx + length])[0]
-
-                if flag == AirstationConfigFlags.LONGITUDE:
-                    self.longitude = struct.unpack('>d', data[idx:idx + length])[0]  # Unpack as double
-
-                if flag == AirstationConfigFlags.LATITUDE:
-                    self.latitude = struct.unpack('>d', data[idx:idx + length])[0]  # Unpack as double
-
-                if flag == AirstationConfigFlags.HEIGHT:
-                    self.height = struct.unpack('>d', data[idx:idx + length])[0]  # Unpack as double
-
-                if flag == AirstationConfigFlags.SSID:
-                    Config.SSID = data[idx:idx + length].decode('utf-8')  # Decode as string
-                    wifi_config_changed = True
-
-                if flag == AirstationConfigFlags.PASSWORD:
-                    Config.PASSWORD = data[idx:idx + length].decode('utf-8')  # Decode as string
-                    wifi_config_changed = True
-                
-                idx += length
+            wifi_config_changed = self.decode_configuration(data) 
 
             Util.write_to_settings({
                 'SSID': Config.SSID,
@@ -105,6 +70,65 @@ class AirStation(LdProductModel):
 
             if wifi_config_changed:
                 WifiUtil.connect()
+
+            # update Characteristic with new data
+            self.send_configuration()
+
+    def decode_configuration(self, data):
+        wifi_config_changed = False
+        idx = 0
+        while idx < len(data):
+            flag = data[idx]                
+            idx += 1
+            length = data[idx]
+            idx += 1
+            if flag == AirstationConfigFlags.AUTO_UPDATE_MODE:
+                self.auto_update_mode = struct.unpack('>i', data[idx:idx + length])[0]
+
+            if flag == AirstationConfigFlags.BATTERY_SAVE_MODE:
+                self.battery_save_mode = struct.unpack('>i', data[idx:idx + length])[0]
+
+            if flag == AirstationConfigFlags.MEASUREMENT_INTERVAL:
+                self.measurement_interval = struct.unpack('>i', data[idx:idx + length])[0]
+
+            if flag == AirstationConfigFlags.LONGITUDE:
+                self.longitude = data[idx:idx + length].decode('utf-8')  # Decode as string
+
+            if flag == AirstationConfigFlags.LATITUDE:
+                self.latitude = data[idx:idx + length].decode('utf-8')  # Decode as string
+
+            if flag == AirstationConfigFlags.HEIGHT:
+                self.height = data[idx:idx + length].decode('utf-8')  # Decode as string
+
+            if flag == AirstationConfigFlags.SSID:
+                Config.SSID = data[idx:idx + length].decode('utf-8')  # Decode as string
+                wifi_config_changed = True
+
+            if flag == AirstationConfigFlags.PASSWORD:
+                Config.PASSWORD = data[idx:idx + length].decode('utf-8')  # Decode as string
+                wifi_config_changed = True
+            
+            idx += length
+
+        return wifi_config_changed
+
+    def encode_configurations(self):
+        data = bytearray()
+        for flag, value in [
+            (AirstationConfigFlags.AUTO_UPDATE_MODE, self.auto_update_mode),
+            (AirstationConfigFlags.BATTERY_SAVE_MODE, self.battery_save_mode),
+            (AirstationConfigFlags.MEASUREMENT_INTERVAL, self.measurement_interval),
+            (AirstationConfigFlags.LONGITUDE, self.longitude),
+            (AirstationConfigFlags.LATITUDE, self.latitude),
+            (AirstationConfigFlags.HEIGHT, self.height),
+            (AirstationConfigFlags.DEVICE_ID, self.device_id)
+        ]:
+            value_bytes = value.encode('utf-8') if isinstance(value, str) else struct.pack('>i', value)
+            data.append(flag)
+            data.append(len(value_bytes) if isinstance(value, str) else struct.calcsize('>i'))
+            data.extend(value_bytes)
+        
+        return data
 
     def receive_button_press(self):
         self.ble_on = not self.ble_on
@@ -200,7 +224,7 @@ class AirStation(LdProductModel):
             WifiUtil.set_RTC()
 
         # check if all configurations wich are nessecary are set
-        if not Config.rtc_is_set or any([self.longitude is None, self.latitude is None, self.height is None]):
+        if not Config.rtc_is_set or not all([self.longitude, self.latitude, self.height]):
             print('DATA CANNOT BE TRANSMITTED')
             print('Not all configurations have been made')
             self.status_led.status_led.fill(Color.PURPLE)

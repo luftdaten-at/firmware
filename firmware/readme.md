@@ -109,21 +109,21 @@ SET_AIR_STATION_CONFIGURATION | 0x06
 
 The following flags are used to indicate which configurations can be set:
 
-| Flag Bit | Configuration            | Description                            |
-|----------|--------------------------|----------------------------------------|
-| 0        | AUTO_UPDATE_MODE         | Enable or disable automatic updates.   |
-| 1        | BATTERY_SAVE_MODE        | Enable or disable battery-saving mode. |
-| 2        | MEASUREMENT_INTERVAL      | Set the interval for measurements.     |
-| 3        | LONGITUDE                | Set the longitude (double value).      |
-| 4        | LATITUDE                 | Set the latitude (double value).       |
-| 5        | HEIGHT                   | Set the height (double value).         |
-| 6        | SSID                     | Set the SSID (string value).           |
-| 7        | PASSWORD                 | Set the password (string value).       |
+| Flag Bit | Configuration            | Description                               |
+|----------|--------------------------|-------------------------------------------|
+| 0        | AUTO_UPDATE_MODE         | Enable or disable automatic updates.      |
+| 1        | BATTERY_SAVE_MODE        | Enable or disable battery-saving mode.    |
+| 2        | MEASUREMENT_INTERVAL     | Set the interval for measurements.        |
+| 3        | LONGITUDE                | Set the longitude (string value).         |
+| 4        | LATITUDE                 | Set the latitude (string value).          |
+| 5        | HEIGHT                   | Set the height (string value).            |
+| 6        | SSID                     | Set the SSID (string value).              |
+| 7        | PASSWORD                 | Set the password (string value).          |
+| 8        | DEVICE_ID                | String: {Chip Name}-{MAC}-{ManufactureID} |
 
 ## Data Types
 
 - **Integer Values**: Represented as a 4-byte integer in big-endian format (e.g., for measurement intervals).
-- **Double Values**: Represented as an 8-byte double in big-endian format (e.g., for longitude, latitude, height).
 - **Strings**: Represented as UTF-8 encoded byte arrays for SSID and password.
 
 ### Sensordaten auslesen (gleich wie v1)
@@ -280,6 +280,12 @@ Gefolgt von byte 0xff. Dann optional Sensor-Details, wenn von Sensor unterstütz
 | Violett | Gerät wird initialisiert (u. A. werden verbundene Sensoren gesucht) |
 | Orange | Gerät sendet Statusdaten (passiert nach Initialisierung) |
 | Rot | Fehler |
+
+## AirStation
+| Farbe | Bedeutung |
+|---|---|
+| Rot | Wlan ist nicht verbunden |
+| Lila | Es fehlen Konfigurationen um Daten an die API zu senden |
 
 ## Fehler-LED-Codes
 
