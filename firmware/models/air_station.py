@@ -44,7 +44,6 @@ class AirStation(LdProductModel):
         self.status_led.status_led.fill(Color.GREEN)
         self.status_led.status_led.show()
 
-
     def send_configuration(self):
         self.ble_service.air_station_configuration = bytearray([self.auto_update_mode, self.battery_save_mode, self.measurement_interval >> 8, self.measurement_interval & ((1<<8)-1)])
         
@@ -132,7 +131,7 @@ class AirStation(LdProductModel):
         device_info = {
             "station": {
                 "time": formatted_time,  # ISO format date and time with Z for UTC
-                "device": f'{self.model_id}-{uname()[0]}-{self.device_id}',  # Placeholder, replace with actual device ID
+                "device": self.device_id,  # Placeholder, replace with actual device ID
                 "firmware": uname()[3],
                 "apikey": "string",
                 "source": 1,

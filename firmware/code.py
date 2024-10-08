@@ -8,6 +8,7 @@ from config import Config
 from lib.cptoml import fetch
 from enums import LdProduct, SensorModel, Color
 from led_controller import LedController
+import os
 
 import neopixel # type: ignore
 
@@ -89,7 +90,7 @@ if boot_mode == 'transmit':
     put('boot_into', next_boot_mode, toml="/boot.toml")
     put('mac', mac, toml="/boot.toml")
     # save device id
-    put('device_id', f'{mac}-{Config.MANUFACTURE_ID}', toml='/boot.toml')
+    put('device_id', f'{os.uname()[0]}-{mac}-{Config.MANUFACTURE_ID}', toml='/boot.toml')
     remount("/", True)
     # Reboot
     import supervisor # type: ignore
