@@ -86,11 +86,16 @@ if boot_mode == 'transmit':
     # Reset boot mode
     from storage import remount # type: ignore
     from lib.cptoml import put
+    import random
     remount("/", False)
     put('boot_into', next_boot_mode, toml="/boot.toml")
     put('mac', mac, toml="/boot.toml")
+    # generate api key
+    vorrat = ''.join(chr(ord('a') + i) for i in range(26)) + ''.join(str(i) for i in range(10))
+    api_key = ''.join(random.choice(vorrat) for _ in range(Config.API_KEY_LENGTH))
+    put('api_key', api_key, toml='/boot.toml')
     # save device id
-    put('device_id', f'{os.uname()[0]}-{mac}-{Config.MANUFACTURE_ID}', toml='/boot.toml')
+    put('device_id', f'{mac}{Config.MANUFACTURE_ID}', toml='/boot.toml')
     remount("/", True)
     # Reboot
     import supervisor # type: ignore

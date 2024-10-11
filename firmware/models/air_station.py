@@ -30,6 +30,7 @@ class AirStation(LdProductModel):
         ])
 
         self.device_id = fetch('device_id', toml='/boot.toml')
+        self.api_key = fetch('api_key', toml='/boot.toml')
         self.longitude = data['longitude']
         self.latitude = data['latitude']
         self.height = data['height']
@@ -134,12 +135,11 @@ class AirStation(LdProductModel):
         self.ble_on = not self.ble_on
         # Possibly change polling interval?
         if self.ble_on:
-            self.status_led.status_led.fill(Color.BLUE)
+            self.status_led.status_led.fill(Color.GREEN)
             self.status_led.status_led.show()
         else:
             self.status_led.status_led.fill(Color.OFF)
             self.status_led.status_led.show()
-        self.status_led.show()
 
     def get_info(self):
         # Get current time from RTC
@@ -157,7 +157,7 @@ class AirStation(LdProductModel):
                 "time": formatted_time,  # ISO format date and time with Z for UTC
                 "device": self.device_id,  # Placeholder, replace with actual device ID
                 "firmware": uname()[3],
-                "apikey": "string",
+                "apikey": self.api_key,
                 "source": 1,
                 "location": {
                     "lat": settings.get("latitude", None),  # Default to "0" if not set

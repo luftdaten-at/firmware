@@ -11,3 +11,4 @@ class Config:
     JSON_QUEUE = 'json_queue'
     CERTIFICATE_PATH = 'certs/isrgrootx1.pem'
     MANUFACTURE_ID = None
+    API_KEY_LENGTH = 32
