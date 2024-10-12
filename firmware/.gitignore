@@ -3,3 +3,6 @@
 
 # except for .gitignore
 !.gitignore
+
+# Circuitpython
+boot_out.txt
