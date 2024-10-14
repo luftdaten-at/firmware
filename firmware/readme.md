@@ -1,10 +1,10 @@
-# 1. Installierung
+# 1. Installieren
 
-## 1 - Neueste CircuitPython-Version herunterladen
+## 1 - CircuitPython-Version herunterladen
 
-Download-Link: https://circuitpython.org/board/espressif_esp32s3_devkitc_1_n8/
+Download-Link: https://circuitpython.org/board/espressif_esp32s3_devkitc_1_n8r8/
 
-Für BLE auf dem ESP32-S3 wird mindestens CircuitPython 9.1.0 benötigt. Akutell bedeutet das, dass wir die Beta-Version verwenden müssen. Lade die `.bin`-Datei herunter.
+Für BLE auf dem ESP32-S3 wird mindestens CircuitPython 9.1.0 benötigt. Durch einen Bug in Circuitpython kann aktuell nur <= 9.1.0 oder >= 9.2.0 genutzt werden. Lade die `.bin`-Datei herunter.
 
 ## 2 - CircuitPython auf dem ESP32-S3 installieren
 
