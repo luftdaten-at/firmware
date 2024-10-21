@@ -12,4 +12,4 @@ PASSWORD = "gestaltgeber"
 TEST_MODE = true
 TEST_API_URL = "https://staging.api.luftdaten.at/v1/station/data"
 API_URL = "https://api.luftdaten.at/v1/station/data"
-UPDATE_SERVER = "http://192.168.1.221/latest_version"
+UPDATE_SERVER = "http://192.168.1.221"

@@ -428,7 +428,7 @@ while True:
 
     # Check for updates
     if WifiUtil.radio.connected:
-        UpgradeManager.check_and_install_upgrade()
+        print(f'{UpgradeManager.check_and_install_upgrade()=}')
 
     '''
     if not ble.advertising and device.ble_on:

@@ -54,6 +54,7 @@ class Config:
     runtime_settings = {
         'rtc_is_set': False,
         'JSON_QUEUE': 'json_queue',
+        'FIRMWARE_FOLDER': 'new_firmware',
         'CERTIFICATE_PATH': 'certs/isrgrootx1.pem',
         'API_KEY_LENGTH': 32,
     }
