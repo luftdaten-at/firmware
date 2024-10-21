@@ -174,9 +174,6 @@ class AirStation(LdProductModel):
 
     def tick(self):
         if not WifiUtil.radio.connected:
-            WifiUtil.connect()
-
-        if not WifiUtil.radio.connected:
             self.status_led.status_led.fill(Color.RED)
             self.status_led.status_led.show()
             time.sleep(2)

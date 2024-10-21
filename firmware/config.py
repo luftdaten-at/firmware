@@ -9,6 +9,7 @@ class AutoSaveDict(dict):
 
     def __setitem__(self, key, value):
         super().__setitem__(key, value)
+        print(key, value)
         remount('/', False)
         put(key, value, toml=f'/{self.toml_file}')
         remount('/', True)
@@ -20,20 +21,31 @@ class AutoSaveDict(dict):
 class Config:
     # Normal settings (persistent)
     settings = AutoSaveDict({
-        'SSID': None,
-        'PASSWORD': None,
-        'API_URL': None,
+        # model id 
+        'MODEL': None,
+
+        # firmware Config
         'FIRMWARE_MAJOR': None,
         'FIRMWARE_MINOR': None,
         'FIRMWARE_PATCH': None,
         'PROTOCOL_VERSION': None,
-        'MODEL': None,
         'MANUFACTURE_ID': None,
+
+        # wifi Config
+        'SSID': None,
+        'PASSWORD': None,
+
+        # API config
         'TEST_MODE': None,
-        'longitude': None,
-        'latitude': None,
-        'height': None,
-        'auto_update_mode': AutoUpdateMode.off,
+        'API_URL': None,
+        'TEST_API_URL': None,
+        'UPDATE_SERVER': None,
+
+        # AirStationConfig must not be specified in settings.toml
+        'longitude': "",
+        'latitude': "",
+        'height': "",
+        'auto_update_mode': AutoUpdateMode.on,
         'battery_save_mode': BatterySaverMode.off,
         'measurement_interval': AirStationMeasurementInterval.sec30,
     }, toml_file='settings.toml')
@@ -55,6 +67,6 @@ class Config:
 
         # Handle the API_URL based on TEST_MODE after initialization
         if Config.settings['TEST_MODE']:
-            Config.runtime_settings['API_URL'] = fetch('TEST_API_URL')
+            Config.runtime_settings['API_URL'] = Config.settings['TEST_API_URL']
         else:
-            Config.runtime_settings['API_URL'] = fetch('API_URL')
+            Config.runtime_settings['API_URL'] = Config.settings['API_URL']

@@ -35,14 +35,17 @@ class WifiUtil:
 
         try:
             print('Trying to set RTC via NTP...')
-            pool = SocketPool(wifi_radio)
-            ntp = NTP(pool, tz_offset=0, cache_seconds=3600)
+            ntp = NTP(WifiUtil.pool, tz_offset=0, cache_seconds=3600)
             rtc.RTC().datetime = ntp.datetime
             Config.runtime_settings['rtc_is_set'] = True  # Assuming rtc_is_set is a setting in your Config
             print('RTC successfully configured')
 
         except Exception as e:
             print(e)
+    
+    @staticmethod
+    def new_session():
+        return Session(WifiUtil.pool)
     
     @staticmethod
     def send_json_to_api(data):

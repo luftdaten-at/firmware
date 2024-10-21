@@ -11,6 +11,7 @@ from lib.cptoml import fetch
 from enums import LdProduct, SensorModel, Color
 from led_controller import LedController
 from firmware_upgrade_manager import UpgradeManager
+from wifi_client import WifiUtil
 
 # Load startup config
 Config.init()
@@ -422,9 +423,14 @@ while True:
     # Clean memory
     gc.collect()
 
-    # Check for updates
-    UpgradeManager.check_and_install_upgrade()
+    if not WifiUtil.radio.connected:
+        WifiUtil.connect()
 
+    # Check for updates
+    if WifiUtil.radio.connected:
+        UpgradeManager.check_and_install_upgrade()
+
+    '''
     if not ble.advertising and device.ble_on:
         ble.start_advertising(advertisement)
         print("Started advertising")
@@ -458,10 +464,10 @@ while True:
 
     device.tick()
     led_controller.tick()
+    '''
 
     time.sleep(device.polling_interval)
 
 '''
 from storage import remount;remount('/', False);open('code.py', 'w').write('from storage import remount;remount("/", True)')
 '''
-
