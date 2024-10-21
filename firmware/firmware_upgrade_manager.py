@@ -3,21 +3,30 @@ from config import Config
 
 class UpgradeManager:
     @staticmethod
-    def check_for_update():
+    def get_latest_firmware_version():
         '''
         return: str: file_name if update available else None
         '''
 
         session = WifiUtil.new_session()
         url=f'{Config.settings['UPDATE_SERVER']}/{Config.settings['MODEL']}'
-        print(f'{url=}')
-        response = session.request(
-            method='GET',
-            url=url,
-        )
 
-        print(f'Response: {response.status_code}')
-        print(f'Response: {response.text}')
+        try:
+            response = session.request(
+                method='GET',
+                url=url,
+            )
+
+            if response.status_code != 200:
+                print(f'Faild to find latest frimware version: {response.text}')
+                return None
+            else:
+                # found latest version
+                return response.text
+
+        except Exception as e:
+            print(e)
+            return None
 
     @staticmethod
     def install_update(firmware_version: str):
@@ -30,6 +39,9 @@ class UpgradeManager:
         download upgrade if available
             install upgrade
         '''
-        UpgradeManager.check_for_update()
+        latest_version = UpgradeManager.get_latest_firmware_version()
 
-        pass
+        if latest_version is None:
+            return 
+
+        # unpack version 
