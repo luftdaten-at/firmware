@@ -1,4 +1,4 @@
-model = -1
+MODEL = -1
 SSID = ""
 PASSWORD = ""
 longitude = ""

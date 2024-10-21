@@ -53,7 +53,7 @@ if boot_mode == 'transmit':
     put('mac', mac, toml="/boot.toml")
     # Generate API key
     vorrat = ''.join(chr(ord('a') + i) for i in range(26)) + ''.join(str(i) for i in range(10))
-    api_key = ''.join(random.choice(vorrat) for _ in range(Config.settings['API_KEY_LENGTH']))
+    api_key = ''.join(random.choice(vorrat) for _ in range(Config.runtime_settings['API_KEY_LENGTH']))
     put('api_key', api_key, toml='/boot.toml')
     # Save device id
     put('device_id', f'{mac}{Config.settings["MANUFACTURE_ID"]}', toml='/boot.toml')
@@ -117,7 +117,7 @@ if boot_mode == 'detectmodel':
     from lib.cptoml import put
     remount("/", False)
     put('boot_into', 'normal', toml="/boot.toml")
-    put('model', device_model)
+    Config.settings['MODEL'] = device_model
     remount("/", True)
     # Show which model was detected
     status_led.fill(colors[0])
@@ -460,3 +460,11 @@ while True:
     led_controller.tick()
 
     time.sleep(device.polling_interval)
+
+    print(Config.settings)
+    print(Config.runtime_settings)
+
+'''
+from storage import remount;remount('/', False);open('code.py', 'w').write('from storage import remount;remount("/", True)')
+'''
+

@@ -38,7 +38,7 @@ class WifiUtil:
             pool = SocketPool(wifi_radio)
             ntp = NTP(pool, tz_offset=0, cache_seconds=3600)
             rtc.RTC().datetime = ntp.datetime
-            Config.settings['rtc_is_set'] = True  # Assuming rtc_is_set is a setting in your Config
+            Config.runtime_settings['rtc_is_set'] = True  # Assuming rtc_is_set is a setting in your Config
             print('RTC successfully configured')
 
         except Exception as e:
@@ -48,17 +48,17 @@ class WifiUtil:
     def send_json_to_api(data):
         context = create_default_context()
 
-        with open(Config.settings['CERTIFICATE_PATH'], 'r') as f:
+        with open(Config.runtime_settings['CERTIFICATE_PATH'], 'r') as f:
             context.load_verify_locations(cadata=f.read())
 
         gc.collect()
         print(f'Mem requests: {gc.mem_free()}')
 
         https = Session(WifiUtil.pool, context)
-        print(f'Request API: {Config.settings["API_URL"]}')
+        print(f'Request API: {Config.runtime_settings["API_URL"]}')
         response = https.request(
             method='POST',
-            url=Config.settings['API_URL'],
+            url=Config.runtime_settings['API_URL'],
             json=data
         )
         return response
