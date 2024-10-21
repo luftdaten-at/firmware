@@ -8,6 +8,7 @@ from ld_service import LdService
 from os import listdir, remove, uname
 import struct
 from lib.cptoml import fetch
+from storage import remount
 
 class AirStation(LdProductModel): 
     def __init__(self, ble_service: LdService, sensors, battery_monitor, status_led):
@@ -132,9 +133,11 @@ class AirStation(LdProductModel):
         return device_info
 
     def save_data(self, data: dict):
+        remount('/', False) 
         file_name = data["station"]["time"].replace(':', '_').replace('.', '_')
         with open(f'{Config.runtime_settings["JSON_QUEUE"]}/{file_name}.json', 'w') as f:
             dump(data, f)
+        remount('/', False) 
     
     def get_json(self):
         sensor_values = {}
@@ -165,7 +168,9 @@ class AirStation(LdProductModel):
                 print(f'Response: {response.status_code}')
                 print(f'Response: {response.text}')
                 if True:  # Placeholder for successful sending check
+                    remount('/', False)
                     remove(file_path) 
+                    remount('/', True)
 
     def tick(self):
         if not WifiUtil.radio.connected:

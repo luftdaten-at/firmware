@@ -9,7 +9,6 @@ class AutoSaveDict(dict):
 
     def __setitem__(self, key, value):
         super().__setitem__(key, value)
-        print(key, value)
         remount('/', False)
         put(key, value, toml=f'/{self.toml_file}')
         remount('/', True)

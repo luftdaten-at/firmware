@@ -461,9 +461,6 @@ while True:
 
     time.sleep(device.polling_interval)
 
-    print(Config.settings)
-    print(Config.runtime_settings)
-
 '''
 from storage import remount;remount('/', False);open('code.py', 'w').write('from storage import remount;remount("/", True)')
 '''
