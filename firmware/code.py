@@ -12,45 +12,11 @@ from enums import LdProduct, SensorModel, Color
 from led_controller import LedController
 from firmware_upgrade_manager import UpgradeManager
 
-
-# Configuration
-TEST_MODE = fetch('TEST_MODE')
-SSID = fetch('SSID')
-PASSWORD = fetch('PASSWORD')
-
-if TEST_MODE:
-    API_URL = fetch('TEST_API_URL')
-else:
-    API_URL = fetch('API_URL')
-
-FIRMWARE_MAJOR = fetch('FIRMWARE_MAJOR')
-FIRMWARE_MINOR = fetch('FIRMWARE_MINOR')
-FIRMWARE_PATCH = fetch('FIRMWARE_PATCH')
-PROTOCOL_VERSION = fetch('PROTOCOL_VERSION')
-MODEL = fetch('model')
-Config.MANUFACTURE_ID = fetch('MANUFACTURE_ID')
-
-Config.SSID = SSID
-Config.PASSWORD = PASSWORD
-Config.API_URL = API_URL
-Config.FIRMWARE_MAJOR = FIRMWARE_MAJOR
-Config.FIRMWARE_MINOR = FIRMWARE_MINOR
-Config.FIRMWARE_PATCH = FIRMWARE_PATCH
-Config.PROTOCOL_VERSION = PROTOCOL_VERSION
-Config.MODEL = MODEL
-
-# print settings
-print(f'{SSID=}')
-print(f'{PASSWORD=}')
-print(f'{API_URL=}')
-print(f'{FIRMWARE_MAJOR=}')
-print(f'{FIRMWARE_MINOR=}')
-print(f'{FIRMWARE_PATCH=}')
-print(f'{PROTOCOL_VERSION=}')
-print(f'{MODEL=}')
+# load startup config
+Config.init()
 
 # Initialize status LED(s) at GPIO8
-status_led = neopixel.NeoPixel(board.IO8, 5 if MODEL == LdProduct.AIR_CUBE else 1)
+status_led = neopixel.NeoPixel(board.IO8, 5 if Config.MODEL == LdProduct.AIR_CUBE else 1)
 status_led.fill(Color.CYAN)
 status_led.show()
 time.sleep(1)
@@ -81,7 +47,7 @@ if boot_mode == 'transmit':
     time.sleep(2)
     # Do we want to auto-detect device model (model == -1 in boot.toml)?
     next_boot_mode = 'normal'
-    if MODEL == -1:
+    if Config.MODEL == -1:
         # Do auto-detect
         next_boot_mode = 'detectmodel'
     # Reset boot mode
@@ -180,7 +146,7 @@ button.direction = digitalio.Direction.INPUT
 i2c = busio.I2C(scl=board.IO5, sda=board.IO4, frequency=20000)
 
 # If button was pressed, check all sensors and save to boot.toml
-if button.value or MODEL == -1:
+if button.value or Config.MODEL == -1:
     status_led.fill(Color.MAGENTA)
     status_led.show()
     
@@ -353,16 +319,16 @@ service = LdService()
 mac = fetch('mac', toml="/boot.toml")
 ble.name = "Luftdaten.at-" + mac
 
-led_controller = LedController(status_led, 5 if MODEL == LdProduct.AIR_CUBE else 1)
+led_controller = LedController(status_led, 5 if Config.MODEL == LdProduct.AIR_CUBE else 1)
 
 device = None
-if MODEL == LdProduct.AIR_AROUND or MODEL == LdProduct.AIR_BADGE or MODEL == LdProduct.AIR_BIKE:
+if Config.MODEL == LdProduct.AIR_AROUND or Config.MODEL == LdProduct.AIR_BADGE or Config.MODEL == LdProduct.AIR_BIKE:
     from models.ld_portable import LdPortable
-    device = LdPortable(MODEL, service, sensors, battery_monitor, led_controller)
-if MODEL == LdProduct.AIR_CUBE:
+    device = LdPortable(Config.MODEL, service, sensors, battery_monitor, led_controller)
+if Config.MODEL == LdProduct.AIR_CUBE:
     from models.air_cube import AirCube
     device = AirCube(service, sensors, battery_monitor, led_controller)
-if MODEL == LdProduct.AIR_STATION:
+if Config.MODEL == LdProduct.AIR_STATION:
     from models.air_station import AirStation
     device = AirStation(service, sensors, battery_monitor, led_controller)
 
@@ -378,13 +344,13 @@ if device == None:
 
 # Set up device info characteristic
 device_info_data = bytearray([
-    PROTOCOL_VERSION,
-    FIRMWARE_MAJOR,
-    FIRMWARE_MINOR,
-    FIRMWARE_PATCH,
+    Config.PROTOCOL_VERSION,
+    Config.FIRMWARE_MAJOR,
+    Config.FIRMWARE_MINOR,
+    Config.FIRMWARE_PATCH,
     # Device Name (e.g. F001). To be retrieved from Datahub, otherwise use 0x00 0x00 0x00 0x00
     0x00, 0x00, 0x00, 0x00, # Not yet implemented
-    MODEL, # Device model (e.g. AIR_AROUND)
+    Config.MODEL, # Device model (e.g. AIR_AROUND)
 ])
 device_info_data.extend(connected_sensors_status)
 service.device_info_characteristic = device_info_data
