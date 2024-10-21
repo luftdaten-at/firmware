@@ -1,22 +1,22 @@
 import time
-import board # type: ignore
-import digitalio # type: ignore
-import busio # type: ignore
+import board  # type: ignore
+import digitalio  # type: ignore
+import busio  # type: ignore
 import gc
-from config import Config
 import os
-import neopixel # type: ignore
+import neopixel  # type: ignore
 
+from config import Config
 from lib.cptoml import fetch
 from enums import LdProduct, SensorModel, Color
 from led_controller import LedController
 from firmware_upgrade_manager import UpgradeManager
 
-# load startup config
+# Load startup config
 Config.init()
 
 # Initialize status LED(s) at GPIO8
-status_led = neopixel.NeoPixel(board.IO8, 5 if Config.MODEL == LdProduct.AIR_CUBE else 1)
+status_led = neopixel.NeoPixel(board.IO8, 5 if Config.settings['MODEL'] == LdProduct.AIR_CUBE else 1)
 status_led.fill(Color.CYAN)
 status_led.show()
 time.sleep(1)
@@ -35,37 +35,31 @@ if boot_mode == 'transmit':
     status_led.fill(Color.ORANGE)
     status_led.show()
     # Relevant imports
-    import wifi # type: ignore
+    import wifi  # type: ignore
     # Get MAC address
     mac = wifi.radio.mac_address_ap.hex().upper()
-    #import socketpool
-    #import adafruit_requests
-    #import ssl
-    #import json
-    # Do the transmission bit
-    # ...
     time.sleep(2)
     # Do we want to auto-detect device model (model == -1 in boot.toml)?
     next_boot_mode = 'normal'
-    if Config.MODEL == -1:
+    if Config.settings['MODEL'] == -1:
         # Do auto-detect
         next_boot_mode = 'detectmodel'
     # Reset boot mode
-    from storage import remount # type: ignore
+    from storage import remount  # type: ignore
     from lib.cptoml import put
     import random
     remount("/", False)
     put('boot_into', next_boot_mode, toml="/boot.toml")
     put('mac', mac, toml="/boot.toml")
-    # generate api key
+    # Generate API key
     vorrat = ''.join(chr(ord('a') + i) for i in range(26)) + ''.join(str(i) for i in range(10))
-    api_key = ''.join(random.choice(vorrat) for _ in range(Config.API_KEY_LENGTH))
+    api_key = ''.join(random.choice(vorrat) for _ in range(Config.settings['API_KEY_LENGTH']))
     put('api_key', api_key, toml='/boot.toml')
-    # save device id
-    put('device_id', f'{mac}{Config.MANUFACTURE_ID}', toml='/boot.toml')
+    # Save device id
+    put('device_id', f'{mac}{Config.settings["MANUFACTURE_ID"]}', toml='/boot.toml')
     remount("/", True)
     # Reboot
-    import supervisor # type: ignore
+    import supervisor  # type: ignore
     supervisor.reload()
     # This should never be reached
 
@@ -77,7 +71,7 @@ if boot_mode == 'detectmodel':
     for i in range(10):
         try:
             battery_monitor = MAX17048(i2c)
-            print(f'Attempt {i+1}: Battery monitor initialized')
+            print(f'Attempt {i + 1}: Battery monitor initialized')
             break
         except:
             pass
@@ -109,7 +103,7 @@ if boot_mode == 'detectmodel':
     if connected_sensors[SensorModel.SCD4X]:
         device_model = LdProduct.AIR_CUBE
         colors = [Color.WHITE, Color.PURPLE]
-    elif battery_monitor == None:
+    elif battery_monitor is None:
         device_model = LdProduct.AIR_STATION
         colors = [Color.WHITE, Color.GREEN]
     elif not connected_sensors[SensorModel.SEN5X]:
@@ -119,7 +113,7 @@ if boot_mode == 'detectmodel':
         device_model = LdProduct.AIR_AROUND
         colors = [Color.WHITE, Color.BLUE]
     # Reset boot mode
-    from storage import remount # type: ignore
+    from storage import remount  # type: ignore
     from lib.cptoml import put
     remount("/", False)
     put('boot_into', 'normal', toml="/boot.toml")
@@ -133,7 +127,7 @@ if boot_mode == 'detectmodel':
     status_led.show()
     time.sleep(2)
     # Reboot
-    import supervisor # type: ignore
+    import supervisor  # type: ignore
     supervisor.reload()
     # This should never be reached
 
@@ -146,12 +140,12 @@ button.direction = digitalio.Direction.INPUT
 i2c = busio.I2C(scl=board.IO5, sda=board.IO4, frequency=20000)
 
 # If button was pressed, check all sensors and save to boot.toml
-if button.value or Config.MODEL == -1:
+if button.value or Config.settings['MODEL'] == -1:
     status_led.fill(Color.MAGENTA)
     status_led.show()
     
     from lib.cptoml import put
-    from storage import remount # type: ignore
+    from storage import remount  # type: ignore
     # Import all sensor modules (if we have many, may go over memory limit)
     from sensors.sensor_sen5x import Sen5xSensor
     from sensors.sensor_bme280 import BME280Sensor
@@ -196,7 +190,7 @@ if button.value or Config.MODEL == -1:
     # Reboot
     status_led.fill(Color.WHITE)
     status_led.show()
-    import supervisor # type: ignore
+    import supervisor  # type: ignore
     supervisor.reload()
     # This should never be reached
 
@@ -206,14 +200,14 @@ status_led.fill(Color.BLUE)
 status_led.show()
 
 # Check for sensors in boot.toml.
-listed_sensors = [] # Sensors that we will connect to
-for model_id in [SensorModel.SEN5X, 
-                 SensorModel.BME280, 
-                 SensorModel.BME680, 
-                 SensorModel.AHT20, 
-                 SensorModel.BMP280, 
-                 SensorModel.AGS02MA, 
-                 SensorModel.SHT30, 
+listed_sensors = []  # Sensors that we will connect to
+for model_id in [SensorModel.SEN5X,
+                 SensorModel.BME280,
+                 SensorModel.BME680,
+                 SensorModel.AHT20,
+                 SensorModel.BMP280,
+                 SensorModel.AGS02MA,
+                 SensorModel.SHT30,
                  SensorModel.SHT31,
                  SensorModel.SCD4X,
                  SensorModel.SHT4X,
@@ -229,7 +223,6 @@ for model_id in [SensorModel.SEN5X,
                 from sensors.sensor_sen5x import Sen5xSensor
                 is_sen54 = fetch(str(model_id) + "_is_sen54", toml="/boot.toml")
                 listed_sensors.append(Sen5xSensor(is_sen54))
-                pass
             elif model_id == SensorModel.BME280:
                 from sensors.sensor_bme280 import BME280Sensor
                 listed_sensors.append(BME280Sensor())
@@ -269,8 +262,8 @@ print("Sensors loaded from boot.toml")
 
 from ld_service import LdService
 
-from adafruit_ble import BLERadio # type: ignore
-from adafruit_ble.advertising.standard import ProvideServicesAdvertisement # type: ignore
+from adafruit_ble import BLERadio  # type: ignore
+from adafruit_ble.advertising.standard import ProvideServicesAdvertisement  # type: ignore
 
 # Battery monitor
 from sensors.max17048 import MAX17048
@@ -281,7 +274,7 @@ battery_monitor = None
 for i in range(10):
     try:
         battery_monitor = MAX17048(i2c)
-        print(f'Attempt {i+1}: Battery monitor initialized')
+        print(f'Attempt {i + 1}: Battery monitor initialized')
         break
     except:
         pass
@@ -293,7 +286,7 @@ if battery_monitor is None:
 # Connect to all sensors that were discovered and saved in boot.toml
 sensors = []
 connected_sensors_status = bytearray([
-    len(listed_sensors), # Number of sensors
+    len(listed_sensors),  # Number of sensors
 ])
 for sensor in listed_sensors:
     print("Currently at", gc.mem_free())
@@ -301,13 +294,13 @@ for sensor in listed_sensors:
         print(f"Failed to connect to sensor {sensor.model_id}")
         connected_sensors_status.extend([
             sensor.model_id,
-            0x00, # Not connected
+            0x00,  # Not connected
         ])
     else:
         print(f"Connected to sensor {sensor.model_id}")
         connected_sensors_status.extend([
             sensor.model_id,
-            0x01, # Connected
+            0x01,  # Connected
         ])
         sensors.append(sensor)
 
@@ -319,20 +312,20 @@ service = LdService()
 mac = fetch('mac', toml="/boot.toml")
 ble.name = "Luftdaten.at-" + mac
 
-led_controller = LedController(status_led, 5 if Config.MODEL == LdProduct.AIR_CUBE else 1)
+led_controller = LedController(status_led, 5 if Config.settings['MODEL'] == LdProduct.AIR_CUBE else 1)
 
 device = None
-if Config.MODEL == LdProduct.AIR_AROUND or Config.MODEL == LdProduct.AIR_BADGE or Config.MODEL == LdProduct.AIR_BIKE:
+if Config.settings['MODEL'] == LdProduct.AIR_AROUND or Config.settings['MODEL'] == LdProduct.AIR_BADGE or Config.settings['MODEL'] == LdProduct.AIR_BIKE:
     from models.ld_portable import LdPortable
-    device = LdPortable(Config.MODEL, service, sensors, battery_monitor, led_controller)
-if Config.MODEL == LdProduct.AIR_CUBE:
+    device = LdPortable(Config.settings['MODEL'], service, sensors, battery_monitor, led_controller)
+if Config.settings['MODEL'] == LdProduct.AIR_CUBE:
     from models.air_cube import AirCube
     device = AirCube(service, sensors, battery_monitor, led_controller)
-if Config.MODEL == LdProduct.AIR_STATION:
+if Config.settings['MODEL'] == LdProduct.AIR_STATION:
     from models.air_station import AirStation
     device = AirStation(service, sensors, battery_monitor, led_controller)
 
-if device == None:
+if device is None:
     print("Model not recognised")
     while True:
         time.sleep(1)
@@ -344,13 +337,13 @@ if device == None:
 
 # Set up device info characteristic
 device_info_data = bytearray([
-    Config.PROTOCOL_VERSION,
-    Config.FIRMWARE_MAJOR,
-    Config.FIRMWARE_MINOR,
-    Config.FIRMWARE_PATCH,
+    Config.settings['PROTOCOL_VERSION'],
+    Config.settings['FIRMWARE_MAJOR'],
+    Config.settings['FIRMWARE_MINOR'],
+    Config.settings['FIRMWARE_PATCH'],
     # Device Name (e.g. F001). To be retrieved from Datahub, otherwise use 0x00 0x00 0x00 0x00
-    0x00, 0x00, 0x00, 0x00, # Not yet implemented
-    Config.MODEL, # Device model (e.g. AIR_AROUND)
+    0x00, 0x00, 0x00, 0x00,  # Not yet implemented
+    Config.settings['MODEL'],  # Device model (e.g. AIR_AROUND)
 ])
 device_info_data.extend(connected_sensors_status)
 service.device_info_characteristic = device_info_data
@@ -364,22 +357,22 @@ if len(sensors) > 0:
     service.sensor_info_characteristic = sensor_info
 else:
     service.sensor_info_characteristic = bytes([0x06])
-    
+
 # Load battery status for the first time
-if battery_monitor is not None: # First none should be battery_monitor
+if battery_monitor is not None:  # First none should be battery_monitor
     service.device_status_characteristic = bytes([
-        1, # Has battery status: Yes
-        round(battery_monitor.cell_soc()), # Battery percentage
-        round(battery_monitor.cell_voltage() * 10), # Battery voltage
-        0, # Error status: 0 = no error
+        1,  # Has battery status: Yes
+        round(battery_monitor.cell_soc()),  # Battery percentage
+        round(battery_monitor.cell_voltage() * 10),  # Battery voltage
+        0,  # Error status: 0 = no error
     ])
 else:
     service.device_status_characteristic = bytes([
-        0, # Has battery status: No
-        0, 0, # Battery percentage, voltage
-        0, # Error status: 0 = no error
+        0,  # Has battery status: No
+        0, 0,  # Battery percentage, voltage
+        0,  # Error status: 0 = no error
     ])
-    
+
 # Create services advertisement
 advertisement = ProvideServicesAdvertisement(service)
 
@@ -409,7 +402,7 @@ if battery_monitor is not None:
         status_led.show()
     else:
         for point in points:
-            if percent>point:
+            if percent > point:
                 status_led.fill(Color.GREEN)
                 status_led.show()
                 time.sleep(0.5)
@@ -417,8 +410,6 @@ if battery_monitor is not None:
                 status_led.show()
                 time.sleep(0.5)
     time.sleep(2)
-
-#buf = bytearray(512)
 
 button_state = False
 
@@ -428,12 +419,11 @@ ble_connected = False
 
 # Main loop
 while True:
-    # clean memory
+    # Clean memory
     gc.collect()
 
-    # check for updates
+    # Check for updates
     UpgradeManager.check_and_install_upgrade()
-
 
     if not ble.advertising and device.ble_on:
         ble.start_advertising(advertisement)
@@ -441,7 +431,7 @@ while True:
     elif ble.advertising and not device.ble_on:
         ble.stop_advertising()
         print("Stopped advertising")
-        
+
     if ble.connected and not ble_connected:
         ble_connected = True
         device.connection_update(True)
@@ -467,7 +457,6 @@ while True:
         led_controller.receive_command(command)
 
     device.tick()
-    
     led_controller.tick()
 
     time.sleep(device.polling_interval)
