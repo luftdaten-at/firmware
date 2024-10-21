@@ -4,13 +4,14 @@ import digitalio # type: ignore
 import busio # type: ignore
 import gc
 from config import Config
+import os
+import neopixel # type: ignore
 
 from lib.cptoml import fetch
 from enums import LdProduct, SensorModel, Color
 from led_controller import LedController
-import os
+from firmware_upgrade_manager import UpgradeManager
 
-import neopixel # type: ignore
 
 # Configuration
 TEST_MODE = fetch('TEST_MODE')
@@ -463,6 +464,10 @@ ble_connected = False
 while True:
     # clean memory
     gc.collect()
+
+    # check for updates
+    UpgradeManager.check_and_install_upgrade()
+
 
     if not ble.advertising and device.ble_on:
         ble.start_advertising(advertisement)
