@@ -1,15 +1,6 @@
 MODEL = -1
+TEST_MODE = true
 
-FIRMWARE_MAJOR = 1
-FIRMWARE_MINOR = 3
-FIRMWARE_PATCH = 0
-PROTOCOL_VERSION = 2
-MANUFACTURE_ID = "AAA"
-
+# wifi settings
 SSID = "cableaerien"
 PASSWORD = "gestaltgeber"
-
-TEST_MODE = true
-TEST_API_URL = "https://staging.api.luftdaten.at/v1/station/data"
-API_URL = "https://api.luftdaten.at/v1/station/data"
-UPDATE_SERVER = "http://192.168.1.221"

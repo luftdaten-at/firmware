@@ -11,7 +11,7 @@ class AutoSaveDict(dict):
         super().__setitem__(key, value)
         print(key, value)
         remount('/', False)
-        put(key, value, toml=f'/{self.toml_file}')
+        put(key, value, toml=f'/{self.toml_file.get(key, 'settings.toml')}')
         remount('/', True)
 
     def set_toml_file(self, filepath):
@@ -19,6 +19,35 @@ class AutoSaveDict(dict):
 
 
 class Config:
+    key_to_toml_file = {
+        # model id 
+        'MODEL': 'settings.toml',
+
+        # firmware Config
+        'FIRMWARE_MAJOR': 'boot.toml',
+        'FIRMWARE_MINOR': 'boot.toml',
+        'FIRMWARE_PATCH': 'boot.toml',
+        'PROTOCOL_VERSION': 'boot.toml',
+        'MANUFACTURE_ID': 'boot.toml',
+
+        # wifi Config
+        'SSID': 'settings.toml',
+        'PASSWORD': 'settings.toml',
+
+        # API config
+        'TEST_MODE': 'settings.toml',
+        'API_URL': 'boot.toml',
+        'TEST_API_URL': 'boot.toml',
+        'UPDATE_SERVER': 'boot.toml',
+
+        # AirStationConfig must not be specified in settings.toml
+        'longitude': 'settings.toml',
+        'latitude': 'settings.toml',
+        'height': 'settings.toml',
+        'auto_update_mode': 'settings.toml',
+        'battery_save_mode': 'settings.toml',
+        'measurement_interval': 'settings.toml', 
+    }
     # Normal settings (persistent)
     settings = AutoSaveDict({
         # model id 
@@ -48,7 +77,7 @@ class Config:
         'auto_update_mode': AutoUpdateMode.on,
         'battery_save_mode': BatterySaverMode.off,
         'measurement_interval': AirStationMeasurementInterval.sec30,
-    }, toml_file='settings.toml')
+    }, toml_file=key_to_toml_file)
 
     # Runtime settings (non-persistent)
     runtime_settings = {
