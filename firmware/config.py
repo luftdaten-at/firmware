@@ -91,9 +91,9 @@ class Config:
     @staticmethod
     def init():
         for key in Config.settings:
-            val = fetch(key)
+            val = fetch(key, toml=Config.key_to_toml_file.get(key, 'settings.toml'))
             if val is not None:
-                Config.settings[key] = fetch(key)
+                Config.settings[key] = val
 
         # Handle the API_URL based on TEST_MODE after initialization
         if Config.settings['TEST_MODE']:

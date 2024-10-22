@@ -1,6 +1,5 @@
 MODEL = -1
 TEST_MODE = true
 
-# wifi settings
 SSID = "cableaerien"
 PASSWORD = "gestaltgeber"

@@ -32,6 +32,7 @@ time.sleep(1)
 #    - Send device status data to API. Reboot into normal mode.
 
 boot_mode = fetch('boot_into', toml="/boot.toml")
+
 if boot_mode == 'transmit':
     status_led.fill(Color.ORANGE)
     status_led.show()
@@ -64,7 +65,7 @@ if boot_mode == 'transmit':
     supervisor.reload()
     # This should never be reached
 
-if boot_mode == 'detectmodel':
+if boot_mode == 'detectmodel' or Config.settings['MODEL'] == -1:
     # Try to connect to battery sensor, as that is part of criteria
     from sensors.max17048 import MAX17048
     i2c = busio.I2C(scl=board.IO5, sda=board.IO4, frequency=20000)
@@ -141,6 +142,8 @@ button.direction = digitalio.Direction.INPUT
 i2c = busio.I2C(scl=board.IO5, sda=board.IO4, frequency=20000)
 
 # If button was pressed, check all sensors and save to boot.toml
+
+print('DEBUG: ', button.value, Config.settings['MODEL'])
 if button.value or Config.settings['MODEL'] == -1:
     status_led.fill(Color.MAGENTA)
     status_led.show()
