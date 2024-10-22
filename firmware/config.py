@@ -19,9 +19,22 @@ class AutoSaveDict(dict):
 
 
 class Config:
+    '''
+    settings.toml: holds all the device spcific settings and informations
+    boot.toml: information not bound to a single device, variables arent ever changed by the code itself
+    '''
+
     key_to_toml_file = {
         # model id 
         'MODEL': 'settings.toml',
+
+        # boot option
+        'boot_into': 'settings.toml',
+
+        # wifi mac should not be changed
+        'mac': 'settings.toml',
+        'api_key': 'settings.toml',
+        'device_id': 'settings.toml',
 
         # firmware Config
         'FIRMWARE_MAJOR': 'boot.toml',
@@ -52,6 +65,14 @@ class Config:
     settings = AutoSaveDict({
         # model id 
         'MODEL': None,
+
+        # boot option
+        'boot_into': None,
+
+        # wifi mac should not be changed
+        'mac': None,
+        'api_key': None,
+        'device_id': None,
 
         # firmware Config
         'FIRMWARE_MAJOR': None,
@@ -89,6 +110,15 @@ class Config:
     }
 
     @staticmethod
+    def generate_random_api_key() -> str:
+        import random
+
+        vorrat = ''.join(chr(ord('a') + i) for i in range(26)) + ''.join(str(i) for i in range(10))
+        api_key = ''.join(random.choice(vorrat) for _ in range(Config.runtime_settings['API_KEY_LENGTH']))
+
+        return api_key
+
+    @staticmethod
     def init():
         for key in Config.settings:
             val = fetch(key, toml=Config.key_to_toml_file.get(key, 'settings.toml'))
@@ -100,3 +130,17 @@ class Config:
             Config.runtime_settings['API_URL'] = Config.settings['TEST_API_URL']
         else:
             Config.runtime_settings['API_URL'] = Config.settings['API_URL']
+
+        # when the device boots the first time
+        # some informations have to be generated
+        # mac
+        if Config.settings['mac'] is None:
+            import wifi
+            Config.settings['mac'] = wifi.radio.mac_address_ap.hex().upper()
+        # generate api key
+        if Config.settings['api_key'] is None:
+            Config.settings['api_key'] = Config.generate_random_api_key()
+
+        # set device id
+        if Config.settings['device_id'] is None:
+            Config.settings['device_id'] = f'{Config.settings['mac']}{Config.settings["MANUFACTURE_ID"]}'

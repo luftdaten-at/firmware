@@ -13,8 +13,6 @@ from led_controller import LedController
 from firmware_upgrade_manager import UpgradeManager
 from wifi_client import WifiUtil
 
-# Load startup config
-Config.init()
 
 # Initialize status LED(s) at GPIO8
 status_led = neopixel.NeoPixel(board.IO8, 5 if Config.settings['MODEL'] == LdProduct.AIR_CUBE else 1)
@@ -28,44 +26,12 @@ time.sleep(1)
 #    - Check if button is pressed
 #        - If pressed, check all sensors and save to boot.toml. Reboot into transmit mode.
 #        - If not pressed, load boot.toml and connect to all sensors listed. Start BLE operation.
-# - transmit:
-#    - Send device status data to API. Reboot into normal mode.
+# - detectmodel
 
-boot_mode = fetch('boot_into', toml="/boot.toml")
+# Load startup config
+Config.init()
 
-if boot_mode == 'transmit':
-    status_led.fill(Color.ORANGE)
-    status_led.show()
-    # Relevant imports
-    import wifi  # type: ignore
-    # Get MAC address
-    mac = wifi.radio.mac_address_ap.hex().upper()
-    time.sleep(2)
-    # Do we want to auto-detect device model (model == -1 in boot.toml)?
-    next_boot_mode = 'normal'
-    if Config.settings['MODEL'] == -1:
-        # Do auto-detect
-        next_boot_mode = 'detectmodel'
-    # Reset boot mode
-    from storage import remount  # type: ignore
-    from lib.cptoml import put
-    import random
-    remount("/", False)
-    put('boot_into', next_boot_mode, toml="/boot.toml")
-    put('mac', mac, toml="/boot.toml")
-    # Generate API key
-    vorrat = ''.join(chr(ord('a') + i) for i in range(26)) + ''.join(str(i) for i in range(10))
-    api_key = ''.join(random.choice(vorrat) for _ in range(Config.runtime_settings['API_KEY_LENGTH']))
-    put('api_key', api_key, toml='/boot.toml')
-    # Save device id
-    put('device_id', f'{mac}{Config.settings["MANUFACTURE_ID"]}', toml='/boot.toml')
-    remount("/", True)
-    # Reboot
-    import supervisor  # type: ignore
-    supervisor.reload()
-    # This should never be reached
-
-if boot_mode == 'detectmodel' or Config.settings['MODEL'] == -1:
+if Config.settings['MODEL'] == -1:
     # Try to connect to battery sensor, as that is part of criteria
     from sensors.max17048 import MAX17048
     i2c = busio.I2C(scl=board.IO5, sda=board.IO4, frequency=20000)
@@ -114,13 +80,8 @@ if boot_mode == 'detectmodel' or Config.settings['MODEL'] == -1:
     else:
         device_model = LdProduct.AIR_AROUND
         colors = [Color.WHITE, Color.BLUE]
-    # Reset boot mode
-    from storage import remount  # type: ignore
-    from lib.cptoml import put
-    remount("/", False)
-    put('boot_into', 'normal', toml="/boot.toml")
+    # set correct model id
     Config.settings['MODEL'] = device_model
-    remount("/", True)
     # Show which model was detected
     status_led.fill(colors[0])
     status_led.show()
@@ -143,7 +104,7 @@ i2c = busio.I2C(scl=board.IO5, sda=board.IO4, frequency=20000)
 
 # If button was pressed, check all sensors and save to boot.toml
 
-print('DEBUG: ', button.value, Config.settings['MODEL'])
+# detect active sensors
 if button.value or Config.settings['MODEL'] == -1:
     status_led.fill(Color.MAGENTA)
     status_led.show()
