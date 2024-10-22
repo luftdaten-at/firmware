@@ -2,7 +2,6 @@ from wifi_client import WifiUtil
 from config import Config
 import adafruit_hashlib as hashlib
 import storage
-import tarfile
 
 class UpgradeManager:
     # API commands
@@ -53,7 +52,6 @@ class UpgradeManager:
 
         session = WifiUtil.new_session()
         url=f'{Config.settings["UPDATE_SERVER"]}/{UpgradeManager.DOWNLOAD}/{file_name}'
-        print(url)
         try:
             response = session.request(
                 method='GET',
