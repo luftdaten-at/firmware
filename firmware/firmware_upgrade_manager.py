@@ -2,6 +2,7 @@ from wifi_client import WifiUtil
 from config import Config
 import adafruit_hashlib as hashlib
 import storage
+import tarfile
 
 class UpgradeManager:
     # API commands
@@ -41,6 +42,8 @@ class UpgradeManager:
     @staticmethod
     def install_update(file_path: str):
         # unzip file
+        # List the information from a .zip archive
+
         # replace files
         pass
 
@@ -137,7 +140,7 @@ class UpgradeManager:
                 # wasn't able to download
                 return -1 
             # install latest firmware
-            UpgradeManager.install_update()
+            UpgradeManager.install_update(f'{Config.runtime_settings['FIRMWARE_FOLDER']}/{file_name}')
 
         except Exception as e:
             print(f'Could not retrieve version information from file name: {file_name}')

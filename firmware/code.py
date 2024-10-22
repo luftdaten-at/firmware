@@ -469,5 +469,5 @@ while True:
     time.sleep(device.polling_interval)
 
 '''
-from storage import remount;remount('/', False);open('code.py', 'w').write('from storage import remount;remount("/", True)')
+from storage import remount;remount('/', False);open('code.py', 'w').write('from storage import remount;remount("/", True);import adafruit_miniz')
 '''
