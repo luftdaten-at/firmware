@@ -19,8 +19,8 @@ class AirStation(LdProductModel):
         self.last_measurement = None
 
         # Load settings from boot.toml
-        self.device_id = fetch('device_id', toml='/boot.toml')
-        self.api_key = fetch('api_key', toml='/boot.toml')
+        self.device_id = Config.settings['device_id'] 
+        self.api_key = Config.settings['api_key']
 
         self.send_configuration()
         self.status_led.status_led.fill(Color.GREEN)
