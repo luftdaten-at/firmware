@@ -2,11 +2,38 @@ from wifi_client import WifiUtil
 from config import Config
 import adafruit_hashlib as hashlib
 import storage
+import json
+import os
 
-class UpgradeManager:
+class Ugm:
     # API commands
     LATEST_VERSION = 'latest_version'
     DOWNLOAD = 'download'
+    FOLDER_LIST = 'folder_list'
+    IGNORE_FILE_PATH = 'ugm/.ignore'
+    session = WifiUtil.new_session()
+
+    @staticmethod
+    def get(url: str, error_msg = ''):
+        try:
+            response = Ugm.session.request(
+                method='GET',
+                url=url
+            )
+            if response.status_code != 200:
+                print('Status code != 200')
+                print(f'{response.status_code=}')
+                print(f'{response.text=}')
+
+                return False
+
+            return response.text
+
+        except Exception as e:
+            if error_msg:
+                print(error_msg)
+            print(e)
+            return False
 
     @staticmethod
     def get_latest_firmware_version() -> str:
@@ -14,29 +41,12 @@ class UpgradeManager:
         return: str: file_name if update available else None
         '''
 
-        session = WifiUtil.new_session()
-        url=f'{Config.settings['UPDATE_SERVER']}/{UpgradeManager.LATEST_VERSION}/{Config.settings['MODEL']}'
-
-        try:
-            response = session.request(
-                method='GET',
-                url=url,
-            )
-
-            if response.status_code != 200:
-                print(f'Faild to find latest frimware version')
-                print(f'{response.status_code=}')
-                print(f'{response.text=}')
-
-                return None
-            else:
-                # found latest version
-                # remove quotes
-                return response.text[1:-1]
-
-        except Exception as e:
-            print(e)
+        url=f'{Config.settings['UPDATE_SERVER']}/{Ugm.LATEST_VERSION}/{Config.settings['MODEL']}'
+        text = ''
+        if not (text := Ugm.get(url)):
             return None
+
+        return text[1:-1]
 
     @staticmethod
     def install_update(file_path: str):
@@ -44,65 +54,54 @@ class UpgradeManager:
         # List the information from a .zip archive
 
         # replace files
-        pass
+        pass  
+    
+    @staticmethod
+    def list_folders(dir=''):
+        '''
+        list all folders in the working dir 
+        '''
+        try:
+            for item in os.listdir(dir):
+                item_path = dir + "/" + item if dir else item
+                if os.stat(item_path)[0] & 0x4000:  # Check if the item is a directory
+                    print(item_path)
+                    # Recursively list subdirectories
+                    Ugm.list_folders(item_path)
+        except OSError as e:
+            print(f"Error accessing {dir}: {e}")
 
     @staticmethod
-    def download_firmware(file_name: str):
+    def download_firmware(folder: str):
+        storage.remount('/', False)
         # .ignore
-        # compare folders
-            # walk folders
-        # compare files
-
-        # boot install.py
-
-
-        # TODO: check if already downloaded
-
-        session = WifiUtil.new_session()
-        url=f'{Config.settings["UPDATE_SERVER"]}/{UpgradeManager.DOWNLOAD}/{file_name}'
+        ignore = set() 
         try:
-            response = session.request(
-                method='GET',
-                url=url,
-            )
-
-            if response.status_code != 200:
-                print(f'Faild to download file: {file_name}')
-                print(f'{response.status_code=}')
-                print(f'{response.text=}')
-                return None
-
-            else:
-                # download succesfull
-                # check hach
-                print('Download succesfull')
-                print(f'{response.status_code=}')
-                print(f'{response.text=}')
-                print('Verify hash')
-
-                content = response.text
-                hexdigest = hashlib.sha256(content).hexdigest()
-
-                if hexdigest != response.headers['sha256_checksum']:
-                    print('invalid checksum')
-                    return False
-
-                # save to file
-                storage.remount('/', False) 
-                try:
-                    with open(f"{Config.runtime_settings['FIRMWARE_FOLDER']}/{file_name}", 'w') as f:
-                        f.write(content)
-                except Exception as e:
-                    print('cannot save downloaded firmware')
-                    print(e)
-                    return False
-                storage.remount('/', True) 
-
-                return True
-
-        except Exception as e:
-            print(e)
+            with open(Ugm.IGNORE_FILE_PATH, 'r') as f:
+                ignore = set(f.read().split())
+        except FileNotFoundError:
             return False
+
+        # init session
+        session = WifiUtil.new_session()
+
+        text = ''
+        url=f'{Config.settings["UPDATE_SERVER"]}/{Ugm.FOLDER_LIST}/{folder}'
+        if not (text := Ugm.get(url)):
+            return False
+
+        # get folders in new firmware
+        new_folders = set(x['relative_path'] for x in json.loads(text))
+        # get current folder
+        cur_folders = Ugm.list_folders()
+
+        # store in rollback
+        # create new folders
+        
+
+        # delete old folders
+        # create new files: (updated changes, new)
+        # delete old files:
 
     @staticmethod
     def check_if_upgrade_available() -> str:
@@ -111,7 +110,7 @@ class UpgradeManager:
         Compares it with the current version
         return: folder of new version if upgrade available else False
         '''
-        file_name = UpgradeManager.get_latest_firmware_version()
+        file_name = Ugm.get_latest_firmware_version()
 
         if file_name is None:
             return 
@@ -121,7 +120,7 @@ class UpgradeManager:
 
         # unpack version
         try:
-            model_id, firmware_major, firmware_minor, firmware_patch = latest_version.split('_')
+            _, firmware_major, firmware_minor, firmware_patch = latest_version.split('_')
             if all([
                 firmware_major == Config.settings['FIRMWARE_MAJOR'],
                 firmware_minor == Config.settings['FIRMWARE_MINOR'],
@@ -139,17 +138,3 @@ class UpgradeManager:
 
             # no upgrade done
             return False
-
-    @staticmethod
-    def check_and_install_upgrade():
-        '''
-        check if upgrade available for current device
-        download upgrade if available
-            install upgrade
-        return: (
-            -1: faild to find or install upgrade,
-             0: no upgrade available
-             1: upgrade succesfully installed
-        )
-        '''
-        pass
