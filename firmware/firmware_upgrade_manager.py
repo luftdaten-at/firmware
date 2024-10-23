@@ -1,8 +1,6 @@
 from wifi_client import WifiUtil
 from config import Config
-import adafruit_hashlib as hashlib
 import storage
-import json
 import os
 
 class Ugm:
@@ -85,19 +83,8 @@ class Ugm:
         # init session
         session = WifiUtil.new_session()
 
-        text = ''
-        url=f'{Config.settings["UPDATE_SERVER"]}/{Ugm.FOLDER_LIST}/{folder}'
-        if not (text := Ugm.get(url)):
-            return False
-
-        # get folders in new firmware
-        new_folders = set(x['relative_path'] for x in json.loads(text))
-        # get current folder
-        cur_folders = Ugm.list_folders()
-
-        # store in rollback
         # create new folders
-        
+
 
         # delete old folders
         # create new files: (updated changes, new)
