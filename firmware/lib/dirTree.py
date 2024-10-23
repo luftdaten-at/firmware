@@ -38,15 +38,15 @@ class FileEntry(Entry):
         if not md5_checksum:
             md5_checksum = calculate_md5(path)
         super().__init__(path, md5_checksum)
-    def __str__(self) -> str:
-        return f"File: {self.path}, md5_checksum: {self.md5_checksum}"
-    def __repr__(self) -> str:
-        return self.__str__()
     def to_dict(self):
         return {
             'path': self.path,
             'md5_checksum': self.md5_checksum
         }
+    def __str__(self) -> str:
+        return f"File: {self.path}, md5_checksum: {self.md5_checksum}"
+    def __repr__(self) -> str:
+        return self.__str__()
     @staticmethod
     def from_dict(d):
         return FileEntry(d['path'], d['md5_checksum'])
@@ -66,24 +66,38 @@ class FolderEntry(Entry):
                 md5_builder.update(self.childs[-1].md5_checksum.encode())
             md5_checksum = md5_builder.hexdigest()
         super().__init__(path, md5_checksum)
-    def __str__(self) -> str:
-        return f"Folder: {self.path}, md5_checksum: {self.md5_checksum}" + '\n'.join([''] + [f"{child}"for child in self.childs]) + '\n'
-    def __repr__(self) -> str:
-        return self.__str__()
     def to_dict(self):
         return {
             'path': self.path,
             'childs': [child.to_dict() for child in self.childs],
             'md5_checksum': self.md5_checksum
         }
+    def __str__(self) -> str:
+        return f"Folder: {self.path}, md5_checksum: {self.md5_checksum}" + '\n'.join([''] + [f"{child}"for child in self.childs]) + '\n'
+    def __repr__(self) -> str:
+        return self.__str__()
+    def __eq__(self, o: Entry):
+        return self.md5_checksum == o.md5_checksum
+    def __sub__(self, o):
+        childs = []
+        md5_builder = hashlib.md5()
+        md5_builder.update(self.path.encode()) 
+        for entry in self.childs:
+            if type(entry) == FileEntry:
+                if not (entry.md5_checksum in (e.md5_checksum for e in o.childs)):
+                    childs.append(entry)
+            elif type(entry) == FolderEntry:
+                oe = [e for e in o.childs if e.path == entry.path]
+                # same path, but not same hash: search recursive
+                if oe and oe[0].md5_checksum != entry.md5_checksum:
+                    childs.append(entry - oe)
+                    md5_builder.update(childs[-1].md5_checksum.encode())
+                # no same path: insert completely
+                elif not oe:
+                    childs.append(entry)
+                    md5_builder.update(childs[-1].md5_checksum.encode())
+                # same path same hash: nothing
+        return FolderEntry(self.path, md5_checksum=md5_builder.hexdigest(), childs=childs)
     @staticmethod
     def from_dict(d):
         return FolderEntry(d['path'], d['md5_checksum'],[Entry.from_dict(dd) for dd in d['childs']]) 
-
-from pprint import pprint
-
-fe = FolderEntry('.')
-d=fe.to_dict()
-
-print(fe)
-print(Entry.from_dict(d))
