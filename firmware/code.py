@@ -260,6 +260,7 @@ while True:
     if WifiUtil.radio.connected:
         print(f'{UpgradeManager.check_and_install_upgrade()=}')
 
+    '''
     if not ble.advertising and device.ble_on:
         ble.start_advertising(advertisement)
         print("Started advertising")
@@ -293,6 +294,7 @@ while True:
 
     device.tick()
     led_controller.tick()
+    '''
 
     time.sleep(device.polling_interval)
 

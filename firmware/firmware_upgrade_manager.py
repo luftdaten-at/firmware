@@ -48,6 +48,14 @@ class UpgradeManager:
 
     @staticmethod
     def download_firmware(file_name: str):
+        # .ignore
+        # compare folders
+            # walk folders
+        # compare files
+
+        # boot install.py
+
+
         # TODO: check if already downloaded
 
         session = WifiUtil.new_session()
@@ -97,6 +105,42 @@ class UpgradeManager:
             return False
 
     @staticmethod
+    def check_if_upgrade_available() -> str:
+        '''
+        Gets the latest version number
+        Compares it with the current version
+        return: folder of new version if upgrade available else False
+        '''
+        file_name = UpgradeManager.get_latest_firmware_version()
+
+        if file_name is None:
+            return 
+
+        # {MODEL_ID}_{FIRMWARE_MAJOR}_{FIRMWARE_MINOR}_{FIRMWARE_PATCH}
+        latest_version = file_name
+
+        # unpack version
+        try:
+            model_id, firmware_major, firmware_minor, firmware_patch = latest_version.split('_')
+            if all([
+                firmware_major == Config.settings['FIRMWARE_MAJOR'],
+                firmware_minor == Config.settings['FIRMWARE_MINOR'],
+                firmware_patch == Config.settings['FIRMWARE_PATCH']
+            ]):
+                # no upgrade available
+                return False 
+            
+            # upgrade available
+            return file_name
+
+        except Exception as e:
+            print(f'Could not retrieve version information from file name: {file_name}')
+            print(e)
+
+            # no upgrade done
+            return False
+
+    @staticmethod
     def check_and_install_upgrade():
         '''
         check if upgrade available for current device
@@ -108,41 +152,4 @@ class UpgradeManager:
              1: upgrade succesfully installed
         )
         '''
-        file_name = UpgradeManager.get_latest_firmware_version()
-
-        if file_name is None:
-            return 
-
-        # {MODEL_ID}_{FIRMWARE_MAJOR}_{FIRMWARE_MINOR}_{FIRMWARE_PATCH}.zip
-        latest_version = file_name
-
-        # remove file extension if exists
-        if (id := latest_version.rfind('.')) != -1:
-            latest_version = latest_version[:id]
-
-
-        # unpack version
-        try:
-            model_id, firmware_major, firmware_minor, firmware_patch = latest_version.split('_')
-            if all([
-                firmware_major == Config.settings['FIRMWARE_MAJOR'],
-                firmware_minor == Config.settings['FIRMWARE_MINOR'],
-                firmware_patch == Config.settings['FIRMWARE_PATCH']
-            ]):
-                # no upgrade available
-                return 0
-            
-            # upgrade available
-            # download latest firmware
-            if not UpgradeManager.download_firmware(file_name):
-                # wasn't able to download
-                return -1 
-            # install latest firmware
-            UpgradeManager.install_update(f'{Config.runtime_settings['FIRMWARE_FOLDER']}/{file_name}')
-
-        except Exception as e:
-            print(f'Could not retrieve version information from file name: {file_name}')
-            print(e)
-
-            # no upgrade done
-            return -1
+        pass
