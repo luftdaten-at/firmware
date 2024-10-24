@@ -2,6 +2,7 @@ from wifi_client import WifiUtil
 from config import Config
 import storage
 import os
+from dirTree import FolderEntry
 
 class Ugm:
     # API commands
@@ -53,21 +54,6 @@ class Ugm:
 
         # replace files
         pass  
-    
-    @staticmethod
-    def list_folders(dir=''):
-        '''
-        list all folders in the working dir 
-        '''
-        try:
-            for item in os.listdir(dir):
-                item_path = dir + "/" + item if dir else item
-                if os.stat(item_path)[0] & 0x4000:  # Check if the item is a directory
-                    print(item_path)
-                    # Recursively list subdirectories
-                    Ugm.list_folders(item_path)
-        except OSError as e:
-            print(f"Error accessing {dir}: {e}")
 
     @staticmethod
     def download_firmware(folder: str):
@@ -83,12 +69,20 @@ class Ugm:
         # init session
         session = WifiUtil.new_session()
 
-        # create new folders
+        # TODO: include igonre
+        cur_tree = FolderEntry('.')
+        new_tree = get_firmware_tree()
 
+        cur_tree.move_diff(new_tree, 'target folder')
 
-        # delete old folders
-        # create new files: (updated changes, new)
-        # delete old files:
+        update_tree = new_tree - cur_tree
+
+        # set update flag start
+        # download update_tree
+        for e in update_tree.walk():
+            # save e
+            pass
+        # set update flag finish
 
     @staticmethod
     def check_if_upgrade_available() -> str:
