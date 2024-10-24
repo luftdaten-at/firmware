@@ -1,6 +1,7 @@
 import hashlib
 #import adafruit_hashlib as hashlib
 import os
+from collections import deque
 
 CHUNK_SIZE = 1024
 
@@ -162,6 +163,9 @@ class FolderEntry(Entry):
     def __eq__(self, o: Entry):
         return self.md5_checksum == o.md5_checksum
 
+    def __iter__(self):
+        return iter(self.childs)
+
     def __sub__(self, o):
         childs = []
         md5_builder = hashlib.md5()
@@ -188,4 +192,12 @@ class FolderEntry(Entry):
         return FolderEntry(d['path'], d['md5_checksum'],[Entry.from_dict(dd) for dd in d['childs']]) 
 
 def walk(folder: FolderEntry):
-    pass
+    q = [folder]
+    while q:
+        entry = q[0]
+        q = q[1:]
+        yield entry
+
+        if type(entry) == FolderEntry:
+            for child in entry:
+                q.append(child)
