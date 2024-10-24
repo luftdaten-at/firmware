@@ -1,7 +1,7 @@
 from wifi_client import WifiUtil
 from config import Config
 import storage
-from dirTree import FolderEntry, Entry
+from dirTree import FolderEntry, Entry, walk
 import json
 
 class Ugm:
@@ -69,7 +69,7 @@ class Ugm:
         session = WifiUtil.new_session()
 
         # TODO: include igonre
-        cur_tree = FolderEntry('.')
+        cur_tree = FolderEntry('.', ignore=ignore)
 
         url=f'{Config.settings['UPDATE_SERVER']}/{Ugm.FILE_LIST}/{folder}'
         text = ''
@@ -78,18 +78,23 @@ class Ugm:
 
         new_tree = Entry.from_dict(json.loads(text))
 
-        print(new_tree)
+        print('cur_tree')
+        for e in walk(cur_tree):
+            print(e.path)
+
+        cur_tree.drop(ignore)
+        new_tree.drop(ignore)
+
         storage.remount('/', False)
-        cur_tree.move_diff(new_tree, 'ugm')
+        cur_tree.move_diff(new_tree, 'ugm', move_self = False)
         update_tree = new_tree - cur_tree
 
-        print(update_tree)
+        print("update_tree")
+        for e in walk(update_tree):
+            print(e.path) 
 
         # set update flag start
         # download update_tree
-        for e in update_tree.walk():
-            print(e)
-            pass
         # set update flag finish
         storage.remount('/', True)
 

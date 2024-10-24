@@ -104,7 +104,7 @@ class FolderEntry(Entry):
     '''
     stores path, childs[Entry], md5 hash of: basename(path) + (md5_checksum of all childs)
     '''
-    def __init__(self, path: str, md5_checksum=None, childs=None) -> None:
+    def __init__(self, path: str, md5_checksum=None, childs=None, ignore=None) -> None:
         self.childs: list[Entry] = childs if childs else []
         super().__init__(path, md5_checksum)
 
@@ -112,6 +112,8 @@ class FolderEntry(Entry):
             self.childs = []
             for name in os.listdir(path):
                 entry_path = join_path(path, name)
+                if ignore is not None and entry_path in ignore:
+                    continue
                 if os.stat(entry_path)[0] & 0x4000:  # Check if the item is a directory
                     self.childs.append(FolderEntry(entry_path))
                 else:
@@ -148,10 +150,13 @@ class FolderEntry(Entry):
                 child.drop(ignore=ignore)
         self.calc_md5_checksum()
 
-    def move(self, target_path: str):
-        target_path = join_path(target_path, basename(self.path))
-
-        os.mkdir(target_path)
+    def move(self, target_path: str, move_self = True):
+        target_path = join_path(target_path, basename(self.path)) if move_self else target_path
+        try:
+            os.mkdir(target_path)
+        except OSError:
+            pass
+            
         for child in self.childs:
             child.move(target_path)
         os.rmdir(self.path)
@@ -159,15 +164,19 @@ class FolderEntry(Entry):
         self.path = target_path
         self.calc_md5_checksum()
     
-    def move_diff(self, o, target_path: str):
+    def move_diff(self, o, target_path: str, move_self = True):
         '''
+        move_self: when False only moves the content not the folder itself
         moves the difference of self - o to the target path
         '''
-        target_path = join_path(target_path, basename(self.path))
+        target_path = join_path(target_path, basename(self.path)) if move_self else target_path
+        try:
+            os.mkdir(target_path)
+        except OSError:
+            pass
 
         childs = []
         can_be_removed = True
-        os.mkdir(target_path)
         for entry in self.childs:
             if type(entry) == FileEntry:
                 if not (entry.md5_checksum in (e.md5_checksum for e in o.childs)):
