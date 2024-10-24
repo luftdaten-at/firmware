@@ -1,8 +1,8 @@
 from wifi_client import WifiUtil
 from config import Config
 import storage
-import os
-from dirTree import FolderEntry
+from dirTree import FolderEntry, Entry
+import json
 
 class Ugm:
     # API commands
@@ -53,13 +53,12 @@ class Ugm:
         # List the information from a .zip archive
 
         # replace files
-        pass  
+        pass
 
     @staticmethod
     def download_firmware(folder: str):
-        storage.remount('/', False)
         # .ignore
-        ignore = set() 
+        ignore = set()
         try:
             with open(Ugm.IGNORE_FILE_PATH, 'r') as f:
                 ignore = set(f.read().split())
@@ -71,10 +70,18 @@ class Ugm:
 
         # TODO: include igonre
         cur_tree = FolderEntry('.')
-        new_tree = get_firmware_tree()
 
+        url=f'{Config.settings['UPDATE_SERVER']}/{Ugm.FOLDER_LIST}/{folder}'
+        text = ''
+        if not (text := Ugm.get(url)):
+            return False
+
+        new_tree = Entry.from_dict(json.loads(text))
+
+        print(new_tree)
+
+        '''
         cur_tree.move_diff(new_tree, 'target folder')
-
         update_tree = new_tree - cur_tree
 
         # set update flag start
@@ -83,6 +90,7 @@ class Ugm:
             # save e
             pass
         # set update flag finish
+        '''
 
     @staticmethod
     def check_if_upgrade_available() -> str:
