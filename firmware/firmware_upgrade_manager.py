@@ -8,7 +8,7 @@ class Ugm:
     # API commands
     LATEST_VERSION = 'latest_version'
     DOWNLOAD = 'download'
-    FOLDER_LIST = 'folder_list'
+    FILE_LIST = 'file_list'
     IGNORE_FILE_PATH = 'ugm/.ignore'
     session = WifiUtil.new_session()
 
@@ -71,7 +71,7 @@ class Ugm:
         # TODO: include igonre
         cur_tree = FolderEntry('.')
 
-        url=f'{Config.settings['UPDATE_SERVER']}/{Ugm.FOLDER_LIST}/{folder}'
+        url=f'{Config.settings['UPDATE_SERVER']}/{Ugm.FILE_LIST}/{folder}'
         text = ''
         if not (text := Ugm.get(url)):
             return False
@@ -79,18 +79,19 @@ class Ugm:
         new_tree = Entry.from_dict(json.loads(text))
 
         print(new_tree)
-
-        '''
-        cur_tree.move_diff(new_tree, 'target folder')
+        storage.remount('/', False)
+        cur_tree.move_diff(new_tree, 'ugm')
         update_tree = new_tree - cur_tree
+
+        print(update_tree)
 
         # set update flag start
         # download update_tree
         for e in update_tree.walk():
-            # save e
+            print(e)
             pass
         # set update flag finish
-        '''
+        storage.remount('/', True)
 
     @staticmethod
     def check_if_upgrade_available() -> str:
