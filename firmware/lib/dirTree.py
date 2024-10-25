@@ -189,7 +189,7 @@ class FolderEntry(Entry):
                 # same path, but not same hash: search recursive
                 if oe and oe[0].md5_checksum != entry.md5_checksum:
                     can_be_removed = False
-                    entry.move_diff(oe, target_path)
+                    entry.move_diff(oe[0], target_path)
                     childs.append(entry)
                 # no same path: insert completely
                 elif not oe:
@@ -228,7 +228,7 @@ class FolderEntry(Entry):
                 oe = [e for e in o.childs if basename(e.path) == basename(entry.path)]
                 # same path, but not same hash: search recursive
                 if oe and oe[0].md5_checksum != entry.md5_checksum:
-                    childs.append(entry - oe)
+                    childs.append(entry - oe[0])
                 # no same path: insert completely
                 elif not oe:
                     childs.append(entry)

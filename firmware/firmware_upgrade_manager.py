@@ -66,11 +66,11 @@ class Ugm:
             return False
 
         # init session
-        session = WifiUtil.new_session()
 
         # TODO: include igonre
         cur_tree = FolderEntry('.', ignore=ignore)
 
+        session = WifiUtil.new_session()
         url=f'{Config.settings['UPDATE_SERVER']}/{Ugm.FILE_LIST}/{folder}'
         text = ''
         if not (text := Ugm.get(url)):
