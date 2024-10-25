@@ -185,7 +185,7 @@ class FolderEntry(Entry):
                 else:
                     can_be_removed = False
             elif type(entry) == FolderEntry:
-                oe = [e for e in o.childs if e.path == entry.path]
+                oe = [e for e in o.childs if basename(e.path) == basename(entry.path)]
                 # same path, but not same hash: search recursive
                 if oe and oe[0].md5_checksum != entry.md5_checksum:
                     can_be_removed = False
@@ -225,7 +225,7 @@ class FolderEntry(Entry):
                 if not (entry.md5_checksum in (e.md5_checksum for e in o.childs)):
                     childs.append(entry)
             elif type(entry) == FolderEntry:
-                oe = [e for e in o.childs if e.path == entry.path]
+                oe = [e for e in o.childs if basename(e.path) == basename(entry.path)]
                 # same path, but not same hash: search recursive
                 if oe and oe[0].md5_checksum != entry.md5_checksum:
                     childs.append(entry - oe)
