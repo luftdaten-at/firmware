@@ -13,7 +13,7 @@ from config import Config
 from lib.cptoml import fetch
 from enums import LdProduct, SensorModel, Color
 from led_controller import LedController
-from code import Ugm
+from upgrade_mananger import Ugm
 from wifi_client import WifiUtil
 
 
@@ -258,7 +258,7 @@ while True:
 
     # Check for updates
     if WifiUtil.radio.connected:
-        print(f'{Ugm.check_and_install_upgrade()=}')
+        print(f'{Ugm.check_if_upgrade_available()=}')
 
     '''
     if not ble.advertising and device.ble_on:
