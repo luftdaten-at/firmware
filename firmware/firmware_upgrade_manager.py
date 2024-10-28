@@ -70,7 +70,6 @@ class Ugm:
         # TODO: include igonre
         cur_tree = FolderEntry('.', ignore=ignore)
 
-        session = WifiUtil.new_session()
         url=f'{Config.settings['UPDATE_SERVER']}/{Ugm.FILE_LIST}/{folder}'
         text = ''
         if not (text := Ugm.get(url)):
@@ -78,9 +77,12 @@ class Ugm:
 
         new_tree = Entry.from_dict(json.loads(text))
 
-        print('cur_tree')
-        for e in walk(cur_tree):
-            print(e.path)
+        print('cur')
+        print(cur_tree)
+        print('new')
+        print(new_tree)
+        print('diff tree')
+        print(cur_tree - new_tree)
 
         cur_tree.drop(ignore)
         new_tree.drop(ignore)
@@ -88,10 +90,6 @@ class Ugm:
         storage.remount('/', False)
         cur_tree.move_diff(new_tree, 'ugm', move_self = False)
         update_tree = new_tree - cur_tree
-
-        print("update_tree")
-        for e in walk(update_tree):
-            print(e.path) 
 
         # set update flag start
         # download update_tree

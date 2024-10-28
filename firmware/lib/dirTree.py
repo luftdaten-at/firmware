@@ -136,7 +136,7 @@ class FolderEntry(Entry):
     def calc_md5_checksum(self):
         md5_builder = hashlib.md5()
         md5_builder.update(basename(self.path).encode())
-        for child in self.childs:
+        for child in sorted(self.childs, key=lambda x: x.md5_checksum):
             md5_builder.update(child.md5_checksum.encode()) 
         self.md5_checksum = md5_builder.hexdigest()
     
