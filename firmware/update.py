@@ -1,4 +1,4 @@
-from firmware_upgrade_manager import Ugm
+from firmware.code import Ugm
 from wifi_client import WifiUtil
 from config import Config
 

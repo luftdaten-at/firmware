@@ -56,6 +56,9 @@ class Entry:
     def to_dict(self):
         pass
 
+    def remove(self):
+        os.remove(self.path)
+
     def move(self, target_path):
         pass
 
@@ -149,6 +152,12 @@ class FolderEntry(Entry):
             if isinstance(child, FolderEntry):
                 child.drop(ignore=ignore)
         self.calc_md5_checksum()
+    
+    def remove(self, remove_self = True):
+        for child in self.childs:
+            child.remove()
+        if remove_self:
+            os.remove(self.path)
 
     def move(self, target_path: str, move_self = True):
         target_path = join_path(target_path, basename(self.path)) if move_self else target_path
