@@ -65,8 +65,10 @@ class Config:
     }, toml_file=key_to_toml_file)
 
     @staticmethod
-    def init():
+    def init(only_settings = False):
         for key in Config.settings:
+            if only_settings and Config.key_to_toml_file.get(key, 'settings.toml') != 'settings.toml':
+                continue
             val = fetch(key, toml=Config.key_to_toml_file.get(key, 'settings.toml'))
             if val is not None:
                 Config.settings[key] = val
