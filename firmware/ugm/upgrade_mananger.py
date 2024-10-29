@@ -155,4 +155,8 @@ class Ugm:
 
     @staticmethod
     def rollback():
-        pass
+        backup = FolderEntry(Ugm.BACKUP_FOLDER)
+        backup.copy('.', copy_self = False)
+        # finish rollback
+        Config.settings['ROLLBACK'] = False
+ 
