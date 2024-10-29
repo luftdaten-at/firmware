@@ -10,11 +10,10 @@ from adafruit_ble import BLERadio  # type: ignore
 from adafruit_ble.advertising.standard import ProvideServicesAdvertisement  # type: ignore
 
 from config import Config
-from lib.cptoml import fetch
 from enums import LdProduct, SensorModel, Color
 from led_controller import LedController
-from upgrade_mananger import Ugm
 from wifi_client import WifiUtil
+from ugm.upgrade_mananger import Ugm
 
 
 # Initialize status LED(s) at GPIO8
@@ -33,6 +32,7 @@ time.sleep(1)
 
 # Load startup config
 Config.init()
+Ugm.init(WifiUtil, Config)
 
 # init bus
 i2c = busio.I2C(scl=board.IO5, sda=board.IO4, frequency=20000)
@@ -259,6 +259,12 @@ while True:
     # Check for updates
     if WifiUtil.radio.connected:
         print(f'{Ugm.check_if_upgrade_available()=}')
+        print(f'{Ugm.get_latest_firmware_version()=}')
+
+        if Ugm.check_if_upgrade_available():
+            import supervisor
+            supervisor.set_next_code_file('code.py')
+            supervisor.reload()
 
     '''
     if not ble.advertising and device.ble_on:
@@ -299,5 +305,5 @@ while True:
     time.sleep(device.polling_interval)
 
 '''
-from storage import remount;remount('/', False);open('code.py', 'w').write('from storage import remount;remount("/", True);import adafruit_miniz')
+from storage import remount;remount('/', False);open('code.py', 'w').write('from storage import remount;remount("/", True)')
 '''

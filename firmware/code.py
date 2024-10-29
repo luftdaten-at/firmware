@@ -1,12 +1,15 @@
 import supervisor
-from upgrade_mananger import Ugm, WifiUtil, Config
+from ugm.upgrade_mananger import Ugm
+from ugm.upgrade_manager_util import Config, WifiUtil
 
 Config.init()
 WifiUtil.connect()
+Ugm.init(WifiUtil, Config)
 
 # check rollback
 if Config.settings['ROLLBACK']:
     Ugm.rollback()
+    print('Rollback not yet implemented. UPDATE FAILED!!!!!!')
     import sys
     sys.exit()
 

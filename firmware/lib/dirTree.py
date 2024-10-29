@@ -14,12 +14,13 @@ def join_path(path: str, *paths):
     same as os.path.join
     '''
     for p in paths:
+        if p.startswith('./'):
+            p = p[2:]
         if path == "":
             path = p
-        elif path.endswith('/'):
-            path += p
-        else:
-            path += '/' + p
+        if not path.endswith('/'):
+            path += '/'
+        path += p
     return path
 
 def basename(path):
@@ -157,7 +158,7 @@ class FolderEntry(Entry):
         for child in self.childs:
             child.remove()
         if remove_self:
-            os.remove(self.path)
+            os.rmdir(self.path)
 
     def move(self, target_path: str, move_self = True):
         target_path = join_path(target_path, basename(self.path)) if move_self else target_path
