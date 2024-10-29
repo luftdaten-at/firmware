@@ -322,3 +322,18 @@ _In Zukunft: z. B. Server-URL, Auto-Update oder Batteriesparmodus setzten._
 
 ## Air Cube
 _TBD_
+
+# Ugm Upgrade manager
+
+When changing the following files a save upgrade cannot be garantied, because they are used in the upgrade manager code.
+
+
+- code.py
+- ugm: all files in this folder
+
+packages:
+- cptoml
+- adafruit_requests
+- socketpool
+- wifi
+- dirTree

@@ -1,14 +1,14 @@
 from models.ld_product_model import LdProductModel
-from enums import LdProduct, Color, AutoUpdateMode, AirStationMeasurementInterval, BatterySaverMode, BleCommands, AirstationConfigFlags
+from enums import LdProduct, Color, BleCommands, AirstationConfigFlags
 from wifi_client import WifiUtil
 import time
 from config import Config
-from util import Util
 from json import dump, load
 from ld_service import LdService
 from os import listdir, remove, uname
 import struct
 from lib.cptoml import fetch
+from storage import remount
 
 class AirStation(LdProductModel): 
     def __init__(self, ble_service: LdService, sensors, battery_monitor, status_led):
@@ -18,28 +18,9 @@ class AirStation(LdProductModel):
         self.polling_interval = 2
         self.last_measurement = None
 
-        data = Util.get_from_settings([
-            'SSID',
-            'PASSWORD',
-            'longitude',
-            'latitude',
-            'height',
-            'auto_update_mode',
-            'battery_save_mode',
-            'measurement_interval'
-        ])
-
-        self.device_id = fetch('device_id', toml='/boot.toml')
-        self.api_key = fetch('api_key', toml='/boot.toml')
-        self.longitude = data['longitude']
-        self.latitude = data['latitude']
-        self.height = data['height']
-        self.auto_update_mode = AutoUpdateMode.off if not data['auto_update_mode'] else data['auto_update_mode']
-        self.battery_save_mode = BatterySaverMode.off if not data['battery_save_mode'] else data['battery_save_mode']
-        self.measurement_interval = AirStationMeasurementInterval.sec30 if not data['measurement_interval'] else data['measurement_interval']
-
-        Config.SSID = data['SSID']
-        Config.PASSWORD = data['PASSWORD']
+        # Load settings from boot.toml
+        self.device_id = Config.settings['device_id'] 
+        self.api_key = Config.settings['api_key']
 
         self.send_configuration()
         self.status_led.status_led.fill(Color.GREEN)
@@ -58,21 +39,10 @@ class AirStation(LdProductModel):
         if cmd == BleCommands.SET_AIR_STATION_CONFIGURATION:
             wifi_config_changed = self.decode_configuration(data) 
 
-            Util.write_to_settings({
-                'SSID': Config.SSID,
-                'PASSWORD': Config.PASSWORD,
-                'longitude': self.longitude,
-                'latitude': self.latitude,
-                'height': self.height,
-                'auto_update_mode': self.auto_update_mode,
-                'battery_save_mode': self.battery_save_mode,
-                'measurement_interval': self.measurement_interval
-            })
-
             if wifi_config_changed:
                 WifiUtil.connect()
 
-            # update Characteristic with new data
+            # Update Characteristic with new data
             self.send_configuration()
 
     def decode_configuration(self, data):
@@ -83,30 +53,31 @@ class AirStation(LdProductModel):
             idx += 1
             length = data[idx]
             idx += 1
+
             if flag == AirstationConfigFlags.AUTO_UPDATE_MODE:
-                self.auto_update_mode = struct.unpack('>i', data[idx:idx + length])[0]
+                Config.settings['auto_update_mode'] = struct.unpack('>i', data[idx:idx + length])[0]
 
             if flag == AirstationConfigFlags.BATTERY_SAVE_MODE:
-                self.battery_save_mode = struct.unpack('>i', data[idx:idx + length])[0]
+                Config.settings['battery_save_mode'] = struct.unpack('>i', data[idx:idx + length])[0]
 
             if flag == AirstationConfigFlags.MEASUREMENT_INTERVAL:
-                self.measurement_interval = struct.unpack('>i', data[idx:idx + length])[0]
+                Config.settings['measurement_interval'] = struct.unpack('>i', data[idx:idx + length])[0]
 
             if flag == AirstationConfigFlags.LONGITUDE:
-                self.longitude = data[idx:idx + length].decode('utf-8')  # Decode as string
+                Config.settings['longitude'] = data[idx:idx + length].decode('utf-8')  # Decode as string
 
             if flag == AirstationConfigFlags.LATITUDE:
-                self.latitude = data[idx:idx + length].decode('utf-8')  # Decode as string
+                Config.settings['latitude'] = data[idx:idx + length].decode('utf-8')  # Decode as string
 
             if flag == AirstationConfigFlags.HEIGHT:
-                self.height = data[idx:idx + length].decode('utf-8')  # Decode as string
+                Config.settings['height'] = data[idx:idx + length].decode('utf-8')  # Decode as string
 
             if flag == AirstationConfigFlags.SSID:
-                Config.SSID = data[idx:idx + length].decode('utf-8')  # Decode as string
+                Config.settings['SSID'] = data[idx:idx + length].decode('utf-8')  # Decode as string
                 wifi_config_changed = True
 
             if flag == AirstationConfigFlags.PASSWORD:
-                Config.PASSWORD = data[idx:idx + length].decode('utf-8')  # Decode as string
+                Config.settings['PASSWORD'] = data[idx:idx + length].decode('utf-8')  # Decode as string
                 wifi_config_changed = True
             
             idx += length
@@ -116,12 +87,12 @@ class AirStation(LdProductModel):
     def encode_configurations(self):
         data = bytearray()
         for flag, value in [
-            (AirstationConfigFlags.AUTO_UPDATE_MODE, self.auto_update_mode),
-            (AirstationConfigFlags.BATTERY_SAVE_MODE, self.battery_save_mode),
-            (AirstationConfigFlags.MEASUREMENT_INTERVAL, self.measurement_interval),
-            (AirstationConfigFlags.LONGITUDE, self.longitude),
-            (AirstationConfigFlags.LATITUDE, self.latitude),
-            (AirstationConfigFlags.HEIGHT, self.height),
+            (AirstationConfigFlags.AUTO_UPDATE_MODE, Config.settings['auto_update_mode']),
+            (AirstationConfigFlags.BATTERY_SAVE_MODE, Config.settings['battery_save_mode']),
+            (AirstationConfigFlags.MEASUREMENT_INTERVAL, Config.settings['measurement_interval']),
+            (AirstationConfigFlags.LONGITUDE, Config.settings['longitude']),
+            (AirstationConfigFlags.LATITUDE, Config.settings['latitude']),
+            (AirstationConfigFlags.HEIGHT, Config.settings['height']),
             (AirstationConfigFlags.DEVICE_ID, self.device_id)
         ]:
             value_bytes = value.encode('utf-8') if isinstance(value, str) else struct.pack('>i', value)
@@ -133,7 +104,6 @@ class AirStation(LdProductModel):
 
     def receive_button_press(self):
         self.ble_on = not self.ble_on
-        # Possibly change polling interval?
         if self.ble_on:
             self.status_led.status_led.fill(Color.GREEN)
             self.status_led.status_led.show()
@@ -142,27 +112,20 @@ class AirStation(LdProductModel):
             self.status_led.status_led.show()
 
     def get_info(self):
-        # Get current time from RTC
         current_time = time.localtime()
-
-        # Format the time into ISO 8601 string
         formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
 
-        # Get latitude, longitude, and height from settings using Util
-        settings = Util.get_from_settings(['latitude', 'longitude', 'height'])
-
-        # Construct the device information
         device_info = {
             "station": {
-                "time": formatted_time,  # ISO format date and time with Z for UTC
-                "device": self.device_id,  # Placeholder, replace with actual device ID
+                "time": formatted_time,
+                "device": self.device_id,
                 "firmware": uname()[3],
                 "apikey": self.api_key,
                 "source": 1,
                 "location": {
-                    "lat": settings.get("latitude", None),  # Default to "0" if not set
-                    "lon": settings.get("longitude", None),  # Default to "0" if not set
-                    "height": settings.get("height", None)  # Default to "0" if not set
+                    "lat": Config.settings.get("latitude", None),
+                    "lon": Config.settings.get("longitude", None),
+                    "height": Config.settings.get("height", None)
                 }
             }
         }
@@ -170,9 +133,11 @@ class AirStation(LdProductModel):
         return device_info
 
     def save_data(self, data: dict):
+        remount('/', False) 
         file_name = data["station"]["time"].replace(':', '_').replace('.', '_')
-        with open(f'{Config.JSON_QUEUE}/{file_name}.json', 'w') as f:
+        with open(f'{Config.runtime_settings["JSON_QUEUE"]}/{file_name}.json', 'w') as f:
             dump(data, f)
+        remount('/', False) 
     
     def get_json(self):
         sensor_values = {}
@@ -193,7 +158,7 @@ class AirStation(LdProductModel):
         return data
     
     def send_to_api(self):
-        for file_path in (f'{Config.JSON_QUEUE}/{f}' for f in listdir(Config.JSON_QUEUE)):
+        for file_path in (f'{Config.runtime_settings["JSON_QUEUE"]}/{f}' for f in listdir(Config.runtime_settings["JSON_QUEUE"])):
             print(file_path)
             with open(file_path, 'r') as f:
                 data = load(f)
@@ -202,16 +167,12 @@ class AirStation(LdProductModel):
                 response = WifiUtil.send_json_to_api(data)
                 print(f'Response: {response.status_code}')
                 print(f'Response: {response.text}')
-                # TODO: if sent sucessfully
-                if True:
+                if True:  # Placeholder for successful sending check
+                    remount('/', False)
                     remove(file_path) 
+                    remount('/', True)
 
     def tick(self):
-        # try to connect to wifi
-        if not WifiUtil.radio.connected:
-            WifiUtil.connect()
-
-        # if not connected status led should be red 
         if not WifiUtil.radio.connected:
             self.status_led.status_led.fill(Color.RED)
             self.status_led.status_led.show()
@@ -219,12 +180,10 @@ class AirStation(LdProductModel):
             self.status_led.status_led.fill(Color.GREEN)
             self.status_led.status_led.show()
 
-        # set current time
-        if not Config.rtc_is_set and WifiUtil.radio.connected:
+        if not Config.runtime_settings['rtc_is_set'] and WifiUtil.radio.connected:
             WifiUtil.set_RTC()
 
-        # check if all configurations wich are nessecary are set
-        if not Config.rtc_is_set or not all([self.longitude, self.latitude, self.height]):
+        if not Config.runtime_settings['rtc_is_set'] or not all([Config.settings['longitude'], Config.settings['latitude'], Config.settings['height']]):
             print('DATA CANNOT BE TRANSMITTED')
             print('Not all configurations have been made')
             self.status_led.status_led.fill(Color.PURPLE)
@@ -233,14 +192,11 @@ class AirStation(LdProductModel):
             self.status_led.status_led.fill(Color.GREEN)
             self.status_led.status_led.show()
         else:
-            # ready to send data
             cur_time = time.monotonic()
-            if not self.last_measurement or cur_time - self.last_measurement >= self.measurement_interval:
-                # make measurement
+            if not self.last_measurement or cur_time - self.last_measurement >= Config.settings['measurement_interval']:
                 self.last_measurement = cur_time
                 data = self.get_json()
                 self.save_data(data)
 
         if WifiUtil.radio.connected:
-            # send saved data
             self.send_to_api()
