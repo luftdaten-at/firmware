@@ -266,7 +266,6 @@ while True:
             supervisor.set_next_code_file('code.py')
             supervisor.reload()
 
-    '''
     if not ble.advertising and device.ble_on:
         ble.start_advertising(advertisement)
         print("Started advertising")
@@ -300,10 +299,5 @@ while True:
 
     device.tick()
     led_controller.tick()
-    '''
 
     time.sleep(device.polling_interval)
-
-'''
-from storage import remount;remount('/', False);open('code.py', 'w').write('from storage import remount;remount("/", True)')
-'''
