@@ -15,6 +15,7 @@ if Config.settings['ROLLBACK']:
 
 # check if update available
 if (folder := Ugm.check_if_upgrade_available()):
+    print(folder)
     Ugm.install_update(folder)
 
 print('load into main')

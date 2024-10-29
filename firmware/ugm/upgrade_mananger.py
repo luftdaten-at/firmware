@@ -75,11 +75,10 @@ class Ugm:
         # unpack version
         try:
             _, firmware_major, firmware_minor, firmware_patch = latest_version.split('_')
-            if all([
-                firmware_major == Config.settings['FIRMWARE_MAJOR'],
-                firmware_minor == Config.settings['FIRMWARE_MINOR'],
-                firmware_patch == Config.settings['FIRMWARE_PATCH']
-            ]):
+            cur_version = (Config.settings['FIRMWARE_MAJOR'], Config.settings['FIRMWARE_MINOR'], Config.settings['FIRMWARE_PATCH'])
+            new_versin = (int(firmware_major), int(firmware_minor), int(firmware_patch))
+
+            if cur_version >= new_versin:
                 # no upgrade available
                 return False 
             
