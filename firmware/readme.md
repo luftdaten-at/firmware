@@ -323,17 +323,40 @@ _In Zukunft: z. B. Server-URL, Auto-Update oder Batteriesparmodus setzten._
 ## Air Cube
 _TBD_
 
-# Ugm Upgrade manager
+# Ugm Upgrade Manager
 
-When changing the following files a save upgrade cannot be garantied, because they are used in the upgrade manager code.
+A tool to upgrade CircuitPython firmware from a FastAPI update server.
 
+## ✨ Features
 
-- code.py
-- ugm: all files in this folder
+- 🔍 **Version Check**: Automatically checks the update server for new firmware versions.
+- 💾 **Pre-Upgrade Backup**: Backs up files that are modified or deleted in the new version.
+- 📥 **Selective Download**: Only downloads and replaces files that are new or changed, optimizing the upgrade process.
+- 🔄 **Automatic Rollback**: Detects failed upgrades and restores all previous files from the backup.
 
-packages:
-- cptoml
-- adafruit_requests
-- socketpool
-- wifi
-- dirTree
+## ⚠️ Critical Files and Dependencies
+
+Modifying any of the following files or packages may compromise upgrade stability:
+
+### 📂 Files
+- `code.py`
+- All files in the `ugm` folder
+
+### 📦 Packages
+- `cptoml`
+- `adafruit_requests`
+- `socketpool`
+- `wifi`
+- `dirTree`
+
+## 🚫 .ignore
+
+Specifies files and directories to ignore during the upgrade process (similar to `.gitignore`).
+
+### Default Example
+```
+ugm
+json_queue
+settings.toml
+code.py
+```
