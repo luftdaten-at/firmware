@@ -1,5 +1,5 @@
-# my_logger.py
 import time
+import storage
 
 # Define the log levels
 LOG_LEVELS = {
@@ -23,6 +23,11 @@ class SimpleLogger:
             
             log_message = f"{formatted_time} [{level}] {message}"
             print(log_message)  # Print to console or handle as needed
+
+            storage.remount('/', False)
+            with open('log.txt', 'a') as f:
+                print(log_message, file=f)
+            storage.remount('/', False)
 
     def debug(self, message):
         self.log(message, 'DEBUG')
