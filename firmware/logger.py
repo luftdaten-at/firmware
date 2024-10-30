@@ -1,30 +1,43 @@
-import logging
+# my_logger.py
 import time
 
-# Step 1: Define the send_status function
-def send_status(timestamp, level, message):
-    # TODO: send data to API
-    # This is where you can handle the status messages
-    print(f"Status Update - Time: {timestamp}, Level: {level}, Message: {message}")
+# Define the log levels
+LOG_LEVELS = {
+    'DEBUG': 0,
+    'INFO': 1,
+    'WARNING': 2,
+    'ERROR': 3,
+    'CRITICAL': 4
+}
 
-# Step 2: Create a custom logging handler
-class StatusLoggingHandler(logging.Handler):
-    def emit(self, record):
-        # Get the log message details
-        timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(record.created))
-        level = record.levelname
-        message = record.getMessage()
-        
-        # Call the send_status function
-        send_status(timestamp, level, message)
+class SimpleLogger:
+    def __init__(self, level='DEBUG'):
+        self.level = LOG_LEVELS.get(level, 0)  # Default to DEBUG level
 
-# Step 3: Create a logger instance
-logger = logging.getLogger("GlobalLogger")
-logger.setLevel(logging.DEBUG)  # Set the logging level
+    def log(self, message, level='DEBUG'):
+        level_num = LOG_LEVELS.get(level, 0)
+        if level_num >= self.level:
+            # Get current time in the desired format
+            current_time = time.localtime()
+            formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
+            
+            log_message = f"{formatted_time} [{level}] {message}"
+            print(log_message)  # Print to console or handle as needed
 
-# Add the custom handler to the logger
-status_handler = StatusLoggingHandler()
-logger.addHandler(status_handler)
+    def debug(self, message):
+        self.log(message, 'DEBUG')
 
-file_handler = logging.FileHandler('log.txt')
-logger.addHandler(file_handler)
+    def info(self, message):
+        self.log(message, 'INFO')
+
+    def warning(self, message):
+        self.log(message, 'WARNING')
+
+    def error(self, message):
+        self.log(message, 'ERROR')
+
+    def critical(self, message):
+        self.log(message, 'CRITICAL')
+
+# Create a global logger instance
+logger = SimpleLogger(level='DEBUG')  # Set your desired default log level

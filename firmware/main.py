@@ -3,7 +3,6 @@ import board  # type: ignore
 import digitalio  # type: ignore
 import busio  # type: ignore
 import gc
-import os
 import neopixel  # type: ignore
 from ld_service import LdService
 from adafruit_ble import BLERadio  # type: ignore
@@ -30,6 +29,8 @@ time.sleep(1)
 #        - If pressed, check all sensors and save to boot.toml. Reboot into transmit mode.
 #        - If not pressed, load boot.toml and connect to all sensors listed. Start BLE operation.
 # - detectmodel
+
+logger.debug('loaded main.py')
 
 # Load startup config
 Config.init()
