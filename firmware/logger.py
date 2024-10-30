@@ -1,5 +1,6 @@
 import time
 import json
+import storage
 
 # Define the log levels
 LOG_LEVELS = {
@@ -29,9 +30,10 @@ class SimpleLogger:
                 'level': level,
                 'message': message
             }
-
+            storage.remount('/', False)
             with open('log.txt', 'a') as f:
                 print(json.dumps(log_entry), file=f)
+            storage.remount('/', True)
 
     def debug(self, *args):
         self.log(self.format_message(*args), 'DEBUG')
