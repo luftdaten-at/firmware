@@ -22,7 +22,7 @@ Ugm.init(WifiUtil, Config)
 
 # check if update available
 if (folder := Ugm.check_if_upgrade_available()):
-    print(f'Installing from folder: {folder}')
+    logger.debug(f'Installing new firmware from folder: {folder}')
     try:
         Ugm.install_update(folder)
     except Exception as e:
