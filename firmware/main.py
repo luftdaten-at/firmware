@@ -14,6 +14,7 @@ from enums import LdProduct, SensorModel, Color
 from led_controller import LedController
 from wifi_client import WifiUtil
 from ugm.upgrade_mananger import Ugm
+from logger import logger
 
 
 # Initialize status LED(s) at GPIO8
@@ -32,6 +33,8 @@ time.sleep(1)
 
 # Load startup config
 Config.init()
+logger.debug('initialized Config successfully')
+
 Ugm.init(WifiUtil, Config)
 
 # init bus
