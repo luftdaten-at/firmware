@@ -15,6 +15,7 @@ Modifying any of the following files or packages may compromise upgrade stabilit
 
 ### 📂 Files
 - `code.py`
+- `logger.py`
 - All files in the `ugm` folder
 
 ### 📦 Packages
