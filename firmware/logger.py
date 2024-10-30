@@ -1,5 +1,4 @@
 import time
-import storage
 import json
 
 # Define the log levels
@@ -15,8 +14,7 @@ class SimpleLogger:
     def __init__(self, level='DEBUG'):
         self.level = LOG_LEVELS.get(level, 0)  # Default to DEBUG level
 
-    def log(self, *message, level='DEBUG'):
-        message = ' '.join(str(x) for x in message)
+    def log(self, message, level='DEBUG'):
         level_num = LOG_LEVELS.get(level, 0)
         if level_num >= self.level:
             # Get current time in the desired format
@@ -32,25 +30,27 @@ class SimpleLogger:
                 'message': message
             }
 
-            storage.remount('/', False)
             with open('log.txt', 'a') as f:
                 print(json.dumps(log_entry), file=f)
-            storage.remount('/', False)
 
-    def debug(self, message):
-        self.log(message, 'DEBUG')
+    def debug(self, *args):
+        self.log(self.format_message(*args), 'DEBUG')
 
-    def info(self, message):
-        self.log(message, 'INFO')
+    def info(self, *args):
+        self.log(self.format_message(*args), 'INFO')
 
-    def warning(self, message):
-        self.log(message, 'WARNING')
+    def warning(self, *args):
+        self.log(self.format_message(*args), 'WARNING')
 
-    def error(self, message):
-        self.log(message, 'ERROR')
+    def error(self, *args):
+        self.log(self.format_message(*args), 'ERROR')
 
-    def critical(self, message):
-        self.log(message, 'CRITICAL')
+    def critical(self, *args):
+        self.log(self.format_message(*args), 'CRITICAL')
+
+    def format_message(self, *args):
+        """Format the message from a list of arguments with spaces."""
+        return ' '.join(str(arg) for arg in args)
 
 # Create a global logger instance
 logger = SimpleLogger(level='DEBUG')  # Set your desired default log level
