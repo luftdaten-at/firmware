@@ -9,7 +9,7 @@ Ugm.init(None, Config)
 
 # check rollback
 if Config.settings['ROLLBACK']:
-    logger.debug('Performe rollback, boot normally')
+    logger.warning('Performe rollback, boot normally')
 
     Ugm.rollback()
     

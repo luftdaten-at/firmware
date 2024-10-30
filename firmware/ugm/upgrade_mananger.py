@@ -2,6 +2,7 @@ from dirTree import FolderEntry, Entry, walk, join_path, FileEntry
 import json
 import storage
 import os
+from logger import logger
 
 WifiUtil = None
 Config = None
@@ -22,7 +23,7 @@ class Ugm:
         Config = config
 
     @staticmethod
-    def get(url: str, error_msg = ''):
+    def get(url: str):
         Ugm.session = WifiUtil.new_session() 
         try:
             response = Ugm.session.request(
@@ -30,18 +31,14 @@ class Ugm:
                 url=url
             )
             if response.status_code != 200:
-                print('Status code != 200')
-                print(f'{response.status_code=}')
-                print(f'{response.text=}')
+                logger.error(f'GET failed, url: {url}, status code: {response.status_code}, text: {response.text}')
 
                 return False
 
             return response.text
 
         except Exception as e:
-            if error_msg:
-                print(error_msg)
-            print(e)
+            logger.error(f'GET faild: {e}')
             return False
 
     @staticmethod
@@ -86,9 +83,7 @@ class Ugm:
             return file_name
 
         except Exception as e:
-            print(f'Could not retrieve version information from file name: {file_name}')
-            print(e)
-
+            logger.error(f'Could not retrieve version information from file name: {file_name}: {e}')
             # no upgrade done
             return False
     
@@ -135,7 +130,6 @@ class Ugm:
         for entry in walk(update_tree):
             if entry.path in ('.', ''):
                 continue
-            print('update', entry.path)
             if isinstance(entry, FolderEntry):
                 try:
                     os.mkdir(entry.path)

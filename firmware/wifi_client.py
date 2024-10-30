@@ -4,6 +4,7 @@ import gc
 from socketpool import SocketPool
 from ssl import create_default_context
 from adafruit_requests import Session
+from logger import logger
 
 # New wifi methods
 class WifiUtil:
@@ -15,13 +16,12 @@ class WifiUtil:
         if not Config.settings['SSID'] or not Config.settings['PASSWORD']:
             return False
         try:
-            print('Connecting to Wifi...')
-            print(Config.settings['SSID'], Config.settings['PASSWORD'])
+            logger.debug('Connecting to Wifi:', Config.settings['SSID'], Config.settings['PASSWORD'])
             wifi_radio.connect(Config.settings['SSID'], Config.settings['PASSWORD'])
-            print('Connection established')
+            logger.debug('Connection established to Wifi', Config.settings['SSID'])
 
         except ConnectionError:
-            print("Failed to connect to WiFi with provided credentials")
+            logger.error("Failed to connect to WiFi with provided credentials")
             return False 
 
         WifiUtil.set_RTC()
@@ -34,14 +34,13 @@ class WifiUtil:
         import rtc
 
         try:
-            print('Trying to set RTC via NTP...')
+            logger.debug('Trying to set RTC via NTP...')
             ntp = NTP(WifiUtil.pool, tz_offset=0, cache_seconds=3600)
             rtc.RTC().datetime = ntp.datetime
             Config.runtime_settings['rtc_is_set'] = True  # Assuming rtc_is_set is a setting in your Config
-            print('RTC successfully configured')
-
+            logger.debug('RTC successfully configured')
         except Exception as e:
-            print(e)
+            logger.error(f'Failed to set RTC via NTP: {e}')
     
     @staticmethod
     def new_session():
@@ -55,10 +54,7 @@ class WifiUtil:
             context.load_verify_locations(cadata=f.read())
 
         gc.collect()
-        print(f'Mem requests: {gc.mem_free()}')
-
         https = Session(WifiUtil.pool, context)
-        print(f'Request API: {Config.runtime_settings["API_URL"]}')
         response = https.request(
             method='POST',
             url=Config.runtime_settings['API_URL'],

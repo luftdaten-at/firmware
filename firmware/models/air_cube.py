@@ -2,6 +2,7 @@ from models.ld_product_model import LdProductModel
 from led_controller import RepeatMode
 from enums import Color, LdProduct, Dimension, Quality, BleCommands
 import time
+from logger import logger
 
 class AirCube(LdProductModel): 
     def __init__(self, ble_service, sensors, battery_monitor, status_led):
@@ -18,7 +19,7 @@ class AirCube(LdProductModel):
         cmd = command[0]
         if cmd == BleCommands.READ_SENSOR_DATA or cmd == BleCommands.READ_SENSOR_DATA_AND_BATTERY_STATUS:
             self.update_ble_sensor_data()
-            print("Sensor values updated")
+            logger.debug("Sensor values updated")
             self.status_led.show_led({
                 'repeat_mode': RepeatMode.TIMES,
                 'repeat_times': 1,
@@ -28,7 +29,7 @@ class AirCube(LdProductModel):
             })
         if cmd == BleCommands.READ_SENSOR_DATA_AND_BATTERY_STATUS:
             self.update_ble_battery_status()
-            print("Battery status updated")
+            logger.debug("Battery status updated")
     
     def receive_button_press(self):
         self.ble_on = not self.ble_on

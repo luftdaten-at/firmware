@@ -15,7 +15,8 @@ class SimpleLogger:
     def __init__(self, level='DEBUG'):
         self.level = LOG_LEVELS.get(level, 0)  # Default to DEBUG level
 
-    def log(self, message, level='DEBUG'):
+    def log(self, *message, level='DEBUG'):
+        message = ' '.join(str(x) for x in message)
         level_num = LOG_LEVELS.get(level, 0)
         if level_num >= self.level:
             # Get current time in the desired format

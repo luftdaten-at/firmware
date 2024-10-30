@@ -1,5 +1,6 @@
 import time
 from enums import BleCommands, Color
+from logger import logger
 
 class LedController:
     BRIGHTNESS_LEVELS = [1/5, 2/5, 3/5, 4/5, 1]
@@ -42,9 +43,9 @@ class LedController:
             for i in range(self.num_leds):
                 self.show_led(pattern, i)
             return
-        print('Set LED', led_id, 'to pattern:', pattern)
+        logger.debug('Set LED', led_id, 'to pattern:', pattern)
         if pattern == self.current_patterns[led_id]:
-            print('Pattern already set')
+            logger.debug('Pattern already set')
 
         self.patterns_started_at[led_id] = time.monotonic()
         self.current_patterns[led_id] = pattern

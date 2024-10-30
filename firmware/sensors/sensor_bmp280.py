@@ -1,6 +1,7 @@
 import adafruit_bmp280 # type: ignore
 from sensors.sensor import Sensor
 from enums import Dimension, SensorModel, Quality
+from logger import logger
 
 class BMP280Sensor(Sensor):
     def __init__(self):
@@ -22,18 +23,18 @@ class BMP280Sensor(Sensor):
     def attempt_connection(self, i2c):
         try:
             self.bmp280_device = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)
-            print("BMP280 sensor found at 0x77")
+            logger.debug("BMP280 sensor found at 0x77")
         except:
-            print("BMP280 sensor not found at 0x77")
+            logger.debug("BMP280 sensor not found at 0x77")
             try:
                 self.bmp280_device = adafruit_bmp280.Adafruit_BMP280_I2C(i2c, address=0x76)
-                print("BMP280 sensor found at 0x76")
+                logger.debug("BMP280 sensor found at 0x76")
             except:
-                print("BMP280 sensor not found at 0x76")
-                print("BMP280 sensor not detected")
+                logger.debug("BMP280 sensor not found at 0x76")
+                logger.debug("BMP280 sensor not detected")
                 return False
 
-        print(f"BMP280 device found on I2C bus {i2c}")
+        logger.debug(f"BMP280 device found on I2C bus {i2c}")
         return True
 
     def read(self):
@@ -43,4 +44,4 @@ class BMP280Sensor(Sensor):
                 Dimension.PRESSURE: self.bmp280_device.pressure,
             }
         except:
-            print("BMP280 Error: ")
+            logger.error("BMP280 Error: ")

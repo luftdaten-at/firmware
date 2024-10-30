@@ -1,6 +1,7 @@
 from sensors.sensor import Sensor
 from enums import Dimension, SensorModel, Quality
 import adafruit_scd4x # type: ignore
+from logger import logger
 
 class Scd4xSensor(Sensor):
     def __init__(self):
@@ -29,10 +30,10 @@ class Scd4xSensor(Sensor):
             self.sensor_details = bytearray(self.scd4x.serial_number)
             self.scd4x.start_periodic_measurement()
         except:
-            print("SCD4x sensor not detected")
+            logger.debug("SCD4x sensor not detected")
             return False
         
-        print(f"SCD4x device found on I2C bus {i2c}")
+        logger.debug(f"SCD4x device found on I2C bus {i2c}")
         return True
 
     def read(self):
@@ -46,4 +47,4 @@ class Scd4xSensor(Sensor):
                     Dimension.CO2: self.scd4x.CO2,
                 }
         except:
-            print("Error reading SEN5x sensor data")
+            logger.error("Error reading SEN5x sensor data")

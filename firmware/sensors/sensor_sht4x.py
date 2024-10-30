@@ -1,6 +1,7 @@
 import adafruit_sht4x # type: ignore
 from sensors.sensor import Sensor
 from enums import Dimension, SensorModel, Quality
+from logger import logger
 
 class Sht4xSensor(Sensor):
     def __init__(self):
@@ -24,10 +25,10 @@ class Sht4xSensor(Sensor):
             self.sht4x_device = adafruit_sht4x.SHT4x(i2c)
             self.sensor_details = bytearray(hex(self.sht4x_device.serial_number).encode())
         except:
-            print("SHT4x sensor not detected")
+            logger.debug("SHT4x sensor not detected")
             return False
 
-        print(f"SHT4x device found on I2C bus {i2c}")
+        logger.debug(f"SHT4x device found on I2C bus {i2c}")
         return True
 
     def read(self):
@@ -37,4 +38,4 @@ class Sht4xSensor(Sensor):
                 Dimension.HUMIDITY: self.sht4x_device.relative_humidity,
             }
         except:
-            print("SHT4x Error")
+            logger.error("SHT4x Error")

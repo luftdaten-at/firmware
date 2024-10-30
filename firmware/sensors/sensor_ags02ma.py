@@ -1,6 +1,7 @@
 from sensors.sensor import Sensor
 from enums import Dimension, SensorModel, Quality
 from adafruit_ags02ma import AGS02MA # type: ignore
+from logger import logger
 
 class AGS02MASensor(Sensor):
     def __init__(self):
@@ -27,10 +28,10 @@ class AGS02MASensor(Sensor):
             # ags.set_address(0x1A)
             self.ags02ma_device = AGS02MA(i2c, address=0x1A)
         except:
-            print("AGS02MA sensor not detected")
+            logger.debug("AGS02MA sensor not detected")
             return False
     
-        print(f"AGS02MA device found on I2C bus {i2c}")
+        logger.debug(f"AGS02MA device found on I2C bus {i2c}")
         return True
 
     def read(self):
@@ -40,4 +41,4 @@ class AGS02MASensor(Sensor):
                 Dimension.GAS_RESISTANCE: self.ags02ma_device.gas_resistance,
             }
         except:
-            print("AGS02MA Error")
+            logger.error("AGS02MA Error")
