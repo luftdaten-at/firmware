@@ -61,6 +61,21 @@ class Dimension():
         SGP40_ADJUSTED_GAS: "SGP40 Adjusted Gas",
     }
 
+    _sensor_community_names = {
+        PM0_1: "P01",
+        PM1_0: "P1",
+        PM2_5: "P2",
+        PM4_0: "P4",
+        PM10_0: "P10",
+        HUMIDITY: "humidity",
+        TEMPERATURE: "temperature",
+        PRESSURE: "pressure",
+        CO2: "co2_ppm",
+        O3: "ozone_ppb",
+        TVOC: "tvoc",
+        NO2: "no2_ppb",
+    }
+
     @classmethod
     def get_unit(cls, dimension_id: int) -> str:
         """
@@ -78,7 +93,11 @@ class Dimension():
         :return: Der zugehörige Name oder 'Unknown', wenn kein Name vorhanden ist
         """
         return cls._names.get(dimension_id, "Unknown")
-
+    
+    @classmethod
+    def get_sensor_community_name(cls, dimension_id: int) -> str:
+        """Returns the sensor-community-specific name for the dimension ID or 'Unknown' if none."""
+        return cls._sensor_community_names.get(dimension_id, "Unknown")
 
 class SensorModel():
     SEN5X = 1
