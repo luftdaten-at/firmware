@@ -9,6 +9,7 @@ from os import listdir, remove, uname
 import struct
 from lib.cptoml import fetch
 from storage import remount
+from logger import logger
 
 class AirStation(LdProductModel): 
     def __init__(self, ble_service: LdService, sensors, battery_monitor, status_led):
@@ -145,7 +146,7 @@ class AirStation(LdProductModel):
             try:
                 sensor.read()
             except:
-                print(f"Error reading sensor {sensor.model_id}, using previous values")
+                logger.error(f"Error reading sensor {sensor.model_id}, using previous values")
 
             sensor_values[id] = {
                 "type": sensor.model_id,
@@ -159,15 +160,12 @@ class AirStation(LdProductModel):
     
     def send_to_api(self):
         for file_path in (f'{Config.runtime_settings["JSON_QUEUE"]}/{f}' for f in listdir(Config.runtime_settings["JSON_QUEUE"])):
-            print(file_path)
             with open(file_path, 'r') as f:
                 data = load(f)
-                print(data)
-                print('Send data: ')
                 response = WifiUtil.send_json_to_api(data)
-                print(f'Response: {response.status_code}')
-                print(f'Response: {response.text}')
-                if True:  # Placeholder for successful sending check
+                logger.debug(f'API Response: {response.status_code}')
+                logger.debug(f'API Response: {response.text}')
+                if response.status_code == 200:  # Placeholder for successful sending check
                     remount('/', False)
                     remove(file_path) 
                     remount('/', True)
@@ -184,8 +182,7 @@ class AirStation(LdProductModel):
             WifiUtil.set_RTC()
 
         if not Config.runtime_settings['rtc_is_set'] or not all([Config.settings['longitude'], Config.settings['latitude'], Config.settings['height']]):
-            print('DATA CANNOT BE TRANSMITTED')
-            print('Not all configurations have been made')
+            logger.warning('DATA CANNOT BE TRANSMITTED, Not all configurations have been made')
             self.status_led.status_led.fill(Color.PURPLE)
             self.status_led.status_led.show()
             time.sleep(2)

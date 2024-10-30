@@ -1,6 +1,7 @@
 import adafruit_bme680 # type: ignore
 from sensors.sensor import Sensor
 from enums import Dimension, SensorModel, Quality
+from logger import logger
 
 class BME680Sensor(Sensor):
     def __init__(self):
@@ -29,10 +30,10 @@ class BME680Sensor(Sensor):
         try:
             self.bme680_device = adafruit_bme680.Adafruit_BME680_I2C(i2c)
         except:
-            print("BME680 sensor not detected")
+            logger.debug("BME680 sensor not detected")
             return False
 
-        print(f"BME680 device found on I2C bus {i2c}")
+        logger.debug(f"BME680 device found on I2C bus {i2c}")
         return True
 
     def read(self):
@@ -44,4 +45,4 @@ class BME680Sensor(Sensor):
                 Dimension.GAS_RESISTANCE: self.bme680_device.gas,
             }
         except:
-            print("BME680")
+            logger.debug("BME680")

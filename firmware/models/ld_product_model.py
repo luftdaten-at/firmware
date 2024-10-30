@@ -1,3 +1,5 @@
+from logger import logger
+
 class LdProductModel:
     def __init__(self, ble_service, sensors, battery_monitor, status_led):
         self.model_id = None
@@ -45,7 +47,7 @@ class LdProductModel:
             try:
                 sensor.read()
             except:
-                print(f"Error reading sensor {sensor.model_id}, using previous values")
+                logger.error(f"Error reading sensor {sensor.model_id}, using previous values")
             vals_array.extend(sensor.get_current_values())
         self.ble_service.sensor_values_characteristic = vals_array
     
@@ -65,4 +67,4 @@ class LdProductModel:
         """Update BLE characteristic with error status."""
         self.status[3] = error_code
         self.ble_service.device_status_characteristic = self.status
-        print(f"Error status updated: {error_code}")
+        (f"Error status updated: {error_code}")

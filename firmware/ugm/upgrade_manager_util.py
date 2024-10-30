@@ -4,6 +4,7 @@ from socketpool import SocketPool
 from adafruit_requests import Session
 import storage
 from lib.cptoml import put
+from logger import logger
 
 
 class AutoSaveDict(dict):
@@ -13,7 +14,6 @@ class AutoSaveDict(dict):
 
     def __setitem__(self, key, value):
         super().__setitem__(key, value)
-        print(key, value)
         storage.remount('/', False)
         put(key, value, toml=f'/{self.toml_file.get(key, 'settings.toml')}')
         storage.remount('/', True)
@@ -82,13 +82,12 @@ class WifiUtil:
         if not Config.settings['SSID'] or not Config.settings['PASSWORD']:
             return False
         try:
-            print('Connecting to Wifi...')
-            print(Config.settings['SSID'], Config.settings['PASSWORD'])
+            logger.debug('Connecting to Wifi:', Config.settings['SSID'], Config.settings['PASSWORD'])
             wifi_radio.connect(Config.settings['SSID'], Config.settings['PASSWORD'])
-            print('Connection established')
+            logger.debug('Connection established to Wifi', Config.settings['SSID'])
 
         except ConnectionError:
-            print("Failed to connect to WiFi with provided credentials")
+            logger.error("Failed to connect to WiFi with provided credentials")
             return False 
 
         return True

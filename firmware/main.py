@@ -3,7 +3,6 @@ import board  # type: ignore
 import digitalio  # type: ignore
 import busio  # type: ignore
 import gc
-import os
 import neopixel  # type: ignore
 from ld_service import LdService
 from adafruit_ble import BLERadio  # type: ignore
@@ -14,6 +13,7 @@ from enums import LdProduct, SensorModel, Color
 from led_controller import LedController
 from wifi_client import WifiUtil
 from ugm.upgrade_mananger import Ugm
+from logger import logger
 
 
 # Initialize status LED(s) at GPIO8
@@ -30,8 +30,12 @@ time.sleep(1)
 #        - If not pressed, load boot.toml and connect to all sensors listed. Start BLE operation.
 # - detectmodel
 
+logger.debug('loaded main.py')
+
 # Load startup config
 Config.init()
+logger.debug('initialized Config successfully')
+
 Ugm.init(WifiUtil, Config)
 
 # init bus
@@ -74,7 +78,7 @@ def get_connected_sensors():
 
     for sensor in defined_sensors:
         if sensor.attempt_connection(i2c):
-            print(f'Found sensor: {sensor.model_id}')
+            logger.info(f'Found sensor: {sensor.model_id}')
             connected_sensors[sensor.model_id] = sensor
 
     return connected_sensors
@@ -86,11 +90,11 @@ def get_battery_monitor():
     for i in range(10):
         try:
             battery_monitor = MAX17048(i2c)
-            print(f'Attempt {i + 1}: Battery monitor initialized')
+            logger.info(f'Attempt {i + 1}: Battery monitor initialized')
             break
         except:
             pass
-        print("Waiting 0.5 seconds before retrying battery monitor initialization")
+        logger.info("Waiting 0.5 seconds before retrying battery monitor initialization")
         time.sleep(0.5)
     
     return battery_monitor
@@ -156,7 +160,7 @@ if Config.settings['MODEL'] == LdProduct.AIR_STATION:
 
 # bad Model was not recognised
 if device is None:
-    print("Model not recognised")
+    logger.critical("Model not recognised")
     while True:
         time.sleep(1)
         status_led.fill(Color.RED)
@@ -219,7 +223,7 @@ for sensor in sensors:
 
 # If a battery monitor is connected, indicate battery percentage
 if battery_monitor is not None:
-    print('show battery state in 2 seconds')
+    logger.debug('show battery state in 2 seconds')
     time.sleep(2)
     CRITICAL = 10
     percent = round(battery_monitor.cell_soc())
@@ -258,37 +262,35 @@ while True:
 
     # Check for updates
     if WifiUtil.radio.connected:
-        print(f'{Ugm.check_if_upgrade_available()=}')
-        print(f'{Ugm.get_latest_firmware_version()=}')
-
         if Ugm.check_if_upgrade_available():
+            logger.info('Upgrade available, reload to install')
             import supervisor
             supervisor.set_next_code_file('code.py')
             supervisor.reload()
 
     if not ble.advertising and device.ble_on:
         ble.start_advertising(advertisement)
-        print("Started advertising")
+        logger.debug("Started advertising")
     elif ble.advertising and not device.ble_on:
         ble.stop_advertising()
-        print("Stopped advertising")
+        logger.debug("Stopped advertising")
 
     if ble.connected and not ble_connected:
         ble_connected = True
         device.connection_update(True)
-        print("BLE connection established")
+        logger.debug("BLE connection established")
     elif not ble.connected and ble_connected:
         ble_connected = False
         device.connection_update(False)
-        print("Disconnected from BLE device")
+        logger.debug("Disconnected from BLE device")
 
     if button.value and not button_state:
         button_state = True
         device.receive_button_press()
-        print("Button pressed")
+        logger.debug("Button pressed")
     elif not button.value and button_state:
         button_state = False
-        print("Button released")
+        logger.debug("Button released")
 
     if service.trigger_reading_characteristic_2:
         command = service.trigger_reading_characteristic_2

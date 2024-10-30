@@ -1,6 +1,7 @@
 from sht30 import SHT30 # type: ignore
 from sensors.sensor import Sensor
 from enums import Dimension, SensorModel, Quality
+from logger import logger
 
 class Sht30Sensor(Sensor):
     def __init__(self):
@@ -23,10 +24,10 @@ class Sht30Sensor(Sensor):
         try:
             self.sht30_device = SHT30()
         except:
-            print("SHT30 sensor not detected")
+            logger.debug("SHT30 sensor not detected")
             return False
 
-        print(f"SHT30 device found on I2C bus {i2c}")
+        logger.debug(f"SHT30 device found on I2C bus {i2c}")
         return True
 
     def read(self):
@@ -37,4 +38,4 @@ class Sht30Sensor(Sensor):
                 Dimension.HUMIDITY: humidity,
             }
         except:
-            print("SHT30 Error")
+            logger.error("SHT30 Error")

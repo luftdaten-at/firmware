@@ -1,6 +1,7 @@
 import adafruit_sht31d # type: ignore
 from sensors.sensor import Sensor
 from enums import Dimension, SensorModel, Quality
+from logger import logger
 
 class Sht31Sensor(Sensor):
     def __init__(self):
@@ -23,10 +24,10 @@ class Sht31Sensor(Sensor):
         try:
             self.sht31_device = adafruit_sht31d.SHT31D(i2c)
         except:
-            print("SHT31 sensor not detected")
+            logger.debug("SHT31 sensor not detected")
             return False
 
-        print(f"SHT31 device found on I2C bus {i2c}")
+        logger.debug(f"SHT31 device found on I2C bus {i2c}")
         return True
 
     def read(self):
@@ -36,4 +37,4 @@ class Sht31Sensor(Sensor):
                 Dimension.HUMIDITY: self.sht31_device.relative_humidity,
             }
         except:
-            print("SHT31 Error")
+            logger.error("SHT31 Error")

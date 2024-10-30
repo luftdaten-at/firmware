@@ -1,6 +1,7 @@
 import adafruit_sgp40 # type: ignore
 from sensors.sensor import Sensor
 from enums import Dimension, SensorModel, Quality
+from logger import logger
 
 class Sgp40Sensor(Sensor):
     def __init__(self):
@@ -27,10 +28,10 @@ class Sgp40Sensor(Sensor):
         try:
             self.sgp40_device = adafruit_sgp40.SGP40(i2c)
         except:
-            print("SGP40 sensor not detected")
+            logger.debug("SGP40 sensor not detected")
             return False
 
-        print(f"SGP40 device found on I2C bus {i2c}")
+        logger.debug(f"SGP40 device found on I2C bus {i2c}")
         return True
     
     def on_start_main_loop(self, device):
@@ -38,9 +39,9 @@ class Sgp40Sensor(Sensor):
         for sensor in device.sensors:
             if sensor.model_id in [SensorModel.SHT4X, SensorModel.SHT30, SensorModel.SHT31]:
                 self.temperature_provider = sensor
-                print('Linked SGP40 with sensor model ', sensor.model_id)
+                logger.debug('Linked SGP40 with sensor model ', sensor.model_id)
                 return
-        print('No temperature sensor found for SGP40')
+        logger.debug('No temperature sensor found for SGP40')
 
     def read(self):
         try:
@@ -48,7 +49,7 @@ class Sgp40Sensor(Sensor):
                 provided_temperature = self.temperature_provider.current_values[Dimension.TEMPERATURE]
                 provided_humidity = self.temperature_provider.current_values[Dimension.HUMIDITY]
                 if provided_temperature is None or provided_humidity is None:
-                    print('Expected temperature and humidity from linked sensor, but got None.')
+                    logger.debug('Expected temperature and humidity from linked sensor, but got None.')
                 else:
                     self.current_values = {
                         Dimension.VOC_INDEX: self.sgp40_device.measure_index(temperature=provided_temperature, relative_humidity=provided_humidity),
@@ -62,4 +63,4 @@ class Sgp40Sensor(Sensor):
                 Dimension.SGP40_ADJUSTED_GAS: self.sgp40_device.measure_raw(),
             }
         except:
-            print("SGP40 Error")
+            logger.error("SGP40 Error")

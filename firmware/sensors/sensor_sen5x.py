@@ -3,6 +3,7 @@ from sensirion_i2c_driver import I2cTransceiver,I2cConnection # type: ignore
 from sensors.sensor import Sensor
 from enums import Dimension, SensorModel, Quality
 import time, sys
+from logger import logger
 
 SEN5X_DEFAULT_ADDRESS = 0x69
 
@@ -55,13 +56,13 @@ class Sen5xSensor(Sensor):
             transceiver = I2cTransceiver(i2c, SEN5X_DEFAULT_ADDRESS)
             self.sen5x_device = Sen5xI2cDevice(I2cConnection(transceiver))
         except (OSError,ValueError):
-            print("SEN5x sensor not detected")
+            logger.debug("SEN5x sensor not detected")
             return False
 
-        print("SEN5x initialised, resetting, waiting 1.1 seconds before read")
+        logger.debug("SEN5x initialised, resetting, waiting 1.1 seconds before read")
         self.sen5x_device.device_reset()
         time.sleep(1.1)
-        print(f"SEN5x device found on I2C bus {i2c}, product type: {self.sen5x_device.get_product_name()}, #{self.sen5x_device.get_serial_number()}")
+        logger.debug(f"SEN5x device found on I2C bus {i2c}, product type: {self.sen5x_device.get_product_name()}, #{self.sen5x_device.get_serial_number()}")
         self.sensor_details = bytearray([
             self.sen5x_device.get_version().firmware.major,
             self.sen5x_device.get_version().firmware.minor,
@@ -90,4 +91,4 @@ class Sen5xSensor(Sensor):
             if not self.is_sen54:
                 self.current_values[Dimension.NOX_INDEX] = sen5x_data.nox_index.scaled
         except:
-            print("Error reading SEN5x sensor data")
+            logger.error("Error reading SEN5x sensor data")
