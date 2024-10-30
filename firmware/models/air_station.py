@@ -1,5 +1,5 @@
 from models.ld_product_model import LdProductModel
-from enums import LdProduct, Color, BleCommands, AirstationConfigFlags
+from enums import LdProduct, Color, BleCommands, AirstationConfigFlags, Dimension
 from wifi_client import WifiUtil
 import time
 from config import Config
@@ -138,26 +138,62 @@ class AirStation(LdProductModel):
         file_name = data["station"]["time"].replace(':', '_').replace('.', '_')
         with open(f'{Config.runtime_settings["JSON_QUEUE"]}/{file_name}.json', 'w') as f:
             dump(data, f)
-        remount('/', False) 
-    
-    def get_json(self):
-        sensor_values = {}
-        for id, sensor in enumerate(self.sensors):
+        remount('/', False)
+
+    def read_all_sensors(self):
+        for sensor in self.sensors:
             try:
                 sensor.read()
             except:
                 logger.error(f"Error reading sensor {sensor.model_id}, using previous values")
 
+    def get_json(self):
+        self.read_all_sensors()
+        sensor_values = {}
+        for id, sensor in enumerate(self.sensors):
             sensor_values[id] = {
                 "type": sensor.model_id,
                 "data": sensor.current_values
-            } 
+            }
 
         data = self.get_info()
         data["sensors"] = sensor_values
 
         return data
     
+    def get_json_sensor_community(self):
+        '''
+        // header
+        Content-Type: application/json  
+        X-Pin: 7  
+        X-Sensor: esp8266-12345678
+        // data
+        {
+        "software_version": "your_version", 
+            "sensordatavalues":[
+                {"value_type":"temperature","value":"22.30"},
+                {"value_type":"humidity","value":"34.70"}
+            ]
+        } 
+        '''
+        self.read_all_sensors()
+
+        sensordatavalues = []
+        for sensor in self.sensors:
+            for dim, val in sensor.current_values:
+                sensordatavalues.append({
+                    "value_type": Dimension.get_sensor_community_name(dim),
+                    "value": val
+                })
+
+        data = {
+            # TODO: wich version?
+            "software_version": "your_version",
+            "sensordatavalues": sensordatavalues
+        }
+
+        return data
+
     def send_to_api(self):
         for file_path in (f'{Config.runtime_settings["JSON_QUEUE"]}/{f}' for f in listdir(Config.runtime_settings["JSON_QUEUE"])):
             with open(file_path, 'r') as f:
