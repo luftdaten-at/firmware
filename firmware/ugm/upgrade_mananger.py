@@ -1,7 +1,10 @@
-from dirTree import FolderEntry, Entry, walk, join_path, FileEntry
 import json
 import storage
 import os
+from ssl import create_default_context
+from adafruit_requests import Session
+
+from dirTree import FolderEntry, Entry, walk, join_path, FileEntry
 from logger import logger
 
 WifiUtil = None
@@ -14,7 +17,6 @@ class Ugm:
     FILE_LIST = 'file_list'
     IGNORE_FILE_PATH = 'ugm/.ignore'
     BACKUP_FOLDER = 'ugm/backup'
-    session = None
 
     @staticmethod
     def init(wifiUtil, config):
@@ -24,9 +26,15 @@ class Ugm:
 
     @staticmethod
     def get(url: str):
-        Ugm.session = WifiUtil.new_session() 
+        context = create_default_context()
+
+        with open(Config.settings['CERTIFICATE_PATH'], 'r') as f:
+            context.load_verify_locations(cadata=f.read())
+
+        session = Session(WifiUtil.pool, context)
+
         try:
-            response = Ugm.session.request(
+            response = session.request(
                 method='GET',
                 url=url
             )
