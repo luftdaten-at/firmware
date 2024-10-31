@@ -58,7 +58,9 @@ class Config:
         'height': 'settings.toml',
         'auto_update_mode': 'settings.toml',
         'battery_save_mode': 'settings.toml',
-        'measurement_interval': 'settings.toml', 
+        'measurement_interval': 'settings.toml',
+
+        'CERTIFICATE_PATH': 'boot.toml',
     }
     # Normal settings (persistent)
     settings = AutoSaveDict({
@@ -97,6 +99,8 @@ class Config:
         'auto_update_mode': AutoUpdateMode.on,
         'battery_save_mode': BatterySaverMode.off,
         'measurement_interval': AirStationMeasurementInterval.sec30,
+
+        'CERTIFICATE_PATH': 'certs/isrgrootx1.pem',
     }, toml_file=key_to_toml_file)
 
     # Runtime settings (non-persistent)
@@ -104,7 +108,6 @@ class Config:
         'rtc_is_set': False,
         'JSON_QUEUE': 'json_queue',
         'FIRMWARE_FOLDER': 'new_firmware',
-        'CERTIFICATE_PATH': 'certs/isrgrootx1.pem',
         'API_KEY_LENGTH': 32,
     }
 
