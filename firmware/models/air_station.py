@@ -133,10 +133,10 @@ class AirStation(LdProductModel):
 
         return device_info
 
-    def save_data(self, data: dict):
+    def save_data(self, data: dict, tag: str):
         remount('/', False) 
         file_name = data["station"]["time"].replace(':', '_').replace('.', '_')
-        with open(f'{Config.runtime_settings["JSON_QUEUE"]}/{file_name}.json', 'w') as f:
+        with open(f'{tag}_{Config.runtime_settings["JSON_QUEUE"]}/{file_name}.json', 'w') as f:
             dump(data, f)
         remount('/', False)
 
@@ -187,8 +187,7 @@ class AirStation(LdProductModel):
                 })
 
         data = {
-            # TODO: wich version?
-            "software_version": "your_version",
+            "software_version": f"Luftdaten.at-{Config.settings['FIRMWARE_MAJOR']}.{Config.settings['FIRMWARE_MINOR']}.{Config.settings['FIRMWARE_']}",
             "sensordatavalues": sensordatavalues
         }
 
@@ -198,13 +197,19 @@ class AirStation(LdProductModel):
         for file_path in (f'{Config.runtime_settings["JSON_QUEUE"]}/{f}' for f in listdir(Config.runtime_settings["JSON_QUEUE"])):
             with open(file_path, 'r') as f:
                 data = load(f)
-                response = WifiUtil.send_json_to_api(data)
-                logger.debug(f'API Response: {response.status_code}')
-                logger.debug(f'API Response: {response.text}')
-                if response.status_code == 200:  # Placeholder for successful sending check
-                    remount('/', False)
-                    remove(file_path) 
-                    remount('/', True)
+
+                if 'sensor_community' in file_path:
+                    pass
+                else:
+                    # send to Luftdaten APi
+                    response = WifiUtil.send_json_to_api(data)
+                    logger.debug(f'API Response: {response.status_code}')
+                    logger.debug(f'API Response: {response.text}')
+                    if response.status_code == 200:  # Placeholder for successful sending check
+                        remount('/', False)
+                        remove(file_path) 
+                        remount('/', True)
+                
 
     def tick(self):
         if not WifiUtil.radio.connected:
@@ -229,7 +234,10 @@ class AirStation(LdProductModel):
             if not self.last_measurement or cur_time - self.last_measurement >= Config.settings['measurement_interval']:
                 self.last_measurement = cur_time
                 data = self.get_json()
+                sensor_community_data = self.get_json_sensor_community()
+
                 self.save_data(data)
+                self.save_data(sensor_community_data, tag='sensor_community')
 
         if WifiUtil.radio.connected:
             self.send_to_api()
