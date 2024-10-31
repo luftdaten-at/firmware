@@ -11,6 +11,7 @@ class WifiUtil:
     radio = wifi_radio
     pool = SocketPool(radio)
 
+
     @staticmethod
     def connect() -> bool:
         if not Config.settings['SSID'] or not Config.settings['PASSWORD']:
@@ -27,6 +28,7 @@ class WifiUtil:
         WifiUtil.set_RTC()
 
         return True
+
 
     @staticmethod
     def set_RTC():
@@ -61,6 +63,32 @@ class WifiUtil:
             json=data
         )
         return response
+    
+
+    @staticmethod
+    def send_json_to_sensor_community(data):
+        context = create_default_context()
+
+        # TODO: correct certificates
+        with open(Config.runtime_settings['TODO'], 'r') as f:
+            context.load_verify_locations(cadata=f.read())
+
+        gc.collect()
+        https = Session(WifiUtil.pool, context)
+        response = https.request(
+            method='POST',
+            # TODO: API url
+            url=Config.runtime_settings['API_URL'],
+            json=data,
+            headers={
+                'Content-Type': 'application/json',
+                # TODO: pin
+                'X-Pin': '',
+                'X-Sensor': Config.settings['device_id']
+            }
+        )
+        return response
+
 
 class ConnectionFailure:
     SSID_NOT_FOUND = 1
