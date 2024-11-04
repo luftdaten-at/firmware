@@ -66,26 +66,19 @@ class WifiUtil:
  
 
     @staticmethod
-    def send_json_to_sensor_community(data):
+    def send_json_to_sensor_community(header, data):
         context = create_default_context()
 
-        # TODO: correct certificates
-        with open(Config.runtime_settings['TODO'], 'r') as f:
+        with open(Config.runtime_settings['SENSOR_COMMUNITY_CERTIFICATE_PATH'], 'r') as f:
             context.load_verify_locations(cadata=f.read())
 
         gc.collect()
         https = Session(WifiUtil.pool, context)
         response = https.request(
             method='POST',
-            # TODO: API url
-            url=Config.runtime_settings['API_URL'],
+            url=Config.runtime_settings['SENSOR_COMMUNITY_API'],
             json=data,
-            headers={
-                'Content-Type': 'application/json',
-                # TODO: pin
-                'X-Pin': '',
-                'X-Sensor': Config.settings['device_id']
-            }
+            headers=header 
         )
         return response
 

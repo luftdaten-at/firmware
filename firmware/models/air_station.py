@@ -1,5 +1,5 @@
 from models.ld_product_model import LdProductModel
-from enums import LdProduct, Color, BleCommands, AirstationConfigFlags, Dimension
+from enums import LdProduct, Color, BleCommands, AirstationConfigFlags, Dimension, SensorModel
 from wifi_client import WifiUtil
 import time
 from config import Config
@@ -184,7 +184,7 @@ class AirStation(LdProductModel):
         for sensor in self.sensors:
             header={
                 'Content-Type': 'application/json',
-                'X-Pin': 16,
+                'X-Pin': SensorModel.get_pin(sensor.model_id),
                 'X-Sensor': Config.settings['device_id']
             }
             sensordatavalues = []
@@ -209,7 +209,9 @@ class AirStation(LdProductModel):
                 data = load(f)
 
                 if 'sensor_community' in file_path:
-                    pass
+                    # data = List[Tuple(header, data)]
+                    for header, d in data:
+                        WifiUtil.send_json_to_sensor_community(header=header, data=d)
                 else:
                     # send to Luftdaten APi
                     response = WifiUtil.send_json_to_api(data)
