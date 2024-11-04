@@ -133,10 +133,12 @@ class AirStation(LdProductModel):
 
         return device_info
 
-    def save_data(self, data: dict, tag: str):
+    def save_data(self, data: dict, tag = 'normal'):
+        current_time = time.localtime()
+        formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
         remount('/', False) 
-        file_name = data["station"]["time"].replace(':', '_').replace('.', '_')
-        with open(f'{tag}_{Config.runtime_settings["JSON_QUEUE"]}/{file_name}.json', 'w') as f:
+        file_name = formatted_time.replace(':', '_').replace('.', '_')
+        with open(f'{Config.runtime_settings["JSON_QUEUE"]}/{file_name}_{tag}.json', 'w') as f:
             dump(data, f)
         remount('/', False)
 
@@ -169,7 +171,7 @@ class AirStation(LdProductModel):
         X-Sensor: ...
         // data
         {
-        "software_version": "your_version", 
+            "software_version": "your_version", 
             "sensordatavalues":[
                 {"value_type":"temperature","value":"22.30"},
                 {"value_type":"humidity","value":"34.70"}
@@ -192,11 +194,11 @@ class AirStation(LdProductModel):
                 #data
                 {
                     "software_version": software_version,
-                    "sensordatavalues": {
-                        'latitude': Config.settings.get("latitude", None),
-                        'longitude': Config.settings.get("longitude", None),
-                        'height': Config.settings.get("height", None)
-                    } 
+                    "sensordatavalues": [
+                        {'value_type': 'latitude', 'value': Config.settings.get("latitude", None)},
+                        {'value_type': 'longitude', 'value': Config.settings.get("longitude", None)},
+                        {'value_type': 'height', 'value': Config.settings.get("height", None)}
+                    ]
                 }
             )
         ]
@@ -208,7 +210,7 @@ class AirStation(LdProductModel):
                 'X-Sensor': Config.settings['device_id']
             }
             sensordatavalues = []
-            for dim, val in sensor.current_values:
+            for dim, val in sensor.current_values.items():
                 sensordatavalues.append({
                     "value_type": Dimension.get_sensor_community_name(dim),
                     "value": val

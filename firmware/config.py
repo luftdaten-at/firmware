@@ -105,7 +105,7 @@ class Config:
         'JSON_QUEUE': 'json_queue',
         'FIRMWARE_FOLDER': 'new_firmware',
         'CERTIFICATE_PATH': 'certs/isrgrootx1.pem',
-        'SENSOR_COMMUNITY_CERTIFICATE_PATH': 'certs/api-sensor-community.pem',
+        'SENSOR_COMMUNITY_CERTIFICATE_PATH': 'certs/api-sensor-community-chain.pem',
         'SENSOR_COMMUNITY_API': 'https://api.sensor.community/v1/push-sensor-data/',
         'API_KEY_LENGTH': 32,
     }
