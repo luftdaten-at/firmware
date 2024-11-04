@@ -92,6 +92,22 @@ class WifiUtil:
 
         return True
     
+
     @staticmethod
-    def new_session():
-        return Session(WifiUtil.pool)
+    def get(url: str):
+        session = Session(WifiUtil.pool)
+        try:
+            response = session.request(
+                method='GET',
+                url=url
+            )
+
+            if response.status_code != 200:
+                logger.error(f'GET failed, url: {url}, status code: {response.status_code}, text: {response.text}')
+
+                return False
+
+            return response.text
+        except Exception as e:
+            logger.error(f'GET faild: {e}')
+            return False
