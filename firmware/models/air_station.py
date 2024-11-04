@@ -161,11 +161,11 @@ class AirStation(LdProductModel):
 
         return data
     
-    def get_json_sensor_community(self):
+    def get_json_list_sensor_community(self):
         '''
         // header
         Content-Type: application/json  
-        X-Pin: 7  
+        X-Pin: 7
         X-Sensor: esp8266-12345678
         // data
         {
@@ -178,20 +178,30 @@ class AirStation(LdProductModel):
         '''
         self.read_all_sensors()
 
-        sensordatavalues = []
+        # Tuple(header, data)
+        dict_list = []
+
         for sensor in self.sensors:
+            header={
+                'Content-Type': 'application/json',
+                'X-Pin': 16,
+                'X-Sensor': Config.settings['device_id']
+            }
+            sensordatavalues = []
             for dim, val in sensor.current_values:
                 sensordatavalues.append({
                     "value_type": Dimension.get_sensor_community_name(dim),
                     "value": val
                 })
 
-        data = {
-            "software_version": f"Luftdaten.at-{Config.settings['FIRMWARE_MAJOR']}.{Config.settings['FIRMWARE_MINOR']}.{Config.settings['FIRMWARE_']}",
-            "sensordatavalues": sensordatavalues
-        }
+            data = {
+                "software_version": f"Luftdaten.at-{Config.settings['FIRMWARE_MAJOR']}.{Config.settings['FIRMWARE_MINOR']}.{Config.settings['FIRMWARE_']}",
+                "sensordatavalues": sensordatavalues
+            }
 
-        return data
+            dict_list.append((header, data))
+
+        return dict_list
 
     def send_to_api(self):
         for file_path in (f'{Config.runtime_settings["JSON_QUEUE"]}/{f}' for f in listdir(Config.runtime_settings["JSON_QUEUE"])):

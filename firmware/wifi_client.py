@@ -63,7 +63,7 @@ class WifiUtil:
             json=data
         )
         return response
-    
+ 
 
     @staticmethod
     def send_json_to_sensor_community(data):

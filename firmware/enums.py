@@ -158,6 +158,27 @@ class SensorModel():
         PMS7003: "Plantower"
     }
 
+    _pins = {
+        'HPM': 1,
+        'PMS': 1,
+        'SDS011': 1,
+        'SPS30': 1,
+        'BME280': 11,
+        'BMP180': 3,
+        'BMP280': 3,
+        'DHT22': 7,
+        'HTU21D': 7,
+        'SHT3x': 7,
+        'GPS(Neo-6M)': 9,
+        'DS18B20': 13,
+        'DNMS': 15,
+        'SEN5X': 16
+    }
+
+    @classmethod
+    def get_pin(cls, model_id: str):
+        return cls._pins[model_id]
+
     @classmethod
     def get_sensor_name(cls, sensor_model):
         return cls._names.get(sensor_model, "Unknown Sensor")
