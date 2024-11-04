@@ -90,7 +90,7 @@ class Config:
         'API_URL': None,
         'TEST_API_URL': None,
         'UPDATE_SERVER': None,
-        'SEND_TO_SENSOR_COMMUNITY': True,
+        'SEND_TO_SENSOR_COMMUNITY': None,
 
         # AirStationConfig must not be specified in settings.toml
         'longitude': "",

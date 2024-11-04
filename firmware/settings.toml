@@ -1,5 +1,5 @@
 MODEL = -1
-TEST_MODE = true
-
-SSID = "cableaerien"
-PASSWORD = "gestaltgeber"
+TEST_MODE = false 
+SSID = ""
+PASSWORD = ""
+SEND_TO_SENSOR_COMMUNITY = false

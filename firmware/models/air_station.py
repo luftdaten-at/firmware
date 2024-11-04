@@ -282,7 +282,9 @@ class AirStation(LdProductModel):
                 sensor_community_data = self.get_json_list_sensor_community()
 
                 self.save_data(data)
-                self.save_data(sensor_community_data, tag='sensor_community')
+
+                if Config.settings['SEND_TO_SENSOR_COMMUNITY']:
+                    self.save_data(sensor_community_data, tag='sensor_community')
 
         if WifiUtil.radio.connected:
             self.send_to_api()
