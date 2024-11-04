@@ -81,7 +81,8 @@ class Config:
 
 class WifiUtil:
     radio = wifi_radio
-    pool = SocketPool(radio)
+    pool: SocketPool = None
+    session: Session = None
 
     @staticmethod
     def connect() -> bool:
@@ -92,8 +93,33 @@ class WifiUtil:
             wifi_radio.connect(Config.settings['SSID'], Config.settings['PASSWORD'])
             logger.debug('Connection established to Wifi', Config.settings['SSID'])
 
+            # init pool
+            WifiUtil.pool = SocketPool(WifiUtil.radio)
+
+            # init session
+            WifiUtil.session = Session(WifiUtil.pool)
+
         except ConnectionError:
             logger.error("Failed to connect to WiFi with provided credentials")
             return False 
 
         return True
+
+
+    @staticmethod
+    def get(url: str):
+        try:
+            response = WifiUtil.session.request(
+                method='GET',
+                url=url
+            )
+
+            if response.status_code != 200:
+                logger.error(f'GET failed, url: {url}, status code: {response.status_code}, text: {response.text}')
+
+                return False
+
+            return response.text
+        except Exception as e:
+            logger.error(f'GET faild: {e}')
+            return False

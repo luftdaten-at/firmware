@@ -9,7 +9,10 @@ from logger import logger
 # New wifi methods
 class WifiUtil:
     radio = wifi_radio
-    pool = SocketPool(radio)
+    pool: SocketPool = None 
+    sensor_community_session: Session = None
+    api_session: Session = None
+
 
     @staticmethod
     def connect() -> bool:
@@ -20,6 +23,20 @@ class WifiUtil:
             wifi_radio.connect(Config.settings['SSID'], Config.settings['PASSWORD'])
             logger.debug('Connection established to Wifi', Config.settings['SSID'])
 
+            # init pool
+            WifiUtil.pool = SocketPool(WifiUtil.radio)
+
+            # init sessions
+            api_context = create_default_context()
+            with open(Config.runtime_settings['CERTIFICATE_PATH'], 'r') as f:
+                api_context.load_verify_locations(cadata=f.read())
+            WifiUtil.api_session = Session(WifiUtil.pool, api_context)
+
+            sensor_community_context = create_default_context()
+            with open(Config.runtime_settings['SENSOR_COMMUNITY_CERTIFICATE_PATH'], 'r') as f:
+                sensor_community_context.load_verify_locations(cadata=f.read())
+            WifiUtil.sensor_community_session = Session(WifiUtil.pool, sensor_community_context)
+
         except ConnectionError:
             logger.error("Failed to connect to WiFi with provided credentials")
             return False 
@@ -27,6 +44,26 @@ class WifiUtil:
         WifiUtil.set_RTC()
 
         return True
+    
+
+    @staticmethod
+    def get(url: str):
+        try:
+            response = WifiUtil.api_session.request(
+                method='GET',
+                url=url
+            )
+
+            if response.status_code != 200:
+                logger.error(f'GET failed, url: {url}, status code: {response.status_code}, text: {response.text}')
+
+                return False
+
+            return response.text
+        except Exception as e:
+            logger.error(f'GET faild: {e}')
+            return False
+
 
     @staticmethod
     def set_RTC():
@@ -42,25 +79,29 @@ class WifiUtil:
         except Exception as e:
             logger.error(f'Failed to set RTC via NTP: {e}')
     
-    @staticmethod
-    def new_session():
-        return Session(WifiUtil.pool)
-    
+
     @staticmethod
     def send_json_to_api(data):
-        context = create_default_context()
-
-        with open(Config.runtime_settings['CERTIFICATE_PATH'], 'r') as f:
-            context.load_verify_locations(cadata=f.read())
-
         gc.collect()
-        https = Session(WifiUtil.pool, context)
-        response = https.request(
+        response = WifiUtil.api_session.request(
             method='POST',
             url=Config.runtime_settings['API_URL'],
             json=data
         )
         return response
+ 
+
+    @staticmethod
+    def send_json_to_sensor_community(header, data):
+        gc.collect()
+        response = WifiUtil.sensor_community_session.request(
+            method='POST',
+            url=Config.runtime_settings['SENSOR_COMMUNITY_API'],
+            json=data,
+            headers=header 
+        )
+        return response
+
 
 class ConnectionFailure:
     SSID_NOT_FOUND = 1

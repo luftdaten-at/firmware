@@ -8,7 +8,7 @@ X-Sensor: esp8266-12345678
 // data
 {
     "software_version": "your_version", 
-     "sensordatavalues":[
+    "sensordatavalues":[
        {"value_type":"temperature","value":"22.30"},
        {"value_type":"humidity","value":"34.70"}
     ]

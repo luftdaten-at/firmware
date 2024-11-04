@@ -24,30 +24,11 @@ class Ugm:
         WifiUtil = wifiUtil
         Config = config
 
+
     @staticmethod
     def get(url: str):
-        context = create_default_context()
+        return WifiUtil.get(url)
 
-        with open(Config.settings['CERTIFICATE_PATH'], 'r') as f:
-            context.load_verify_locations(cadata=f.read())
-
-        session = Session(WifiUtil.pool, context)
-
-        try:
-            response = session.request(
-                method='GET',
-                url=url
-            )
-            if response.status_code != 200:
-                logger.error(f'GET failed, url: {url}, status code: {response.status_code}, text: {response.text}')
-
-                return False
-
-            return response.text
-
-        except Exception as e:
-            logger.error(f'GET faild: {e}')
-            return False
 
     @staticmethod
     def get_latest_firmware_version() -> str:

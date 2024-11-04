@@ -61,6 +61,21 @@ class Dimension():
         SGP40_ADJUSTED_GAS: "SGP40 Adjusted Gas",
     }
 
+    _sensor_community_names = {
+        PM0_1: "P01",
+        PM1_0: "P1",
+        PM2_5: "P2",
+        PM4_0: "P4",
+        PM10_0: "P10",
+        HUMIDITY: "humidity",
+        TEMPERATURE: "temperature",
+        PRESSURE: "pressure",
+        CO2: "co2_ppm",
+        O3: "ozone_ppb",
+        TVOC: "tvoc",
+        NO2: "no2_ppb",
+    }
+
     @classmethod
     def get_unit(cls, dimension_id: int) -> str:
         """
@@ -78,7 +93,11 @@ class Dimension():
         :return: Der zugehörige Name oder 'Unknown', wenn kein Name vorhanden ist
         """
         return cls._names.get(dimension_id, "Unknown")
-
+    
+    @classmethod
+    def get_sensor_community_name(cls, dimension_id: int) -> str:
+        """Returns the sensor-community-specific name for the dimension ID or 'Unknown' if none."""
+        return cls._sensor_community_names.get(dimension_id, "Unknown")
 
 class SensorModel():
     SEN5X = 1
@@ -138,6 +157,26 @@ class SensorModel():
         PMS5003: "Plantower",
         PMS7003: "Plantower"
     }
+
+    _pins = {
+        PMS5003: 1,
+        PMS7003: 1,
+        SDS011: 1,
+        SPS30: 1,
+        BME280: 11,
+        BME680: 11,
+        BMP280: 3,
+        DHT22: 7,
+        SHT30: 7,
+        SHT31: 7,
+        SHT35: 7,
+        SHT4X: 7,
+        SEN5X: 16
+    }
+
+    @classmethod
+    def get_pin(cls, model_id: str):
+        return cls._pins[model_id]
 
     @classmethod
     def get_sensor_name(cls, sensor_model):
