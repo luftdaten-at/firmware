@@ -11,6 +11,7 @@ class WifiUtil:
     radio = wifi_radio
     pool: SocketPool = None 
     sensor_community_session: Session = None
+    api_session: Session = None
 
 
     @staticmethod
@@ -26,12 +27,15 @@ class WifiUtil:
             WifiUtil.pool = SocketPool(WifiUtil.radio)
 
             # init sessions
+            api_context = create_default_context()
+            with open(Config.runtime_settings['CERTIFICATE_PATH'], 'r') as f:
+                api_context.load_verify_locations(cadata=f.read())
+            WifiUtil.api_session = Session(WifiUtil.pool, api_context)
+
             sensor_community_context = create_default_context()
             with open(Config.runtime_settings['SENSOR_COMMUNITY_CERTIFICATE_PATH'], 'r') as f:
                 sensor_community_context.load_verify_locations(cadata=f.read())
-
             WifiUtil.sensor_community_session = Session(WifiUtil.pool, sensor_community_context)
-
 
         except ConnectionError:
             logger.error("Failed to connect to WiFi with provided credentials")
@@ -44,9 +48,8 @@ class WifiUtil:
 
     @staticmethod
     def get(url: str):
-        session = Session(WifiUtil.pool)
         try:
-            response = session.request(
+            response = WifiUtil.api_session.request(
                 method='GET',
                 url=url
             )
@@ -79,14 +82,8 @@ class WifiUtil:
 
     @staticmethod
     def send_json_to_api(data):
-        context = create_default_context()
-
-        with open(Config.runtime_settings['CERTIFICATE_PATH'], 'r') as f:
-            context.load_verify_locations(cadata=f.read())
-
         gc.collect()
-        session = Session(WifiUtil.pool, context)
-        response = session.request(
+        response = WifiUtil.api_session.request(
             method='POST',
             url=Config.runtime_settings['API_URL'],
             json=data
@@ -96,10 +93,6 @@ class WifiUtil:
 
     @staticmethod
     def send_json_to_sensor_community(header, data):
-        print(f'sensor community: \n{header=}\n{data=}')
-        context = create_default_context()
-
-
         gc.collect()
         response = WifiUtil.sensor_community_session.request(
             method='POST',
@@ -107,7 +100,6 @@ class WifiUtil:
             json=data,
             headers=header 
         )
-        print(f'response sensor community: {response=}')
         return response
 
 

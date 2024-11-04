@@ -227,16 +227,27 @@ class AirStation(LdProductModel):
 
     def send_to_api(self):
         for file_path in (f'{Config.runtime_settings["JSON_QUEUE"]}/{f}' for f in listdir(Config.runtime_settings["JSON_QUEUE"])):
+            logger.debug(f'process file: {file_path}')
             with open(file_path, 'r') as f:
                 data = load(f)
 
                 if 'sensor_community' in file_path:
                     # data = List[Tuple(header, data)]
                     for header, d in data:
-                        WifiUtil.send_json_to_sensor_community(header=header, data=d)
+                        response = WifiUtil.send_json_to_sensor_community(header=header, data=d)
+                        logger.debug(f'{file_path=}')
+                        logger.debug(f'API Response: {response.status_code}')
+                        logger.debug(f'API Response: {response.text}')
+                        if response.status_code != 200:
+                            break
+                    else:
+                        remount('/', False)
+                        remove(file_path) 
+                        remount('/', True)
                 else:
                     # send to Luftdaten APi
                     response = WifiUtil.send_json_to_api(data)
+                    logger.debug(f'{file_path=}')
                     logger.debug(f'API Response: {response.status_code}')
                     logger.debug(f'API Response: {response.text}')
                     if response.status_code == 200:  # Placeholder for successful sending check
