@@ -51,6 +51,7 @@ class Config:
         'API_URL': 'boot.toml',
         'TEST_API_URL': 'boot.toml',
         'UPDATE_SERVER': 'boot.toml',
+        'SEND_TO_SENSOR_COMMUNITY': 'settings.toml',
 
         # AirStationConfig must not be specified in settings.toml
         'longitude': 'settings.toml',
@@ -89,6 +90,7 @@ class Config:
         'API_URL': None,
         'TEST_API_URL': None,
         'UPDATE_SERVER': None,
+        'SEND_TO_SENSOR_COMMUNITY': True,
 
         # AirStationConfig must not be specified in settings.toml
         'longitude': "",

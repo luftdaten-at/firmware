@@ -188,7 +188,7 @@ class AirStation(LdProductModel):
                 {
                     'Content-Type': 'application/json',
                     # GPS(Neo-6M) => Pin 9
-                    'X-Pin': 9,
+                    'X-Pin': '9',
                     'X-Sensor': Config.settings['device_id']
                 },
                 #data
@@ -206,7 +206,7 @@ class AirStation(LdProductModel):
         for sensor in self.sensors:
             header={
                 'Content-Type': 'application/json',
-                'X-Pin': SensorModel.get_pin(sensor.model_id),
+                'X-Pin': str(SensorModel.get_pin(sensor.model_id)),
                 'X-Sensor': Config.settings['device_id']
             }
             sensordatavalues = []
