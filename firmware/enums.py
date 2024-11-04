@@ -159,20 +159,19 @@ class SensorModel():
     }
 
     _pins = {
-        'HPM': 1,
-        'PMS': 1,
-        'SDS011': 1,
-        'SPS30': 1,
-        'BME280': 11,
-        'BMP180': 3,
-        'BMP280': 3,
-        'DHT22': 7,
-        'HTU21D': 7,
-        'SHT3x': 7,
-        'GPS(Neo-6M)': 9,
-        'DS18B20': 13,
-        'DNMS': 15,
-        'SEN5X': 16
+        PMS5003: 1,
+        PMS7003: 1,
+        SDS011: 1,
+        SPS30: 1,
+        BME280: 11,
+        BME680: 11,
+        BMP280: 3,
+        DHT22: 7,
+        SHT30: 7,
+        SHT31: 7,
+        SHT35: 7,
+        SHT4X: 7,
+        SEN5X: 16
     }
 
     @classmethod

@@ -165,8 +165,8 @@ class AirStation(LdProductModel):
         '''
         // header
         Content-Type: application/json  
-        X-Pin: 7
-        X-Sensor: esp8266-12345678
+        X-Pin: ...
+        X-Sensor: ...
         // data
         {
         "software_version": "your_version", 
@@ -177,9 +177,29 @@ class AirStation(LdProductModel):
         } 
         '''
         self.read_all_sensors()
+        software_version = f"Luftdaten.at-{Config.settings['FIRMWARE_MAJOR']}.{Config.settings['FIRMWARE_MINOR']}.{Config.settings['FIRMWARE_PATCH']}"
 
         # Tuple(header, data)
-        dict_list = []
+        dict_list = [
+            (
+                # header
+                {
+                    'Content-Type': 'application/json',
+                    # GPS(Neo-6M) => Pin 9
+                    'X-Pin': 9,
+                    'X-Sensor': Config.settings['device_id']
+                },
+                #data
+                {
+                    "software_version": software_version,
+                    "sensordatavalues": {
+                        'latitude': Config.settings.get("latitude", None),
+                        'longitude': Config.settings.get("longitude", None),
+                        'height': Config.settings.get("height", None)
+                    } 
+                }
+            )
+        ]
 
         for sensor in self.sensors:
             header={
@@ -195,7 +215,7 @@ class AirStation(LdProductModel):
                 })
 
             data = {
-                "software_version": f"Luftdaten.at-{Config.settings['FIRMWARE_MAJOR']}.{Config.settings['FIRMWARE_MINOR']}.{Config.settings['FIRMWARE_']}",
+                "software_version": software_version,
                 "sensordatavalues": sensordatavalues
             }
 
@@ -246,7 +266,7 @@ class AirStation(LdProductModel):
             if not self.last_measurement or cur_time - self.last_measurement >= Config.settings['measurement_interval']:
                 self.last_measurement = cur_time
                 data = self.get_json()
-                sensor_community_data = self.get_json_sensor_community()
+                sensor_community_data = self.get_json_list_sensor_community()
 
                 self.save_data(data)
                 self.save_data(sensor_community_data, tag='sensor_community')
