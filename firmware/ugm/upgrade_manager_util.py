@@ -4,6 +4,7 @@ from socketpool import SocketPool
 from adafruit_requests import Session
 import storage
 from lib.cptoml import put
+
 from logger import logger
 
 
@@ -44,7 +45,10 @@ class Config:
         'UPDATE_SERVER': 'boot.toml',
 
         # update config
-        'ROLLBACK': 'settings.toml'
+        'ROLLBACK': 'settings.toml',
+
+        # path for https certificates
+        'CERTIFICATE_PATH': 'boot.toml'
     }
     # Normal settings (persistent)
     settings = AutoSaveDict({
@@ -61,7 +65,9 @@ class Config:
         'PASSWORD': None,
 
         'UPDATE_SERVER': None,
-        'ROLLBACK': False
+        'ROLLBACK': False,
+
+        'CERTIFICATE_PATH': "certs/isrgrootx1.pem" 
     }, toml_file=key_to_toml_file)
 
     @staticmethod
@@ -98,7 +104,7 @@ class WifiUtil:
             return False 
 
         return True
-    
+
 
     @staticmethod
     def get(url: str):
