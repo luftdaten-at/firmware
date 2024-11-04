@@ -4,6 +4,7 @@ from socketpool import SocketPool
 from adafruit_requests import Session
 import storage
 from lib.cptoml import put
+from ssl import create_default_context
 
 from logger import logger
 
@@ -97,7 +98,10 @@ class WifiUtil:
             WifiUtil.pool = SocketPool(WifiUtil.radio)
 
             # init session
-            WifiUtil.session = Session(WifiUtil.pool)
+            api_context = create_default_context()
+            with open(Config.settings['CERTIFICATE_PATH'], 'r') as f:
+                api_context.load_verify_locations(cadata=f.read())
+            WifiUtil.session = Session(WifiUtil.pool, api_context)
 
         except ConnectionError:
             logger.error("Failed to connect to WiFi with provided credentials")
