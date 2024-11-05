@@ -27,7 +27,7 @@ class SimpleLogger:
 
             log_entry = {
                 'time': formatted_time,
-                'level': level,
+                'level': level_num,
                 'message': message
             }
             storage.remount('/', False)
