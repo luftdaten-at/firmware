@@ -21,7 +21,7 @@ WifiUtil.connect()
 Ugm.init(WifiUtil, Config)
 
 # check if update available
-if (folder := Ugm.check_if_upgrade_available()):
+if WifiUtil.radio.connected and (folder := Ugm.check_if_upgrade_available()):
     logger.debug(f'Installing new firmware from folder: {folder}')
     try:
         Ugm.install_update(folder)
