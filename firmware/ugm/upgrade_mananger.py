@@ -102,19 +102,16 @@ class Ugm:
         update_tree = new_tree - cur_tree
 
         storage.remount('/', False)
-
         # clear backup folder
         FolderEntry(Ugm.BACKUP_FOLDER).remove(remove_self = False)
-
-        # backup diff
-        cur_tree.move_diff(new_tree, Ugm.BACKUP_FOLDER, move_self = False)
-
         storage.remount('/', True)
 
         # overwrite with new files
         Config.settings['ROLLBACK'] = True
 
         storage.remount('/', False)
+        # backup diff
+        cur_tree.move_diff(new_tree, Ugm.BACKUP_FOLDER, move_self = False)
 
         for entry in walk(update_tree):
             if entry.path in ('.', ''):
