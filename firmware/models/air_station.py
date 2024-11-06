@@ -3,7 +3,7 @@ from enums import LdProduct, Color, BleCommands, AirstationConfigFlags, Dimensio
 from wifi_client import WifiUtil
 import time
 from config import Config
-from json import dump, load
+from json import dump, load, loads
 from ld_service import LdService
 from os import listdir, remove, uname
 import struct
@@ -231,7 +231,24 @@ class AirStation(LdProductModel):
             with open(file_path, 'r') as f:
                 data = load(f)
 
-                if 'sensor_community' in file_path:
+                if 'tmp_log.txt' in file_path:
+                    # send status to Luftdaten APi
+                    status_list = []
+                    for line in f.readlines():
+                        status_list.append(loads(line))
+
+                    data = self.get_info()
+                    data["status_list"] = status_list
+
+                    response = WifiUtil.send_json_to_api(data, router='status')
+                    logger.debug(f'{file_path=}')
+                    logger.debug(f'API Response: {response.status_code}')
+                    logger.debug(f'API Response: {response.text}')
+                    if response.status_code == 200:  # Placeholder for successful sending check
+                        remount('/', False)
+                        remove(file_path) 
+                        remount('/', True)
+                elif 'sensor_community' in file_path:
                     # data = List[Tuple(header, data)]
                     for header, d in data:
                         response = WifiUtil.send_json_to_sensor_community(header=header, data=d)

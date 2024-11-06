@@ -27,13 +27,21 @@ class SimpleLogger:
 
             log_entry = {
                 'time': formatted_time,
-                'level': level,
+                'level': level_num,
                 'message': message
             }
             storage.remount('/', False)
             with open('log.txt', 'a') as f:
-                print(json.dumps(log_entry), file=f)
+                print(log_message, file=f)
             storage.remount('/', True)
+
+            self.save(log_entry)
+
+    def save(self, data):
+        storage.remount('/', False)
+        with open('json_queue/tmp_log.txt', 'a') as f:
+            print(json.dumps(data), file=f)
+        storage.remount('/', True)
 
     def debug(self, *args):
         self.log(self.format_message(*args), 'DEBUG')
