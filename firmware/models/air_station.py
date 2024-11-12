@@ -267,7 +267,7 @@ class AirStation(LdProductModel):
                     logger.debug(f'{file_path=}')
                     logger.debug(f'API Response: {response.status_code}')
                     logger.debug(f'API Response: {response.text}')
-                    if response.status_code == 200:  # Placeholder for successful sending check
+                    if response.status_code in (200, 422):  # Placeholder for successful sending check
                         remount('/', False)
                         remove(file_path) 
                         remount('/', True)
