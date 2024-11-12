@@ -26,8 +26,6 @@ class AirStation(LdProductModel):
         self.api_key = Config.settings['api_key']
 
         self.send_configuration()
-        self.status_led.status_led.fill(Color.GREEN)
-        self.status_led.status_led.show()
     
     def connection_update(self, connected):
         if connected:
@@ -124,13 +122,7 @@ class AirStation(LdProductModel):
         return data
 
     def receive_button_press(self):
-        self.ble_on = not self.ble_on
-        if self.ble_on:
-            self.status_led.status_led.fill(Color.GREEN)
-            self.status_led.status_led.show()
-        else:
-            self.status_led.status_led.fill(Color.OFF)
-            self.status_led.status_led.show()
+        pass
 
     def get_info(self):
         current_time = time.localtime()
@@ -295,22 +287,15 @@ class AirStation(LdProductModel):
 
     def tick(self):
         if not WifiUtil.radio.connected:
-            self.status_led.status_led.fill(Color.RED)
-            self.status_led.status_led.show()
-            time.sleep(2)
-            self.status_led.status_led.fill(Color.GREEN)
-            self.status_led.status_led.show()
-
+            # TODO: configure lighting
+            pass
         if not Config.runtime_settings['rtc_is_set'] and WifiUtil.radio.connected:
             WifiUtil.set_RTC()
 
         if not Config.runtime_settings['rtc_is_set'] or not all([Config.settings['longitude'], Config.settings['latitude'], Config.settings['height']]):
             logger.warning('DATA CANNOT BE TRANSMITTED, Not all configurations have been made')
-            self.status_led.status_led.fill(Color.PURPLE)
-            self.status_led.status_led.show()
-            time.sleep(2)
-            self.status_led.status_led.fill(Color.GREEN)
-            self.status_led.status_led.show()
+            # TODO: configure lighting
+            
         else:
             cur_time = time.monotonic()
             if not self.last_measurement or cur_time - self.last_measurement >= Config.settings['measurement_interval']:
