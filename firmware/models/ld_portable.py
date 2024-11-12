@@ -37,10 +37,10 @@ class LdPortable(LdProductModel):
     def connection_update(self, connected):
         if connected:
             self.status_led.show_led({
-                'repeat_mode': RepeatMode.TIMES,
-                'repeat_times': 1,
+                'repeat_mode': RepeatMode.FOREVER,
                 'elements': [
-                    {'color': Color.GREEN, 'duration': 1}
+                    {'color': Color.GREEN, 'duration': 0.5},
+                    {'color': Color.OFF, 'duration': 0.5},
                 ],
             })
         else:

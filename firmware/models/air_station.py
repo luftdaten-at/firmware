@@ -28,6 +28,24 @@ class AirStation(LdProductModel):
         self.send_configuration()
         self.status_led.status_led.fill(Color.GREEN)
         self.status_led.status_led.show()
+    
+    def connection_update(self, connected):
+        if connected:
+            self.status_led.show_led({
+                'repeat_mode': RepeatMode.FOREVER,
+                'elements': [
+                    {'color': Color.GREEN, 'duration': 0.5},
+                    {'color': Color.OFF, 'duration': 0.5},
+                ],
+            })
+        else:
+            self.status_led.show_led({
+                'repeat_mode': RepeatMode.FOREVER,
+                'elements': [
+                    {'color': Color.CYAN, 'duration': 0.5},
+                    {'color': Color.OFF, 'duration': 0.5},
+                ],
+            })
 
     def send_configuration(self):
         self.ble_service.air_station_configuration = self.encode_configurations()
