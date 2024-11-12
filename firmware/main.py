@@ -308,7 +308,8 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as e:
-        full_traceback = traceback.format_exc()
-        logger.critical(f"{e}\n{full_traceback}")
+        # TODO: not working
+        #full_traceback = traceback.format_exc()
+        #logger.critical(f"{e}\n{full_traceback}")
 
         supervisor.reload()

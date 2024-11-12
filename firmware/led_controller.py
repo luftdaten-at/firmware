@@ -57,7 +57,7 @@ class LedController:
     def turn_off_led(self, led_id = 0):
         self._show_led(Color.OFF, led_id=led_id)
     def turn_on_led(self, led_id=0):
-        self._show_led(Color.CYAN, led_id=led_id) 
+        self._show_led(Color.CYAN, led_id=led_id)
             
     def _show_led(self, color, led_id = 0):
         if led_id == -1:
