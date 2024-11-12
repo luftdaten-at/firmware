@@ -40,7 +40,7 @@ class LdPortable(LdProductModel):
                 'repeat_mode': RepeatMode.TIMES,
                 'repeat_times': 1,
                 'elements': [
-                    {'color': Color.GREEN, 'duration': 1},
+                    {'color': Color.GREEN, 'duration': 1}
                 ],
             })
         else:

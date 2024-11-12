@@ -11,7 +11,7 @@ from adafruit_ble.advertising.standard import ProvideServicesAdvertisement  # ty
 
 from config import Config
 from enums import LdProduct, SensorModel, Color
-from led_controller import LedController
+from led_controller import LedController, RepeatMode
 from wifi_client import WifiUtil
 from ugm.upgrade_mananger import Ugm
 from logger import logger
@@ -19,9 +19,13 @@ from logger import logger
 def main():
     # Initialize status LED(s) at GPIO8
     status_led = neopixel.NeoPixel(board.IO8, 5 if Config.settings['MODEL'] == LdProduct.AIR_CUBE else 1)
-    status_led.fill(Color.CYAN)
-    status_led.show()
-    time.sleep(1)
+
+    led_controller = LedController(status_led, 1)
+    led_controller.show_led({
+        'repeat_mode': RepeatMode.PERMANENT,
+        'color': Color.YELLOW,
+    })
+    led_controller.tick()
 
     # Check boot mode
     # Options:
@@ -162,14 +166,16 @@ def main():
     # bad Model was not recognised
     if device is None:
         logger.critical("Model not recognised")
+        led_controller.show_led({
+            'repeat_mode': RepeatMode.FOREVER,
+            'elements': [
+                {'color': Color.RED, 'duration': 0.5},
+                {'color': Color.ORANGE, 'duration': 0.5},
+            ],
+        })
         while True:
-            time.sleep(1)
-            status_led.fill(Color.RED)
-            status_led.show()
-            time.sleep(1)
-            status_led.fill(Color.ORANGE)
-            status_led.show()
-        
+            LedController.tick()
+
     # Set up device info characteristic
     device_info_data = bytearray([
         Config.settings['PROTOCOL_VERSION'],
@@ -211,13 +217,6 @@ def main():
 
     # Create services advertisement
     advertisement = ProvideServicesAdvertisement(service)
-
-    # Flash the status LED green for 2s to indicate the device is ready, then turn off
-    status_led.fill(Color.GREEN)
-    status_led.show()
-    time.sleep(2)
-    status_led.fill(Color.OFF)
-    status_led.show()
 
     for sensor in sensors:
         sensor.on_start_main_loop(device)

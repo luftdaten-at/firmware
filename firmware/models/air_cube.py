@@ -107,7 +107,6 @@ class AirCube(LdProductModel):
         }, led_id)
 
     def connection_update(self, connected):
-        return
         if connected:
             self.status_led.show_led({
                 'repeat_mode': RepeatMode.TIMES,

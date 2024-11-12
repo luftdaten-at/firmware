@@ -322,3 +322,9 @@ _In Zukunft: z. B. Server-URL, Auto-Update oder Batteriesparmodus setzten._
 
 ## Air Cube
 _TBD_
+
+# Color code
+
+yellow, init config
+blue, ble on ready to connect
+green, connected
