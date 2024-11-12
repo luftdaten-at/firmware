@@ -5,6 +5,7 @@ import busio  # type: ignore
 import gc
 import neopixel  # type: ignore
 import traceback
+import supervisor
 from ld_service import LdService
 from adafruit_ble import BLERadio  # type: ignore
 from adafruit_ble.advertising.standard import ProvideServicesAdvertisement  # type: ignore
@@ -264,7 +265,6 @@ def main():
         if WifiUtil.radio.connected:
             if Ugm.check_if_upgrade_available():
                 logger.info('Upgrade available, reload to install')
-                import supervisor
                 supervisor.set_next_code_file('code.py')
                 supervisor.reload()
 

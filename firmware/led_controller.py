@@ -48,6 +48,9 @@ class LedController:
     def show_led(self, pattern, led_id = 0):
         if pattern['repeat_mode'] == RepeatMode.FOREVER:
             self.default_pattern[led_id] = pattern
+        elif pattern['repeat_mode'] == RepeatMode.PERMANENT:
+            pattern['elements'] = [{'color': pattern['color'], 'duration': float('inf')}]
+            self.default_pattern[led_id] = pattern
         else:
             self.pattern_queue[led_id].append(pattern)
             
