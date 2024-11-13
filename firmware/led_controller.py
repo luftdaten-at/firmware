@@ -5,65 +5,57 @@ from logger import logger
 class LedController:
     BRIGHTNESS_LEVELS = [1/5, 2/5, 3/5, 4/5, 1]
 
-    def __init__(self, status_led, num_leds):
-        self.num_leds = num_leds
+    def __init__(self, status_led, n):
+        self.n = n 
         self.status_led = status_led
-        self.current_patterns = [None for _ in range(num_leds)]
-        self.time_in_patterns = [0 for _ in range(num_leds)]
-        self.repetitons_of_current_patterns = [0 for _ in range(num_leds)]
-        self.patterns_started_at = [0 for _ in range(num_leds)]
-                
+        self.default_pattern = [None] * n
+        self.pattern_queue = [[] for _ in range(n)] 
+         
     def tick(self):
-        for i, pattern in enumerate(self.current_patterns):
-            if pattern is None:
-                continue
-            self.time_in_patterns[i] = (time.monotonic() - self.patterns_started_at[i])
-            if pattern['repeat_mode'] == RepeatMode.FOREVER or pattern['repeat_mode'] == RepeatMode.TIMES:
-                total_duration = sum(item['duration'] for item in pattern['elements'])
-                while self.time_in_patterns[i] >= total_duration:
-                    self.time_in_patterns[i] -= total_duration
-                    if pattern['repeat_mode'] == RepeatMode.TIMES:
-                        if self.repetitons_of_current_patterns[i] == pattern['repeat_times']:
-                            self.current_patterns[i] = None
-                            self.turn_off_led()
-                            continue
-                        self.repetitons_of_current_patterns[i] += 1
-                t = 0
-                for item in pattern['elements']:
-                    t += item['duration']
-                    if self.time_in_patterns[i] < t:
-                        self._show_led(item['color'])
-                        break
-            elif pattern['repeat_mode'] == RepeatMode.PERMANENT:
-                pass # Led would already have been set in show_led
+        for i in range(self.n):
+            if not self.pattern_queue[i]:
+                if self.default_pattern[i]:
+                    d = self.default_pattern[i]
+                    d['repeat_times'] = 1
+                    self.pattern_queue[i].append(d)
+                else:
+                    # no pattern found
+                    continue
+            if self.pattern_queue[i]:
+                # execute pattern
+                pattern = self.pattern_queue[i][0]
+                pointer = pattern.get('pointer', 0)
+
+                start_time = pattern.get(f'{pointer}_start_time', time.monotonic())
+                pattern[f'{pointer}_start_time'] = start_time
+
+                cur = pattern['elements'][pointer % len(pattern['elements'])]
+                self._show_led(cur['color'], i)
+
+                if time.monotonic() >= start_time + cur['duration']:
+                    pointer += 1
+                
+                pattern['pointer'] = pointer
+
+                cur = pattern['elements'][pointer % len(pattern['elements'])]
+                self._show_led(cur['color'], i)
+
+                if pointer // len(pattern['elements']) >= pattern['repeat_times']:
+                    self.pattern_queue[i] = self.pattern_queue[i][1:]
+                else:
+                    self.pattern_queue[i][0] = pattern
     
     def show_led(self, pattern, led_id = 0):
-        # LED ID -1 is for setting all LEDs
-        if led_id == -1:
-            for i in range(self.num_leds):
-                self.show_led(pattern, i)
-            return
-        logger.debug('Set LED', led_id, 'to pattern:', pattern)
-        if pattern == self.current_patterns[led_id]:
-            logger.debug('Pattern already set')
-
-        self.patterns_started_at[led_id] = time.monotonic()
-        self.current_patterns[led_id] = pattern
-        self.time_in_patterns[led_id] = 0
-        self.repetitons_of_current_patterns[led_id] = 0
-        if pattern['repeat_mode'] == RepeatMode.PERMANENT:
-            self._show_led(pattern['color'], led_id=led_id)
-            
-    def turn_off_led(self, led_id = 0):
-        self._show_led(Color.OFF, led_id=led_id)
-    def turn_on_led(self, led_id=0):
-        self._show_led(Color.CYAN, led_id=led_id) 
+        if pattern['repeat_mode'] == RepeatMode.FOREVER:
+            self.default_pattern[led_id] = pattern
+        elif pattern['repeat_mode'] == RepeatMode.PERMANENT:
+            pattern['elements'] = [{'color': pattern['color'], 'duration': float('inf')}]
+            self.default_pattern[led_id] = pattern
+        else:
+            self.pattern_queue[led_id].append(pattern)
             
     def _show_led(self, color, led_id = 0):
-        if led_id == -1:
-            self.status_led.fill(color)
-        else:
-            self.status_led[led_id] = color
+        self.status_led[led_id] = color
         self.status_led.show()
     
     def set_brightness(self, level):
@@ -81,6 +73,18 @@ class LedController:
             self.turn_on_led()
 
 class RepeatMode:
+    '''
+    {
+        "repeat_mode": [mode],
+        "elements": [
+            {"color": [color], "duration": [duration]},
+            ...
+        ]
+        # if mode == TIMES
+        "repeat_times": [int],
+
+    } 
+    '''
     FOREVER = 0
     TIMES = 1
     PERMANENT = 2

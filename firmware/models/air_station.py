@@ -1,15 +1,17 @@
-from models.ld_product_model import LdProductModel
-from enums import LdProduct, Color, BleCommands, AirstationConfigFlags, Dimension, SensorModel
-from wifi_client import WifiUtil
 import time
-from config import Config
-from json import dump, load, loads
-from ld_service import LdService
-from os import listdir, remove, uname
 import struct
-from lib.cptoml import fetch
+from wifi_client import WifiUtil
 from storage import remount
+from json import dump, load, loads
+from lib.cptoml import fetch
+from os import listdir, remove, uname
+
+from config import Config
+from models.ld_product_model import LdProductModel
+from ld_service import LdService
+from enums import LdProduct, Color, BleCommands, AirstationConfigFlags, Dimension, SensorModel
 from logger import logger
+from led_controller import RepeatMode
 
 class AirStation(LdProductModel): 
     def __init__(self, ble_service: LdService, sensors, battery_monitor, status_led):
@@ -24,8 +26,24 @@ class AirStation(LdProductModel):
         self.api_key = Config.settings['api_key']
 
         self.send_configuration()
-        self.status_led.status_led.fill(Color.GREEN)
-        self.status_led.status_led.show()
+    
+    def connection_update(self, connected):
+        if connected:
+            self.status_led.show_led({
+                'repeat_mode': RepeatMode.FOREVER,
+                'elements': [
+                    {'color': Color.GREEN, 'duration': 0.5},
+                    {'color': Color.OFF, 'duration': 0.5},
+                ],
+            })
+        else:
+            self.status_led.show_led({
+                'repeat_mode': RepeatMode.FOREVER,
+                'elements': [
+                    {'color': Color.CYAN, 'duration': 0.5},
+                    {'color': Color.OFF, 'duration': 0.5},
+                ],
+            })
 
     def send_configuration(self):
         self.ble_service.air_station_configuration = self.encode_configurations()
@@ -104,13 +122,7 @@ class AirStation(LdProductModel):
         return data
 
     def receive_button_press(self):
-        self.ble_on = not self.ble_on
-        if self.ble_on:
-            self.status_led.status_led.fill(Color.GREEN)
-            self.status_led.status_led.show()
-        else:
-            self.status_led.status_led.fill(Color.OFF)
-            self.status_led.status_led.show()
+        pass
 
     def get_info(self):
         current_time = time.localtime()
@@ -267,7 +279,7 @@ class AirStation(LdProductModel):
                     logger.debug(f'{file_path=}')
                     logger.debug(f'API Response: {response.status_code}')
                     logger.debug(f'API Response: {response.text}')
-                    if response.status_code == 200:  # Placeholder for successful sending check
+                    if response.status_code in (200, 422):  # Placeholder for successful sending check
                         remount('/', False)
                         remove(file_path) 
                         remount('/', True)
@@ -275,22 +287,15 @@ class AirStation(LdProductModel):
 
     def tick(self):
         if not WifiUtil.radio.connected:
-            self.status_led.status_led.fill(Color.RED)
-            self.status_led.status_led.show()
-            time.sleep(2)
-            self.status_led.status_led.fill(Color.GREEN)
-            self.status_led.status_led.show()
-
+            # TODO: configure lighting
+            pass
         if not Config.runtime_settings['rtc_is_set'] and WifiUtil.radio.connected:
             WifiUtil.set_RTC()
 
         if not Config.runtime_settings['rtc_is_set'] or not all([Config.settings['longitude'], Config.settings['latitude'], Config.settings['height']]):
             logger.warning('DATA CANNOT BE TRANSMITTED, Not all configurations have been made')
-            self.status_led.status_led.fill(Color.PURPLE)
-            self.status_led.status_led.show()
-            time.sleep(2)
-            self.status_led.status_led.fill(Color.GREEN)
-            self.status_led.status_led.show()
+            # TODO: configure lighting
+            
         else:
             cur_time = time.monotonic()
             if not self.last_measurement or cur_time - self.last_measurement >= Config.settings['measurement_interval']:
