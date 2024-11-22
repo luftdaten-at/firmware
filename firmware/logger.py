@@ -30,10 +30,6 @@ class SimpleLogger:
                 'level': level_num,
                 'message': message
             }
-            storage.remount('/', False)
-            with open('log.txt', 'a') as f:
-                print(log_message, file=f)
-            storage.remount('/', True)
 
             self.save(log_entry)
 
