@@ -310,7 +310,7 @@ class AirStation(LdProductModel):
         else:
             self.status_led.show_led({
                 'repeat_mode': RepeatMode.PERMANENT,
-                'color': Color.GREEN,
+                'color': Color.GREEN_LOW,
             })
             cur_time = time.monotonic()
             if not self.last_measurement or cur_time - self.last_measurement >= Config.settings['measurement_interval']:
