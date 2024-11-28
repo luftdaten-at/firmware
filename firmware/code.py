@@ -1,4 +1,6 @@
 import supervisor
+import board
+import neopixel
 from ugm.upgrade_mananger import Ugm
 from ugm.upgrade_manager_util import Config, WifiUtil
 from logger import logger
@@ -22,6 +24,9 @@ Ugm.init(WifiUtil, Config)
 
 # check if update available
 if WifiUtil.radio.connected and (folder := Ugm.check_if_upgrade_available()):
+    # Assume model is AirStation
+    status_led = neopixel.NeoPixel(board.IO8, 1)
+    status_led[0] = (200, 0, 80)
     logger.debug(f'Installing new firmware from folder: {folder}')
     try:
         Ugm.install_update(folder)

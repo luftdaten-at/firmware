@@ -248,9 +248,6 @@ def main():
         time.sleep(2)
 
     button_state = False
-
-    device.connection_update(False)
-
     ble_connected = False
 
     # Main loop
@@ -277,11 +274,9 @@ def main():
 
         if ble.connected and not ble_connected:
             ble_connected = True
-            device.connection_update(True)
             logger.debug("BLE connection established")
         elif not ble.connected and ble_connected:
             ble_connected = False
-            device.connection_update(False)
             logger.debug("Disconnected from BLE device")
 
         if button.value and not button_state:

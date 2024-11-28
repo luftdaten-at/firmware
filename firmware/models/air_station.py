@@ -26,6 +26,15 @@ class AirStation(LdProductModel):
         self.api_key = Config.settings['api_key']
 
         self.send_configuration()
+
+        # Ready but not configured
+        self.status_led.show_led({
+            'repeat_mode': RepeatMode.FOREVER,
+                'elements': [
+                    {'color': Color.BLUE, 'duration': 0.5},
+                    {'color': Color.RED, 'duration': 0.5},
+            ],
+        })
     
     def connection_update(self, connected):
         if connected:
@@ -286,17 +295,23 @@ class AirStation(LdProductModel):
                 
 
     def tick(self):
-        if not WifiUtil.radio.connected:
-            # TODO: configure lighting
-            pass
         if not Config.runtime_settings['rtc_is_set'] and WifiUtil.radio.connected:
             WifiUtil.set_RTC()
 
-        if not Config.runtime_settings['rtc_is_set'] or not all([Config.settings['longitude'], Config.settings['latitude'], Config.settings['height']]):
+        if not WifiUtil.radio.connected or not Config.runtime_settings['rtc_is_set'] or not all([Config.settings['longitude'], Config.settings['latitude'], Config.settings['height']]):
             logger.warning('DATA CANNOT BE TRANSMITTED, Not all configurations have been made')
-            # TODO: configure lighting
-            
+            self.status_led.show_led({
+                'repeat_mode': RepeatMode.FOREVER,
+                    'elements': [
+                        {'color': Color.BLUE, 'duration': 0.5},
+                        {'color': Color.RED, 'duration': 0.5},
+                ],
+            })
         else:
+            self.status_led.show_led({
+                'repeat_mode': RepeatMode.PERMANENT,
+                'color': Color.GREEN_LOW,
+            })
             cur_time = time.monotonic()
             if not self.last_measurement or cur_time - self.last_measurement >= Config.settings['measurement_interval']:
                 self.last_measurement = cur_time
