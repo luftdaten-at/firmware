@@ -1,8 +1,14 @@
-from models.ld_product_model import LdProductModel
-from led_controller import RepeatMode
-from enums import Color, LdProduct, Dimension, Quality, BleCommands
 import time
+from os import listdir, remove, uname
+from storage import remount
+from json import dump
+
+from led_controller import RepeatMode
+from models.ld_product_model import LdProductModel
 from logger import logger
+from config import Config
+from enums import Color, LdProduct, Dimension, Quality, BleCommands
+
 
 class AirCube(LdProductModel): 
     def __init__(self, ble_service, sensors, battery_monitor, status_led):
@@ -123,3 +129,54 @@ class AirCube(LdProductModel):
                     {'color': Color.OFF, 'duration': 0.5},
                 ],
             })
+    
+    def save_data(self, data: dict, tag = 'normal'):
+        current_time = time.localtime()
+        formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
+        remount('/', False) 
+        file_name = formatted_time.replace(':', '_').replace('.', '_')
+        with open(f'{Config.runtime_settings["JSON_QUEUE"]}/{file_name}_{tag}.json', 'w') as f:
+            dump(data, f)
+        remount('/', False)
+
+    def read_all_sensors(self):
+        for sensor in self.sensors:
+            try:
+                sensor.read()
+            except:
+                logger.error(f"Error reading sensor {sensor.model_id}, using previous values")
+
+    def get_info(self):
+        current_time = time.localtime()
+        formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
+
+        device_info = {
+            "station": {
+                "time": formatted_time,
+                "device": self.device_id,
+                "firmware": uname()[3],
+                "apikey": self.api_key,
+                "source": 1,
+                "location": {
+                    "lat": Config.settings.get("latitude", None),
+                    "lon": Config.settings.get("longitude", None),
+                    "height": Config.settings.get("height", None)
+                }
+            }
+        }
+
+        return device_info
+
+    def get_json(self):
+        self.read_all_sensors()
+        sensor_values = {}
+        for id, sensor in enumerate(self.sensors):
+            sensor_values[id] = {
+                "type": sensor.model_id,
+                "data": sensor.current_values
+            }
+
+        data = self.get_info()
+        data["sensors"] = sensor_values
+
+        return data

@@ -19,6 +19,7 @@ from logger import logger
 
 def main():
     # Initialize status LED(s) at GPIO8
+    '''
     status_led = neopixel.NeoPixel(board.IO8, 5 if Config.settings['MODEL'] == LdProduct.AIR_CUBE else 1)
 
     led_controller = LedController(status_led, 1)
@@ -27,6 +28,7 @@ def main():
         'color': Color.YELLOW,
     })
     led_controller.tick()
+    '''
 
     # Check boot mode
     # Options:
@@ -151,6 +153,7 @@ def main():
     ble.name = "Luftdaten.at-" + Config.settings['mac']
 
     # init led controller
+    status_led = neopixel.NeoPixel(board.IO8, 5 if Config.settings['MODEL'] == LdProduct.AIR_CUBE else 1)
     led_controller = LedController(status_led, 5 if Config.settings['MODEL'] == LdProduct.AIR_CUBE else 1)
 
     device = None
@@ -298,6 +301,8 @@ def main():
         led_controller.tick()
 
         time.sleep(device.polling_interval)
+
+        print(device.get_json())
 
 if __name__ == '__main__':
     try:
