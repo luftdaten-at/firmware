@@ -1,8 +1,9 @@
 import time
 from os import listdir, remove, uname
 from storage import remount
-from json import dump
+from json import dump, load, loads, dumps
 
+from wifi_client import WifiUtil
 from led_controller import RepeatMode
 from models.ld_product_model import LdProductModel
 from logger import logger
@@ -101,6 +102,8 @@ class AirCube(LdProductModel):
                                 [800, 1000, 1400], 
                                 [Color.GREEN, Color.YELLOW, Color.ORANGE, Color.RED],
                                 )
+        
+
             
     def _updateLed(self, led_id, value, color_cutoffs, colors):
         color = colors[0]
@@ -180,3 +183,37 @@ class AirCube(LdProductModel):
         data["sensors"] = sensor_values
 
         return data
+
+    def send_to_api(self):
+        for file_path in (f'{Config.runtime_settings["JSON_QUEUE"]}/{f}' for f in listdir(Config.runtime_settings["JSON_QUEUE"])):
+            logger.debug(f'process file: {file_path}')
+            with open(file_path, 'r') as f:
+                data = load(f)
+
+                if 'tmp_log.txt' in file_path:
+                    # send status to Luftdaten APi
+                    status_list = []
+                    for line in f.readlines():
+                        status_list.append(loads(line))
+
+                    data = self.get_info()
+                    data["status_list"] = status_list
+
+                    response = WifiUtil.send_json_to_api(data, router='status')
+                    logger.debug(f'{file_path=}')
+                    logger.debug(f'API Response: {response.status_code}')
+                    logger.debug(f'API Response: {response.text}')
+                    if response.status_code == 200:  # Placeholder for successful sending check
+                        remount('/', False)
+                        remove(file_path) 
+                        remount('/', True)
+                else:
+                    # send to django APi
+                    response = WifiUtil.send_json_to_api(data)
+                    logger.debug(f'{file_path=}')
+                    logger.debug(f'API Response: {response.status_code}')
+                    logger.debug(f'API Response: {response.text}')
+                    if response.status_code in (200, 422):  # Placeholder for successful sending check
+                        remount('/', False)
+                        remove(file_path) 
+                        remount('/', True)
