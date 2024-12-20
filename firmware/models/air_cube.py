@@ -50,10 +50,18 @@ class AirCube(LdProductModel):
     
     def tick(self):
         # Measure every 5 seconds (allow this to be settable)
-        if self.last_measurement is None or time.monotonic() - self.last_measurement > 5:
+        if self.last_measurement is None or time.monotonic() - self.last_measurement >= Config.settings['measurement_interval']:
+            # set last measurement to now
+            self.last_measurement = time.monotonic()
+
+            # send to API
+            data = self.get_json()
+            self.save_data(data=data)
+            if WifiUtil.radio.connected:
+                self.send_to_api()
+
             # This reads sensors & updates BLE - we don't mind updating BLE even if it is off
             self.update_ble_sensor_data()
-            self.last_measurement = time.monotonic()
             # Update LEDs
             sensor_values = {
                 Dimension.TEMPERATURE: [],
