@@ -19,6 +19,9 @@ class AirCube(LdProductModel):
         self.ble_on = False
         self.number_of_leds = 5
         self.last_measurement = None
+
+        self.device_id = Config.settings['device_id'] 
+        self.api_key = Config.settings['api_key']
         
     def receive_command(self, command):
         if(len(command) == 0):
@@ -207,7 +210,7 @@ class AirCube(LdProductModel):
                     data = self.get_info()
                     data["status_list"] = status_list
 
-                    response = WifiUtil.send_json_to_api(data, router='status')
+                    response = WifiUtil.send_json_to_api(data, router='status/')
                     logger.debug(f'{file_path=}')
                     logger.debug(f'API Response: {response.status_code}')
                     logger.debug(f'API Response: {response.text}')

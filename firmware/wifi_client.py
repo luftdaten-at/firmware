@@ -81,7 +81,7 @@ class WifiUtil:
     
 
     @staticmethod
-    def send_json_to_api(data, router: str = 'data'):
+    def send_json_to_api(data, router: str = 'data/'):
         gc.collect()
         response = WifiUtil.api_session.request(
             method='POST',
