@@ -1,6 +1,6 @@
 from lib.cptoml import put, fetch
 from storage import remount
-from enums import AutoUpdateMode, AirStationMeasurementInterval, BatterySaverMode
+from enums import AutoUpdateMode, AirStationMeasurementInterval, BatterySaverMode, LdProduct
 
 class AutoSaveDict(dict):
     def __init__(self, *args, **kwargs):
@@ -137,10 +137,13 @@ class Config:
                 Config.settings[key] = val
 
         # Handle the API_URL based on TEST_MODE after initialization
-        if Config.settings['TEST_MODE']:
-            Config.runtime_settings['API_URL'] = Config.settings['TEST_API_URL']
-        else:
+        if Config.settings['MODEL'] == LdProduct.AIR_STATION:
             Config.runtime_settings['API_URL'] = Config.settings['API_URL']
+            if Config.settings['TEST_MODE']:
+                Config.runtime_settings['API_URLS'] = [Config.settings['TEST_API_URL']]
+
+        elif Config.settings['MODEL'] in (LdProduct.AIR_CUBE, LdProduct.AIR_BADGE):
+            Config.settings['API_URL'] = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
 
         # when the device boots the first time
         # some informations have to be generated
