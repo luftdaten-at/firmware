@@ -128,6 +128,7 @@ def main():
     # auto detect model if model=-1
     if Config.settings['MODEL'] == -1:
         Config.settings['MODEL'] = get_model_id_from_sensors(connected_sensors, battery_monitor)
+        Config.set_api_url()
 
     # prepare connected sensors status for ble 
     connected_sensors_status = bytearray([

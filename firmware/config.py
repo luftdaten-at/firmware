@@ -128,6 +128,16 @@ class Config:
         api_key = ''.join(random.choice(vorrat) for _ in range(Config.runtime_settings['API_KEY_LENGTH']))
 
         return api_key
+    
+    @staticmethod
+    def set_api_url():
+        if Config.settings['MODEL'] == LdProduct.AIR_STATION:
+            Config.runtime_settings['API_URL'] = Config.settings['API_URL']
+            if Config.settings['TEST_MODE']:
+                Config.runtime_settings['API_URLS'] = [Config.settings['TEST_API_URL']]
+
+        elif Config.settings['MODEL'] in (LdProduct.AIR_CUBE, LdProduct.AIR_BADGE):
+            Config.settings['API_URL'] = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
 
     @staticmethod
     def init():
@@ -137,14 +147,8 @@ class Config:
                 Config.settings[key] = val
 
         # Handle the API_URL based on TEST_MODE after initialization
-        if Config.settings['MODEL'] == LdProduct.AIR_STATION:
-            Config.runtime_settings['API_URL'] = Config.settings['API_URL']
-            if Config.settings['TEST_MODE']:
-                Config.runtime_settings['API_URLS'] = [Config.settings['TEST_API_URL']]
-
-        elif Config.settings['MODEL'] in (LdProduct.AIR_CUBE, LdProduct.AIR_BADGE):
-            Config.settings['API_URL'] = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
-
+        Config.set_api_url()
+        
         # when the device boots the first time
         # some informations have to be generated
         # mac
