@@ -51,6 +51,8 @@ class Config:
         'API_URL': 'boot.toml',
         'TEST_API_URL': 'boot.toml',
         'UPDATE_SERVER': 'boot.toml',
+        'DATAHUB_API_URL': 'boot.toml',
+        'DATAHUB_TEST_API_URL': 'boot.toml',
         'SEND_TO_SENSOR_COMMUNITY': 'settings.toml',
 
         # AirStationConfig must not be specified in settings.toml
@@ -92,6 +94,8 @@ class Config:
         'API_URL': None,
         'TEST_API_URL': None,
         'UPDATE_SERVER': None,
+        'DATAHUB_API_URL': None,
+        'DATAHUB_TEST_API_URL': None,
         'SEND_TO_SENSOR_COMMUNITY': None,
 
         # AirStationConfig must not be specified in settings.toml
