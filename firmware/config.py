@@ -137,7 +137,7 @@ class Config:
                 Config.runtime_settings['API_URLS'] = [Config.settings['TEST_API_URL']]
 
         elif Config.settings['MODEL'] in (LdProduct.AIR_CUBE, LdProduct.AIR_BADGE):
-            Config.settings['API_URL'] = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
+            Config.runtime_settings['API_URL'] = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
 
     @staticmethod
     def init():

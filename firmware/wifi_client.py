@@ -90,7 +90,7 @@ class WifiUtil:
         )
         # send to additional APIs
         # TODO: Handle response
-        if Config.settings['API_URLS']:
+        if Config.settings.get('API_URLS', None):
             for api_url in Config.settings['API_URLS']:
                 WifiUtil.api_session.request(
                     method='POST',
