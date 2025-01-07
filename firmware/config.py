@@ -1,6 +1,6 @@
 from lib.cptoml import put, fetch
 from storage import remount
-from enums import AutoUpdateMode, AirStationMeasurementInterval, BatterySaverMode
+from enums import AutoUpdateMode, AirStationMeasurementInterval, BatterySaverMode, LdProduct
 
 class AutoSaveDict(dict):
     def __init__(self, *args, **kwargs):
@@ -51,6 +51,8 @@ class Config:
         'API_URL': 'boot.toml',
         'TEST_API_URL': 'boot.toml',
         'UPDATE_SERVER': 'boot.toml',
+        'DATAHUB_API_URL': 'boot.toml',
+        'DATAHUB_TEST_API_URL': 'boot.toml',
         'SEND_TO_SENSOR_COMMUNITY': 'settings.toml',
 
         # AirStationConfig must not be specified in settings.toml
@@ -92,6 +94,8 @@ class Config:
         'API_URL': None,
         'TEST_API_URL': None,
         'UPDATE_SERVER': None,
+        'DATAHUB_API_URL': None,
+        'DATAHUB_TEST_API_URL': None,
         'SEND_TO_SENSOR_COMMUNITY': None,
 
         # AirStationConfig must not be specified in settings.toml
@@ -124,6 +128,16 @@ class Config:
         api_key = ''.join(random.choice(vorrat) for _ in range(Config.runtime_settings['API_KEY_LENGTH']))
 
         return api_key
+    
+    @staticmethod
+    def set_api_url():
+        if Config.settings['MODEL'] == LdProduct.AIR_STATION:
+            Config.runtime_settings['API_URL'] = Config.settings['API_URL']
+            if Config.settings['TEST_MODE']:
+                Config.runtime_settings['API_URLS'] = [Config.settings['TEST_API_URL']]
+
+        elif Config.settings['MODEL'] in (LdProduct.AIR_CUBE, LdProduct.AIR_BADGE):
+            Config.runtime_settings['API_URL'] = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
 
     @staticmethod
     def init():
@@ -133,11 +147,8 @@ class Config:
                 Config.settings[key] = val
 
         # Handle the API_URL based on TEST_MODE after initialization
-        if Config.settings['TEST_MODE']:
-            Config.runtime_settings['API_URL'] = Config.settings['TEST_API_URL']
-        else:
-            Config.runtime_settings['API_URL'] = Config.settings['API_URL']
-
+        Config.set_api_url()
+        
         # when the device boots the first time
         # some informations have to be generated
         # mac

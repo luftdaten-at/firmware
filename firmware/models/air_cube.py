@@ -168,8 +168,16 @@ class AirCube(LdProductModel):
             "station": {
                 "time": formatted_time,
                 "device": self.device_id,
-                "firmware": uname()[3],
+                "firmware": f"{Config.settings['FIRMWARE_MAJOR']}.{Config.settings['FIRMWARE_MINOR']}.{Config.settings['FIRMWARE_PATCH']}",
+                "model": self.model_id,
                 "apikey": self.api_key,
+
+                "battery": {
+                    # cell_voltage() -> returns mili volt / 1000 to convert to volts
+                    "voltage": self.battery_monitor.cell_voltage() / 1000 if self.battery_monitor else None,
+                    "percentage": self.battery_monitor.cell_soc() if self.battery_monitor else None,
+                },
+
                 "source": 1,
                 "location": {
                     "lat": Config.settings.get("latitude", None),
