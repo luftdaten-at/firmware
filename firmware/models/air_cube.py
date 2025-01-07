@@ -168,7 +168,7 @@ class AirCube(LdProductModel):
             "station": {
                 "time": formatted_time,
                 "device": self.device_id,
-                "firmware": uname()[3],
+                "firmware": f"{Config.settings['FIRMWARE_MAJOR']}.{Config.settings['FIRMWARE_MINOR']}.{Config.settings['FIRMWARE_PATCH']}",
                 "model": self.model_id,
                 "apikey": self.api_key,
 
