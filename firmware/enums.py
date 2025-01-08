@@ -35,6 +35,7 @@ class Dimension():
     NO2 = 16
     SGP40_RAW_GAS = 17
     SGP40_ADJUSTED_GAS = 18
+    ADJUSTED_TEMP = 19
 
     thresholds = {
         TEMPERATURE: ([18, 24], [Color.BLUE, Color.GREEN, Color.RED]),
@@ -63,6 +64,7 @@ class Dimension():
         NO2: "ppb",
         SGP40_RAW_GAS: "Ω",
         SGP40_ADJUSTED_GAS: "Ω",
+        ADJUSTED_TEMP: "°C",
     }
 
     _names = {
@@ -84,6 +86,7 @@ class Dimension():
         NO2: "Nitrogen Dioxide (NO2)",
         SGP40_RAW_GAS: "SGP40 Raw Gas",
         SGP40_ADJUSTED_GAS: "SGP40 Adjusted Gas",
+        ADJUSTED_TEMP: "Adjusted Temperature",
     }
 
     _sensor_community_names = {
@@ -142,6 +145,7 @@ class SensorModel():
     SPS30 = 15
     PMS5003 = 16
     PMS7003 = 17
+    VIRTUAL_SENSOR = 18
 
     _names = {
         SEN5X: "SEN5X",
@@ -160,7 +164,8 @@ class SensorModel():
         SHT35: "SHT35",
         SPS30: "SPS30",
         PMS5003: "PMS5003",
-        PMS7003: "PMS7003"
+        PMS7003: "PMS7003",
+        VIRTUAL_SENSOR: "VIRTUAL_SENSOR",
     }
 
     _manufacturer = {
@@ -180,7 +185,8 @@ class SensorModel():
         SHT35: "Sensirion",
         SPS30: "Sensirion",
         PMS5003: "Plantower",
-        PMS7003: "Plantower"
+        PMS7003: "Plantower",
+        VIRTUAL_SENSOR: "Luftdaten.at"
     }
 
     _pins = {
