@@ -9,6 +9,7 @@ from models.ld_product_model import LdProductModel
 from logger import logger
 from config import Config
 from enums import Color, LdProduct, Dimension, Quality, BleCommands
+from sensors.virtual_sensor import VirtualSensor
 
 
 class AirCube(LdProductModel): 
@@ -22,6 +23,27 @@ class AirCube(LdProductModel):
 
         self.device_id = Config.settings['device_id'] 
         self.api_key = Config.settings['api_key']
+        
+        calculated_dimension_set = set([Dimension.ADJUSTED_TEMP_CUBE])
+        required_sensor_id_set = set(
+            sensor_id 
+            for calculated_dimension in calculated_dimension_set
+                for sensor_id in Dimension.get_required_sensors(calculated_dimension)
+        )
+
+        # gather required sensors for virtual sensor
+        required_sensor_dict = {}
+        for sensor in sensors:
+            if sensor.model_id in required_sensor_id_set:
+                required_sensor_dict[sensor.model_id] = sensor
+
+        vsen = VirtualSensor(
+            required_sensor_dict=required_sensor_dict, # required sensors to calculate dimensions
+            calculated_dimension_set=calculated_dimension_set # dimensions to be calculated
+        )
+        
+        # add virtual sensor
+        sensors.append(vsen)
         
     def receive_command(self, command):
         if(len(command) == 0):
