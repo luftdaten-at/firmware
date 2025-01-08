@@ -195,6 +195,10 @@ class Dimension():
     }
 
     @classmethod
+    def get_required_sensors(cls, dimension_id: int) -> set[SensorModel]:
+        return cls._required_sensors.get(dimension_id, None)
+
+    @classmethod
     def get_unit(cls, dimension_id: int) -> str:
         """
         Gibt die Einheit der angegebenen Dimension zurück.
