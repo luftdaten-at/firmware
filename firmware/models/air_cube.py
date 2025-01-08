@@ -23,6 +23,10 @@ class AirCube(LdProductModel):
         self.device_id = Config.settings['device_id'] 
         self.api_key = Config.settings['api_key']
         
+        # add virtual sensor
+        # aht20, sht45, sen54
+         
+        
     def receive_command(self, command):
         if(len(command) == 0):
             return
