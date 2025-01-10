@@ -127,7 +127,8 @@ class Dimension():
         TEMPERATURE: ([18, 24], [Color.BLUE, Color.GREEN, Color.RED]),
         PM2_5: ([5, 15], [Color.GREEN, Color.YELLOW, Color.RED]),
         TVOC: ([220, 1430], [Color.GREEN, Color.YELLOW, Color.RED]),
-        CO2: ([800, 1000, 1400], [Color.GREEN, Color.YELLOW, Color.ORANGE, Color.RED])
+        CO2: ([800, 1000, 1400], [Color.GREEN, Color.YELLOW, Color.ORANGE, Color.RED]),
+        ADJUSTED_TEMP_CUBE: ([18, 24], [Color.BLUE, Color.GREEN, Color.RED]),
     }
 
     # Dictionary für die Einheiten der Dimensionen
