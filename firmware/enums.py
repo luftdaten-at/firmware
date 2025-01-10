@@ -221,6 +221,14 @@ class Dimension():
         """Returns the sensor-community-specific name for the dimension ID or 'Unknown' if none."""
         return cls._sensor_community_names.get(dimension_id, "Unknown")
 
+    @classmethod
+    def get_color(cls, dimension_id: int, val: float):
+        th, colors = cls.thresholds.get(dimension_id)
+        th = [-float('inf')] + th + [float('inf')]
+        for i in range(len(th)):
+            if th[i] <= val < th[i + 1]:
+                return colors[i]
+
 
 class LdProduct():
     AIR_AROUND = 1
