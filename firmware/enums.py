@@ -36,6 +36,9 @@ class SensorModel():
     PMS7003 = 17
     VIRTUAL_SENSOR = 18
     LTR390 = 19
+    BMP388 = 20
+    BMP390 = 21
+    lsm6ds = 22
 
     _names = {
         SEN5X: "SEN5X",
@@ -56,7 +59,10 @@ class SensorModel():
         PMS5003: "PMS5003",
         PMS7003: "PMS7003",
         VIRTUAL_SENSOR: "VIRTUAL_SENSOR",
-        LTR390: "LTR390"
+        LTR390: "LTR390",
+        BMP388: 'BMP388',
+        BMP390: 'BMP390',
+        lsm6ds: 'lsm6ds',
     }
 
     _manufacturer = {
@@ -126,6 +132,9 @@ class Dimension():
     ADJUSTED_TEMP_CUBE = 19
     UVS = 20
     LIGHT = 21
+    ACCELERATION = 22,
+    GYRO = 23,
+
 
     thresholds = {
         TEMPERATURE: ([18, 24], [Color.BLUE, Color.GREEN, Color.RED]),
@@ -156,6 +165,8 @@ class Dimension():
         SGP40_RAW_GAS: "Ω",
         SGP40_ADJUSTED_GAS: "Ω",
         ADJUSTED_TEMP_CUBE: "°C",
+        ACCELERATION: "m/s²",
+        GYRO: "radians/s"
     }
 
     _names = {
@@ -180,6 +191,8 @@ class Dimension():
         ADJUSTED_TEMP_CUBE: "Adjusted Temperature Air Cube",
         UVS: "UVS",
         LIGHT: "Light",
+        ACCELERATION: "acceleration",
+        GYRO: "gyro"
     }
 
     _required_sensors = {
