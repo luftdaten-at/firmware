@@ -124,6 +124,8 @@ class Dimension():
     SGP40_RAW_GAS = 17
     SGP40_ADJUSTED_GAS = 18
     ADJUSTED_TEMP_CUBE = 19
+    UVS = 20
+    LIGHT = 21
 
     thresholds = {
         TEMPERATURE: ([18, 24], [Color.BLUE, Color.GREEN, Color.RED]),
@@ -176,6 +178,8 @@ class Dimension():
         SGP40_RAW_GAS: "SGP40 Raw Gas",
         SGP40_ADJUSTED_GAS: "SGP40 Adjusted Gas",
         ADJUSTED_TEMP_CUBE: "Adjusted Temperature Air Cube",
+        UVS: "UVS",
+        LIGHT: "Light",
     }
 
     _required_sensors = {
