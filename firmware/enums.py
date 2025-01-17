@@ -35,6 +35,7 @@ class SensorModel():
     PMS5003 = 16
     PMS7003 = 17
     VIRTUAL_SENSOR = 18
+    LTR390 = 19
 
     _names = {
         SEN5X: "SEN5X",
@@ -55,6 +56,7 @@ class SensorModel():
         PMS5003: "PMS5003",
         PMS7003: "PMS7003",
         VIRTUAL_SENSOR: "VIRTUAL_SENSOR",
+        LTR390: "LTR390"
     }
 
     _manufacturer = {
