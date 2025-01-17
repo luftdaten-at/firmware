@@ -38,7 +38,7 @@ class SensorModel():
     LTR390 = 19
     BMP388 = 20
     BMP390 = 21
-    lsm6ds = 22
+    LSM6DS = 22
 
     _names = {
         SEN5X: "SEN5X",
@@ -62,7 +62,8 @@ class SensorModel():
         LTR390: "LTR390",
         BMP388: 'BMP388',
         BMP390: 'BMP390',
-        lsm6ds: 'lsm6ds',
+        LSM6DS: 'lsm6ds',
+        
     }
 
     _manufacturer = {
