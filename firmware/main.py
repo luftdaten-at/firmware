@@ -6,6 +6,8 @@ import gc
 import neopixel  # type: ignore
 import traceback
 import supervisor
+import adafruit_ds3231
+import rtc
 from ld_service import LdService
 from adafruit_ble import BLERadio  # type: ignore
 from adafruit_ble.advertising.standard import ProvideServicesAdvertisement  # type: ignore
@@ -48,6 +50,17 @@ def main():
 
     # init bus
     i2c = busio.I2C(scl=board.IO5, sda=board.IO4, frequency=20000)
+
+    # set correct time if rtc module is connected
+    try:
+        rtc_with_battery = adafruit_ds3231.DS3231(i2c)
+        rtc.RTC().datetime = rtc_with_battery.datetime
+
+        Config.runtime_settings['rtc_is_set'] = True
+        Config.runtime_settings['rtc_module'] = rtc_with_battery
+    except:
+        # rtc module not connected
+        pass
 
     # Initialize the button at GPIO9
     button_pin = board.IO9

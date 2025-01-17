@@ -1,6 +1,6 @@
+import gc
 from wifi import radio as wifi_radio
 from config import Config
-import gc
 from socketpool import SocketPool
 from ssl import create_default_context
 from adafruit_requests import Session
@@ -67,15 +67,21 @@ class WifiUtil:
 
     @staticmethod
     def set_RTC():
-        from adafruit_ntp import NTP
         import rtc
+        from adafruit_ntp import NTP
 
         try:
             logger.debug('Trying to set RTC via NTP...')
             ntp = NTP(WifiUtil.pool, tz_offset=0, cache_seconds=3600)
             rtc.RTC().datetime = ntp.datetime
             Config.runtime_settings['rtc_is_set'] = True  # Assuming rtc_is_set is a setting in your Config
+
             logger.debug('RTC successfully configured')
+
+            # set rtc module
+            if rtc_module := Config.runtime_settings.get('rtc_module', None):
+                rtc_module.datetime = rtc.RTC().datetime
+
         except Exception as e:
             logger.error(f'Failed to set RTC via NTP: {e}')
     
