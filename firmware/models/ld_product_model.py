@@ -1,7 +1,7 @@
 from logger import logger
 
 class LdProductModel:
-    def __init__(self, ble_service, sensors, battery_monitor, status_led):
+    def __init__(self, ble_service, sensors, battery_monitor):
         self.model_id = None
         """Product model."""
         
@@ -18,7 +18,6 @@ class LdProductModel:
         self.ble_service = ble_service
         self.sensors = sensors
         self.battery_monitor = battery_monitor
-        self.status_led = status_led
         self.status = bytearray([0, 0, 0, 0])
         
     def receive_command(self, command):
