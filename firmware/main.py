@@ -80,29 +80,26 @@ def main():
     # init ble name
     ble.name = "Luftdaten.at-" + Config.settings['mac']
 
-    # init led controller
-    status_led = neopixel.NeoPixel(board.IO8, 5 if Config.settings['MODEL'] == LdProduct.AIR_CUBE else 1)
-    led_controller = LedController(status_led, 5 if Config.settings['MODEL'] == LdProduct.AIR_CUBE else 1)
 
     device = None
     if Config.settings['MODEL'] == LdProduct.AIR_AROUND or Config.settings['MODEL'] == LdProduct.AIR_BIKE:
         from firmware.models.air_around import AirAround
-        device = AirAround(Config.settings['MODEL'], service, sensors, battery_monitor, led_controller)
+        device = AirAround(Config.settings['MODEL'], service, sensors, battery_monitor)
     if Config.settings['MODEL'] == LdProduct.AIR_BADGE:
         from models.air_badge import AirBadge
         device = AirBadge(
             ble_service=ble, 
             sensors=sensors,
             battery_monitor=battery_monitor,
-            status_led=status_led
         )
     if Config.settings['MODEL'] == LdProduct.AIR_CUBE:
         from models.air_cube import AirCube
-        device = AirCube(service, sensors, battery_monitor, led_controller)
+        device = AirCube(service, sensors, battery_monitor)
     if Config.settings['MODEL'] == LdProduct.AIR_STATION:
         from models.air_station import AirStation
-        device = AirStation(service, sensors, battery_monitor, led_controller)
+        device = AirStation(service, sensors, battery_monitor)
 
+    '''
     # bad Model was not recognised
     if device is None:
         logger.critical("Model not recognised")
@@ -115,6 +112,7 @@ def main():
         })
         while True:
             LedController.tick()
+    '''
 
     # Set up device info characteristic
     device_info_data = bytearray([
@@ -170,19 +168,19 @@ def main():
         points = [25, 50, 75]
         # critical
         if percent < CRITICAL:
-            status_led.fill(Color.RED)
-            status_led.show()
+            device.status_led.status_led.fill(Color.RED)
+            device.status_led.status_led.show()
             time.sleep(0.2)
-            status_led.fill(Color.OFF)
-            status_led.show()
+            device.status_led.status_led.fill(Color.OFF)
+            device.status_led.status_led.show()
         else:
             for point in points:
                 if percent > point:
-                    status_led.fill(Color.GREEN)
-                    status_led.show()
+                    device.status_led.status_led.fill(Color.GREEN)
+                    device.status_led.status_led.show()
                     time.sleep(0.5)
-                    status_led.fill(Color.OFF)
-                    status_led.show()
+                    device.status_led.status_led.fill(Color.OFF)
+                    device.status_led.status_led.show()
                     time.sleep(0.5)
         time.sleep(2)
 
@@ -231,10 +229,10 @@ def main():
             service.trigger_reading_characteristic_2 = bytearray()
 
             device.receive_command(command)
-            led_controller.receive_command(command)
+            device.status_led.receive_command(command)
 
         device.tick()
-        led_controller.tick()
+        device.status_led.tick()
 
         time.sleep(device.polling_interval)
 
