@@ -3,7 +3,7 @@ from led_controller import RepeatMode
 from enums import Color, BleCommands
 from logger import logger
 
-class LdPortable(LdProductModel): 
+class AirAround(LdProductModel): 
     def __init__(self, model, ble_service, sensors, battery_monitor, status_led):
         super().__init__(ble_service, sensors, battery_monitor, status_led)
         self.polling_interval = 0.01

@@ -172,8 +172,8 @@ def main():
 
     device = None
     if Config.settings['MODEL'] == LdProduct.AIR_AROUND or Config.settings['MODEL'] == LdProduct.AIR_BADGE or Config.settings['MODEL'] == LdProduct.AIR_BIKE:
-        from models.ld_portable import LdPortable
-        device = LdPortable(Config.settings['MODEL'], service, sensors, battery_monitor, led_controller)
+        from models.ld_portable import AirAround
+        device = AirAround(Config.settings['MODEL'], service, sensors, battery_monitor, led_controller)
     if Config.settings['MODEL'] == LdProduct.AIR_CUBE:
         from models.air_cube import AirCube
         device = AirCube(service, sensors, battery_monitor, led_controller)
