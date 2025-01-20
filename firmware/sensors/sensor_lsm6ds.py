@@ -3,7 +3,7 @@ from sensors.sensor import Sensor
 from enums import Dimension, SensorModel, Quality
 from logger import logger
 
-class Lsm6ds(Sensor):
+class Lsm6dsSensor(Sensor):
     def __init__(self):
         super().__init__()
         self.model_id = SensorModel.LSM6DS

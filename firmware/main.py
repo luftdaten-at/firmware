@@ -83,7 +83,7 @@ def main():
 
     device = None
     if Config.settings['MODEL'] == LdProduct.AIR_AROUND or Config.settings['MODEL'] == LdProduct.AIR_BIKE:
-        from firmware.models.air_around import AirAround
+        from models.air_around import AirAround
         device = AirAround(Config.settings['MODEL'], service, sensors, battery_monitor)
     if Config.settings['MODEL'] == LdProduct.AIR_BADGE:
         from models.air_badge import AirBadge
@@ -235,8 +235,6 @@ def main():
         device.status_led.tick()
 
         time.sleep(device.polling_interval)
-
-        print(device.get_json())
 
 if __name__ == '__main__':
     try:

@@ -2,7 +2,7 @@ import neopixel
 import board
 
 from led_controller import LedController
-from firmware.models.air_around import LdProductModel 
+from models.ld_product_model import LdProductModel
 from enums import LdProduct, BleCommands
 from logger import logger
 
