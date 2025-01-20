@@ -20,26 +20,6 @@ from ugm.upgrade_mananger import Ugm
 from logger import logger
 
 def main():
-    # Initialize status LED(s) at GPIO8
-    '''
-    status_led = neopixel.NeoPixel(board.IO8, 5 if Config.settings['MODEL'] == LdProduct.AIR_CUBE else 1)
-
-    led_controller = LedController(status_led, 1)
-    led_controller.show_led({
-        'repeat_mode': RepeatMode.PERMANENT,
-        'color': Color.YELLOW,
-    })
-    led_controller.tick()
-    '''
-
-    # Check boot mode
-    # Options:
-    # - normal:
-    #    - Check if button is pressed
-    #        - If pressed, check all sensors and save to boot.toml. Reboot into transmit mode.
-    #        - If not pressed, load boot.toml and connect to all sensors listed. Start BLE operation.
-    # - detectmodel
-
     logger.debug('loaded main.py')
 
     # Load startup config
@@ -171,9 +151,17 @@ def main():
     led_controller = LedController(status_led, 5 if Config.settings['MODEL'] == LdProduct.AIR_CUBE else 1)
 
     device = None
-    if Config.settings['MODEL'] == LdProduct.AIR_AROUND or Config.settings['MODEL'] == LdProduct.AIR_BADGE or Config.settings['MODEL'] == LdProduct.AIR_BIKE:
-        from models.ld_portable import AirAround
+    if Config.settings['MODEL'] == LdProduct.AIR_AROUND or Config.settings['MODEL'] == LdProduct.AIR_BIKE:
+        from firmware.models.air_around import AirAround
         device = AirAround(Config.settings['MODEL'], service, sensors, battery_monitor, led_controller)
+    if Config.settings['MODEL'] == LdProduct.AIR_BADGE:
+        from models.air_badge import AirBadge
+        device = AirBadge(
+            ble_service=ble, 
+            sensors=sensors,
+            battery_monitor=battery_monitor,
+            status_led=status_led
+        )
     if Config.settings['MODEL'] == LdProduct.AIR_CUBE:
         from models.air_cube import AirCube
         device = AirCube(service, sensors, battery_monitor, led_controller)

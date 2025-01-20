@@ -1,4 +1,4 @@
-from models.ld_portable import LdProductModel 
+from firmware.models.air_around import LdProductModel 
 from enums import LdProduct, BleCommands
 from logger import logger
 
