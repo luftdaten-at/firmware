@@ -18,6 +18,9 @@ from sensors.virtual_sensor import VirtualSensor
 class AirCube(LdProductModel): 
     NEOPIXEL_PIN = board.IO8
     NEOPIXLE_N = 5
+    SCL = None
+    SDA = None
+    BUTTON_PIN = None
 
     def __init__(self, ble_service, sensors, battery_monitor):
         super().__init__(ble_service, sensors, battery_monitor)
