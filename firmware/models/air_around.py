@@ -14,8 +14,8 @@ class AirAround(LdProductModel):
     SDA = None
     BUTTON_PIN = None
 
-    def __init__(self, model, ble_service, sensors, battery_monitor, status_led):
-        super().__init__(ble_service, sensors, battery_monitor, status_led)
+    def __init__(self, model, ble_service, sensors, battery_monitor):
+        super().__init__(ble_service, sensors, battery_monitor)
         self.polling_interval = 0.01
         self.model_id = model
         self.ble_on = True

@@ -15,8 +15,8 @@ class AirBadge(LdProductModel):
     SDA = None
     BUTTON_PIN = None
 
-    def __init__(self, ble_service, sensors, battery_monitor, status_led):
-        super().__init__(ble_service, sensors, battery_monitor, status_led)
+    def __init__(self, ble_service, sensors, battery_monitor):
+        super().__init__(ble_service, sensors, battery_monitor)
 
         # init status led
         self.status_led = LedController(
