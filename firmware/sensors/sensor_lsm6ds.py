@@ -1,40 +1,40 @@
-import adafruit_ltr390
+from adafruit_lsm6ds.lsm6dsox import LSM6DSOX
 from sensors.sensor import Sensor
 from enums import Dimension, SensorModel, Quality
 from logger import logger
 
-class Sht31Sensor(Sensor):
+class Lsm6ds(Sensor):
     def __init__(self):
         super().__init__()
-        self.model_id = SensorModel.LTR390
+        self.model_id = SensorModel.LSM6DS
         self.measures_values = [
-            Dimension.UVS,
-            Dimension.LIGHT
+            Dimension.ACCELERATION,
+            Dimension.GYRO
         ]
         self.current_values = {
-            Dimension.UVS: None,
-            Dimension.LIGHT: None,
+            Dimension.ACCELERATION: None,
+            Dimension.GYRO: None,
         }
         self.value_quality = {
-            Dimension.UVS: Quality.HIGH,
-            Dimension.LIGHT: Quality.HIGH,
+            Dimension.ACCELERATION: Quality.HIGH,
+            Dimension.GYRO: Quality.HIGH,
         }
         
     def attempt_connection(self, i2c):
         try:
-            self.ltr = adafruit_ltr390.LTR390(i2c)
+            self.sox = LSM6DSOX(i2c)
         except:
-            logger.debug("LTR390 sensor not detected")
+            logger.debug("LSM6DS sensor not detected")
             return False
 
-        logger.debug(f"LTR390 device found on I2C bus {i2c}")
+        logger.debug(f"LSM6DS device found on I2C bus {i2c}")
         return True
 
     def read(self):
         try:
             self.current_values = {
-                Dimension.UVS: self.ltr.uvs,
-                Dimension.LIGHT: self.ltr.light,
+                Dimension.ACCELERATION: self.sox.acceleration,
+                Dimension.GYRO: self.sox.gyro,
             }
         except:
-            logger.error("LTR390 Error")
+            logger.error("LSM6DS Error")
