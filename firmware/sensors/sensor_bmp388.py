@@ -1,40 +1,44 @@
-from adafruit_lsm6ds.lsm6dsox import LSM6DSOX
+import adafruit_bmp3xx
 from sensors.sensor import Sensor
 from enums import Dimension, SensorModel, Quality
 from logger import logger
 
-class Sht31Sensor(Sensor):
+class Bmp388Sensor(Sensor):
     def __init__(self):
         super().__init__()
-        self.model_id = SensorModel.LSM6DS
+        self.model_id = SensorModel.BMP388
         self.measures_values = [
-            Dimension.ACCELERATION,
-            Dimension.GYRO
+            Dimension.TEMPERATURE,
+            Dimension.PRESSURE,
+            Dimension.ALTITUDE
         ]
         self.current_values = {
-            Dimension.ACCELERATION: None,
-            Dimension.GYRO: None,
+            Dimension.TEMPERATURE: None,
+            Dimension.PRESSURE: None,
+            Dimension.ALTITUDE: None
         }
         self.value_quality = {
-            Dimension.ACCELERATION: Quality.HIGH,
-            Dimension.GYRO: Quality.HIGH,
+            Dimension.TEMPERATURE: Quality.HIGH,
+            Dimension.PRESSURE: Quality.HIGH,
+            Dimension.ALTITUDE: Quality.HIGH 
         }
         
     def attempt_connection(self, i2c):
         try:
-            self.sox = LSM6DSOX(i2c)
+            self.bmp = adafruit_bmp3xx.BMP3XX_I2C(i2c)
         except:
-            logger.debug("LSM6DS sensor not detected")
+            logger.debug("Bmp388 sensor not detected")
             return False
 
-        logger.debug(f"LSM6DS device found on I2C bus {i2c}")
+        logger.debug(f"Bmp388 device found on I2C bus {i2c}")
         return True
 
     def read(self):
         try:
             self.current_values = {
-                Dimension.ACCELERATION: self.sox.acceleration,
-                Dimension.GYRO: self.sox.gyro,
+                Dimension.TEMPERATURE: self.bmp.temperature,
+                Dimension.PRESSURE: self.bmp.pressure,
+                Dimension.ALTITUDE: self.bmp.altitude
             }
         except:
-            logger.error("LSM6DS Error")
+            logger.error("Bmp388 Error")

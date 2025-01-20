@@ -133,8 +133,9 @@ class Dimension():
     ADJUSTED_TEMP_CUBE = 19
     UVS = 20
     LIGHT = 21
-    ACCELERATION = 22,
-    GYRO = 23,
+    ACCELERATION = 22
+    GYRO = 23
+    ALTITUDE = 24
 
 
     thresholds = {
