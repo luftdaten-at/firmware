@@ -80,7 +80,7 @@ def main():
     # init ble name
     ble.name = "Luftdaten.at-" + Config.settings['mac']
 
-
+    # Select correct Device base on Config.settings['MODEL']
     device = None
     if Config.settings['MODEL'] == LdProduct.AIR_AROUND or Config.settings['MODEL'] == LdProduct.AIR_BIKE:
         from models.air_around import AirAround
@@ -98,21 +98,6 @@ def main():
     if Config.settings['MODEL'] == LdProduct.AIR_STATION:
         from models.air_station import AirStation
         device = AirStation(service, sensors, battery_monitor)
-
-    '''
-    # bad Model was not recognised
-    if device is None:
-        logger.critical("Model not recognised")
-        led_controller.show_led({
-            'repeat_mode': RepeatMode.FOREVER,
-            'elements': [
-                {'color': Color.RED, 'duration': 0.5},
-                {'color': Color.ORANGE, 'duration': 0.5},
-            ],
-        })
-        while True:
-            LedController.tick()
-    '''
 
     # Set up device info characteristic
     device_info_data = bytearray([
