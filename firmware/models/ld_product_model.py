@@ -25,16 +25,20 @@ class LdProductModel:
         self.battery_monitor = battery_monitor
         self.status = bytearray([0, 0, 0, 0])
 
-        print(self.get_initial_info())
+        # try to connect to wifi if not connected
+        if not WifiUtil.radio.connected:
+            WifiUtil.connect()
         # try to send status to API
         if WifiUtil.radio.connected:
             # prepare station info
             data = self.get_initial_info()
             api_url = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
-            WifiUtil.send_json_to_api(
+            logger.debug('Try to send initial info to datahub')
+            resp = WifiUtil.send_json_to_api(
                 data=data,
                 api_url=api_url,
             )
+            logger.debug(f'Datahub response: {resp}')
 
 
     def get_initial_info(self):
