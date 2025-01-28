@@ -198,7 +198,7 @@ class Dimension():
     }
 
     _required_sensors = {
-        ADJUSTED_TEMP_CUBE: set([SensorModel.AHT20, SensorModel.SHT4X, SensorModel.SEN5X])
+        ADJUSTED_TEMP_CUBE: set([SensorModel.SHT4X, SensorModel.SEN5X])
     }
 
     _sensor_community_names = {
