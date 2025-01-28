@@ -18,28 +18,9 @@ from led_controller import LedController, RepeatMode
 from wifi_client import WifiUtil
 from ugm.upgrade_mananger import Ugm
 from logger import logger
+from util import get_battery_monitor, get_connected_sensors, get_model_id_from_sensors
 
 def main():
-    # Initialize status LED(s) at GPIO8
-    '''
-    status_led = neopixel.NeoPixel(board.IO8, 5 if Config.settings['MODEL'] == LdProduct.AIR_CUBE else 1)
-
-    led_controller = LedController(status_led, 1)
-    led_controller.show_led({
-        'repeat_mode': RepeatMode.PERMANENT,
-        'color': Color.YELLOW,
-    })
-    led_controller.tick()
-    '''
-
-    # Check boot mode
-    # Options:
-    # - normal:
-    #    - Check if button is pressed
-    #        - If pressed, check all sensors and save to boot.toml. Reboot into transmit mode.
-    #        - If not pressed, load boot.toml and connect to all sensors listed. Start BLE operation.
-    # - detectmodel
-
     logger.debug('loaded main.py')
 
     # Load startup config
@@ -67,76 +48,9 @@ def main():
     button = digitalio.DigitalInOut(button_pin)
     button.direction = digitalio.Direction.INPUT
 
-    def get_connected_sensors():
-        from sensors.sensor_sen5x import Sen5xSensor
-        from sensors.sensor_bme280 import BME280Sensor
-        from sensors.sensor_bme680 import BME680Sensor
-        from sensors.sensor_aht20 import AHT20Sensor
-        from sensors.sensor_bmp280 import BMP280Sensor
-        from sensors.sensor_ags02ma import AGS02MASensor
-        from sensors.sensor_scd4x import Scd4xSensor
-        from sensors.sensor_sht30 import Sht30Sensor
-        from sensors.sensor_sht31 import Sht31Sensor
-        from sensors.sensor_sht4x import Sht4xSensor
-        from sensors.sensor_sgp40 import Sgp40Sensor
-
-        # List of sensors that we will attempt to connect to
-        defined_sensors = [
-            Sen5xSensor(),
-            BME280Sensor(),
-            BME680Sensor(),
-            AHT20Sensor(),
-            BMP280Sensor(),
-            AGS02MASensor(),
-            Sht30Sensor(),
-            Sht31Sensor(),
-            Scd4xSensor(),
-            Sht4xSensor(),
-            Sgp40Sensor(),
-        ]
-
-        connected_sensors = {}
-
-        for sensor in defined_sensors:
-            if sensor.attempt_connection(i2c):
-                logger.info(f'Found sensor: {sensor.model_id}')
-                connected_sensors[sensor.model_id] = sensor
-
-        return connected_sensors
-
-    def get_battery_monitor():
-        # Try to connect to battery sensor, as that is part of criteria
-        from sensors.max17048 import MAX17048
-        battery_monitor = None
-        for i in range(10):
-            try:
-                battery_monitor = MAX17048(i2c)
-                logger.info(f'Attempt {i + 1}: Battery monitor initialized')
-                break
-            except:
-                pass
-            logger.info("Waiting 0.5 seconds before retrying battery monitor initialization")
-            time.sleep(0.5)
-        
-        return battery_monitor
-
-    def get_model_id_from_sensors(connected_sensors: dict, battery_monitor) -> int:
-        # Find correct model
-        device_model = -1
-        if connected_sensors.get(SensorModel.SCD4X, None):
-            device_model = LdProduct.AIR_CUBE
-        elif battery_monitor is None:
-            device_model = LdProduct.AIR_STATION
-        elif not connected_sensors.get(SensorModel.SEN5X, None):
-            device_model = LdProduct.AIR_BADGE
-        else:
-            device_model = LdProduct.AIR_AROUND
-        
-        return device_model
-
     # get connected sensors
-    connected_sensors = get_connected_sensors()
-    battery_monitor = get_battery_monitor()
+    connected_sensors = get_connected_sensors(i2c)
+    battery_monitor = get_battery_monitor(i2c)
 
     # auto detect model if model=-1
     if Config.settings['MODEL'] == -1:
@@ -166,33 +80,24 @@ def main():
     # init ble name
     ble.name = "Luftdaten.at-" + Config.settings['mac']
 
-    # init led controller
-    status_led = neopixel.NeoPixel(board.IO8, 5 if Config.settings['MODEL'] == LdProduct.AIR_CUBE else 1)
-    led_controller = LedController(status_led, 5 if Config.settings['MODEL'] == LdProduct.AIR_CUBE else 1)
-
+    # Select correct Device base on Config.settings['MODEL']
     device = None
-    if Config.settings['MODEL'] == LdProduct.AIR_AROUND or Config.settings['MODEL'] == LdProduct.AIR_BADGE or Config.settings['MODEL'] == LdProduct.AIR_BIKE:
-        from models.ld_portable import LdPortable
-        device = LdPortable(Config.settings['MODEL'], service, sensors, battery_monitor, led_controller)
+    if Config.settings['MODEL'] == LdProduct.AIR_AROUND or Config.settings['MODEL'] == LdProduct.AIR_BIKE:
+        from models.air_around import AirAround
+        device = AirAround(Config.settings['MODEL'], service, sensors, battery_monitor)
+    if Config.settings['MODEL'] == LdProduct.AIR_BADGE:
+        from models.air_badge import AirBadge
+        device = AirBadge(
+            ble_service=ble, 
+            sensors=sensors,
+            battery_monitor=battery_monitor,
+        )
     if Config.settings['MODEL'] == LdProduct.AIR_CUBE:
         from models.air_cube import AirCube
-        device = AirCube(service, sensors, battery_monitor, led_controller)
+        device = AirCube(service, sensors, battery_monitor)
     if Config.settings['MODEL'] == LdProduct.AIR_STATION:
         from models.air_station import AirStation
-        device = AirStation(service, sensors, battery_monitor, led_controller)
-
-    # bad Model was not recognised
-    if device is None:
-        logger.critical("Model not recognised")
-        led_controller.show_led({
-            'repeat_mode': RepeatMode.FOREVER,
-            'elements': [
-                {'color': Color.RED, 'duration': 0.5},
-                {'color': Color.ORANGE, 'duration': 0.5},
-            ],
-        })
-        while True:
-            LedController.tick()
+        device = AirStation(service, sensors, battery_monitor)
 
     # Set up device info characteristic
     device_info_data = bytearray([
@@ -248,19 +153,19 @@ def main():
         points = [25, 50, 75]
         # critical
         if percent < CRITICAL:
-            status_led.fill(Color.RED)
-            status_led.show()
+            device.status_led.status_led.fill(Color.RED)
+            device.status_led.status_led.show()
             time.sleep(0.2)
-            status_led.fill(Color.OFF)
-            status_led.show()
+            device.status_led.status_led.fill(Color.OFF)
+            device.status_led.status_led.show()
         else:
             for point in points:
                 if percent > point:
-                    status_led.fill(Color.GREEN)
-                    status_led.show()
+                    device.status_led.status_led.fill(Color.GREEN)
+                    device.status_led.status_led.show()
                     time.sleep(0.5)
-                    status_led.fill(Color.OFF)
-                    status_led.show()
+                    device.status_led.status_led.fill(Color.OFF)
+                    device.status_led.status_led.show()
                     time.sleep(0.5)
         time.sleep(2)
 
@@ -309,14 +214,12 @@ def main():
             service.trigger_reading_characteristic_2 = bytearray()
 
             device.receive_command(command)
-            led_controller.receive_command(command)
+            device.status_led.receive_command(command)
 
         device.tick()
-        led_controller.tick()
+        device.status_led.tick()
 
         time.sleep(device.polling_interval)
-
-        print(device.get_json())
 
 if __name__ == '__main__':
     try:

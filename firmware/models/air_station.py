@@ -1,11 +1,14 @@
 import time
+import board
 import struct
+import neopixel
 from wifi_client import WifiUtil
 from storage import remount
 from json import dump, load, loads
 from lib.cptoml import fetch
 from os import listdir, remove, uname
 
+from led_controller import LedController
 from config import Config
 from models.ld_product_model import LdProductModel
 from ld_service import LdService
@@ -13,9 +16,15 @@ from enums import LdProduct, Color, BleCommands, AirstationConfigFlags, Dimensio
 from logger import logger
 from led_controller import RepeatMode
 
-class AirStation(LdProductModel): 
-    def __init__(self, ble_service: LdService, sensors, battery_monitor, status_led):
-        super().__init__(ble_service, sensors, battery_monitor, status_led)
+class AirStation(LdProductModel):
+    NEOPIXEL_PIN = board.IO8
+    NEOPIXLE_N = 1
+    SCL = None
+    SDA = None
+    BUTTON_PIN = None
+
+    def __init__(self, ble_service: LdService, sensors, battery_monitor):
+        super().__init__(ble_service, sensors, battery_monitor)
         self.model_id = LdProduct.AIR_STATION
         self.ble_on = True
         self.polling_interval = 2
@@ -24,6 +33,15 @@ class AirStation(LdProductModel):
         # Load settings from boot.toml
         self.device_id = Config.settings['device_id'] 
         self.api_key = Config.settings['api_key']
+
+        # init status led
+        self.status_led = LedController(
+            status_led=neopixel.NeoPixel(
+                pin=AirStation.NEOPIXEL_PIN,
+                n=AirStation.NEOPIXLE_N
+            ),
+            n=AirStation.NEOPIXLE_N
+        )
 
         self.send_configuration()
 

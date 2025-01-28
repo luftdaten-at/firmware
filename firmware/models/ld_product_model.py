@@ -1,7 +1,12 @@
+import time
+
 from logger import logger
+from wifi_client import WifiUtil
+from config import Config
+from sensors.sensor import Sensor
 
 class LdProductModel:
-    def __init__(self, ble_service, sensors, battery_monitor, status_led):
+    def __init__(self, ble_service, sensors: list[Sensor], battery_monitor):
         self.model_id = None
         """Product model."""
         
@@ -18,8 +23,52 @@ class LdProductModel:
         self.ble_service = ble_service
         self.sensors = sensors
         self.battery_monitor = battery_monitor
-        self.status_led = status_led
         self.status = bytearray([0, 0, 0, 0])
+
+        # try to connect to wifi if not connected
+        if not WifiUtil.radio.connected:
+            WifiUtil.connect()
+        # try to send status to API
+        if WifiUtil.radio.connected:
+            # prepare station info
+            data = self.get_initial_info()
+            api_url = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
+            logger.debug('Try to send initial info to datahub')
+            resp = WifiUtil.send_json_to_api(
+                data=data,
+                api_url=api_url,
+            )
+            logger.debug(f'Datahub response: {resp.text}')
+
+
+    def get_initial_info(self):
+        """
+        returns station info json for datahub status
+        """
+        current_time = time.localtime()
+        formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
+
+        device_info = {
+            "station": {
+                "time": formatted_time,
+                "device": Config.settings['device_id'],
+                "firmware": f"{Config.settings['FIRMWARE_MAJOR']}.{Config.settings['FIRMWARE_MINOR']}.{Config.settings['FIRMWARE_PATCH']}",
+                "model": Config.settings['MODEL'],
+                "apikey": Config.settings['api_key'],
+                
+                # list of all connected sensors
+                "sensor_list": [
+                    {
+                        "model_id": sensor.model_id,
+                        "dimension_list": sensor.measures_values
+                    } for sensor in self.sensors
+                ]
+            },
+            "sensors": {}
+        }
+
+        return device_info
+
         
     def receive_command(self, command):
         """Process a command received on the BLE command characteristic."""

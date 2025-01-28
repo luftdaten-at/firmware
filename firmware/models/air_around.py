@@ -1,14 +1,33 @@
+import board
+import neopixel
+
+from led_controller import LedController
 from models.ld_product_model import LdProductModel
 from led_controller import RepeatMode
 from enums import Color, BleCommands
 from logger import logger
 
-class LdPortable(LdProductModel): 
-    def __init__(self, model, ble_service, sensors, battery_monitor, status_led):
-        super().__init__(ble_service, sensors, battery_monitor, status_led)
+class AirAround(LdProductModel): 
+    NEOPIXEL_PIN = board.IO8
+    NEOPIXLE_N = 1
+    SCL = None
+    SDA = None
+    BUTTON_PIN = None
+
+    def __init__(self, model, ble_service, sensors, battery_monitor):
+        super().__init__(ble_service, sensors, battery_monitor)
         self.polling_interval = 0.01
         self.model_id = model
         self.ble_on = True
+
+        # init status led
+        self.status_led = LedController(
+            status_led=neopixel.NeoPixel(
+                pin=AirAround.NEOPIXEL_PIN,
+                n=AirAround.NEOPIXLE_N
+            ),
+            n=AirAround.NEOPIXLE_N
+        )
         
     def receive_command(self, command):
         if not command:

@@ -19,7 +19,7 @@ class WifiUtil:
         if not Config.settings['SSID'] or not Config.settings['PASSWORD']:
             return False
         try:
-            logger.debug('Connecting to Wifi:', Config.settings['SSID'], Config.settings['PASSWORD'])
+            logger.debug('Connecting to Wifi:', Config.settings['SSID'])
             wifi_radio.connect(Config.settings['SSID'], Config.settings['PASSWORD'])
             logger.debug('Connection established to Wifi', Config.settings['SSID'])
 
@@ -87,11 +87,14 @@ class WifiUtil:
     
 
     @staticmethod
-    def send_json_to_api(data, router: str = 'data/'):
+    def send_json_to_api(data, api_url: str = None, router: str = 'data/'):
+        if not api_url:
+            api_url = Config.runtime_settings['API_URL']
         gc.collect()
+        logger.debug(f"{api_url}/{router}")
         response = WifiUtil.api_session.request(
             method='POST',
-            url=f"{Config.runtime_settings['API_URL']}/{router}",
+            url=f"{api_url}/{router}",
             json=data
         )
         # send to additional APIs

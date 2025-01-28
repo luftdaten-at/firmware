@@ -1,8 +1,11 @@
 import time
+import board
+import neopixel
 from os import listdir, remove, uname
 from storage import remount
 from json import dump, load, loads, dumps
 
+from led_controller import LedController
 from wifi_client import WifiUtil
 from led_controller import RepeatMode
 from models.ld_product_model import LdProductModel
@@ -13,8 +16,14 @@ from sensors.virtual_sensor import VirtualSensor
 
 
 class AirCube(LdProductModel): 
-    def __init__(self, ble_service, sensors, battery_monitor, status_led):
-        super().__init__(ble_service, sensors, battery_monitor, status_led)
+    NEOPIXEL_PIN = board.IO8
+    NEOPIXLE_N = 5
+    SCL = None
+    SDA = None
+    BUTTON_PIN = None
+
+    def __init__(self, ble_service, sensors, battery_monitor):
+        super().__init__(ble_service, sensors, battery_monitor)
         self.polling_interval = 0.01
         self.model_id = LdProduct.AIR_CUBE
         self.ble_on = False
@@ -23,6 +32,15 @@ class AirCube(LdProductModel):
 
         self.device_id = Config.settings['device_id'] 
         self.api_key = Config.settings['api_key']
+
+        # init status led
+        self.status_led = LedController(
+            status_led=neopixel.NeoPixel(
+                pin=AirCube.NEOPIXEL_PIN,
+                n=AirCube.NEOPIXLE_N
+            ),
+            n=AirCube.NEOPIXLE_N
+        )
         
         calculated_dimension_set = set([Dimension.ADJUSTED_TEMP_CUBE])
         required_sensor_id_set = set(
