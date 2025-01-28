@@ -91,6 +91,7 @@ class WifiUtil:
         if not api_url:
             api_url = Config.runtime_settings['API_URL']
         gc.collect()
+        logger.debug(f"{api_url}/{router}")
         response = WifiUtil.api_session.request(
             method='POST',
             url=f"{api_url}/{router}",

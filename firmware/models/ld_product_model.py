@@ -53,7 +53,7 @@ class LdProductModel:
                 "time": formatted_time,
                 "device": Config.settings['device_id'],
                 "firmware": f"{Config.settings['FIRMWARE_MAJOR']}.{Config.settings['FIRMWARE_MINOR']}.{Config.settings['FIRMWARE_PATCH']}",
-                "model": self.model_id,
+                "model": Config.settings['MODEL'],
                 "apikey": Config.settings['api_key'],
                 
                 # list of all connected sensors
