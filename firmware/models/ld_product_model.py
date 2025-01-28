@@ -38,7 +38,7 @@ class LdProductModel:
                 data=data,
                 api_url=api_url,
             )
-            logger.debug(f'Datahub response: {resp}')
+            logger.debug(f'Datahub response: {resp.text}')
 
 
     def get_initial_info(self):
