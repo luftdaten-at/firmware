@@ -87,11 +87,11 @@ class WifiUtil:
     
 
     @staticmethod
-    def send_json_to_api(data, router: str = 'data/'):
+    def send_json_to_api(data, api_url: str = Config.runtime_settings['API_URL'], router: str = 'data/'):
         gc.collect()
         response = WifiUtil.api_session.request(
             method='POST',
-            url=f"{Config.runtime_settings['API_URL']}/{router}",
+            url=f"{api_url}/{router}",
             json=data
         )
         # send to additional APIs

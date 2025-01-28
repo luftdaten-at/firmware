@@ -25,14 +25,19 @@ class LdProductModel:
         self.battery_monitor = battery_monitor
         self.status = bytearray([0, 0, 0, 0])
 
-        print(self.get_info())
+        print(self.get_initial_info())
         # try to send status to API
         if WifiUtil.radio.connected:
             # prepare station info
-            pass
+            data = self.get_initial_info()
+            api_url = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
+            WifiUtil.send_json_to_api(
+                data=data,
+                api_url=api_url,
+            )
 
 
-    def get_info(self):
+    def get_initial_info(self):
         """
         returns station info json for datahub status
         """
@@ -54,7 +59,8 @@ class LdProductModel:
                         "dimension_list": sensor.measures_values
                     } for sensor in self.sensors
                 ]
-            }
+            },
+            "sensors": {}
         }
 
         return device_info
