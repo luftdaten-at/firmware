@@ -116,7 +116,7 @@ class LdProductModel:
                     data = self.get_info()
                     data["status_list"] = status_list
 
-                    response = WifiUtil.send_json_to_api(data, router='status')
+                    response = WifiUtil.send_json_to_api(data, router='status/')
                     logger.debug(f'{file_path=}')
                     logger.debug(f'API Response: {response.status_code}')
                     logger.debug(f'API Response: {response.text}')
