@@ -90,6 +90,44 @@ class AirCube(LdProductModel):
             })
         else:
             self.status_led.turn_off_led()
+            
+    def _updateLed(self, led_id, value, color_cutoffs, colors):
+        color = colors[0]
+        for i in range(len(color_cutoffs)):
+            if value > color_cutoffs[i]:
+                color = colors[i + 1]
+        self.status_led.show_led({
+            'repeat_mode': RepeatMode.PERMANENT,
+            'color': color,
+        }, led_id)
+
+    def connection_update(self, connected):
+        if connected:
+            self.status_led.show_led({
+                'repeat_mode': RepeatMode.TIMES,
+                'repeat_times': 1,
+                'elements': [
+                    {'color': Color.GREEN, 'duration': 1},
+                ],
+            })
+        else:
+            self.status_led.show_led({
+                'repeat_mode': RepeatMode.FOREVER,
+                'elements': [
+                    {'color': Color.CYAN, 'duration': 0.5},
+                    {'color': Color.OFF, 'duration': 0.5},
+                ],
+            })
+
+    def get_info(self):
+        device_info = super().get_info()
+        device_info['station']['battery'] = {
+            # cell_voltage() -> returns mili volt / 1000 to convert to volts
+            "voltage": self.battery_monitor.cell_voltage() / 1000 if self.battery_monitor else None,
+            "percentage": self.battery_monitor.cell_soc() if self.battery_monitor else None,
+        }
+
+        return device_info
     
     def tick(self):
         # Measure every 5 seconds (allow this to be settable)
@@ -153,126 +191,3 @@ class AirCube(LdProductModel):
                                 [800, 1000, 1400], 
                                 [Color.GREEN, Color.YELLOW, Color.ORANGE, Color.RED],
                                 )
-        
-
-            
-    def _updateLed(self, led_id, value, color_cutoffs, colors):
-        color = colors[0]
-        for i in range(len(color_cutoffs)):
-            if value > color_cutoffs[i]:
-                color = colors[i + 1]
-        self.status_led.show_led({
-            'repeat_mode': RepeatMode.PERMANENT,
-            'color': color,
-        }, led_id)
-
-    def connection_update(self, connected):
-        if connected:
-            self.status_led.show_led({
-                'repeat_mode': RepeatMode.TIMES,
-                'repeat_times': 1,
-                'elements': [
-                    {'color': Color.GREEN, 'duration': 1},
-                ],
-            })
-        else:
-            self.status_led.show_led({
-                'repeat_mode': RepeatMode.FOREVER,
-                'elements': [
-                    {'color': Color.CYAN, 'duration': 0.5},
-                    {'color': Color.OFF, 'duration': 0.5},
-                ],
-            })
-    
-    def save_data(self, data: dict, tag = 'normal'):
-        current_time = time.localtime()
-        formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
-        remount('/', False) 
-        file_name = formatted_time.replace(':', '_').replace('.', '_')
-        with open(f'{Config.runtime_settings["JSON_QUEUE"]}/{file_name}_{tag}.json', 'w') as f:
-            dump(data, f)
-        remount('/', False)
-
-    def read_all_sensors(self):
-        for sensor in self.sensors:
-            try:
-                sensor.read()
-            except:
-                logger.error(f"Error reading sensor {sensor.model_id}, using previous values")
-
-    def get_info(self):
-        current_time = time.localtime()
-        formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
-
-        device_info = {
-            "station": {
-                "time": formatted_time,
-                "device": self.device_id,
-                "firmware": f"{Config.settings['FIRMWARE_MAJOR']}.{Config.settings['FIRMWARE_MINOR']}.{Config.settings['FIRMWARE_PATCH']}",
-                "model": self.model_id,
-                "apikey": self.api_key,
-
-                "battery": {
-                    # cell_voltage() -> returns mili volt / 1000 to convert to volts
-                    "voltage": self.battery_monitor.cell_voltage() / 1000 if self.battery_monitor else None,
-                    "percentage": self.battery_monitor.cell_soc() if self.battery_monitor else None,
-                },
-
-                "source": 1,
-                "location": {
-                    "lat": Config.settings.get("latitude", None),
-                    "lon": Config.settings.get("longitude", None),
-                    "height": Config.settings.get("height", None)
-                }
-            }
-        }
-
-        return device_info
-
-    def get_json(self):
-        self.read_all_sensors()
-        sensor_values = {}
-        for id, sensor in enumerate(self.sensors):
-            sensor_values[id] = {
-                "type": sensor.model_id,
-                "data": sensor.current_values
-            }
-
-        data = self.get_info()
-        data["sensors"] = sensor_values
-
-        return data
-
-    def send_to_api(self):
-        for file_path in (f'{Config.runtime_settings["JSON_QUEUE"]}/{f}' for f in listdir(Config.runtime_settings["JSON_QUEUE"])):
-            logger.debug(f'process file: {file_path}')
-            with open(file_path, 'r') as f:
-                data = load(f)
-
-                if 'tmp_log.txt' in file_path:
-                    # send status to Luftdaten APi
-                    status_list = []
-                    for line in f.readlines():
-                        status_list.append(loads(line))
-
-                    data = self.get_info()
-                    data["status_list"] = status_list
-
-                    response = WifiUtil.send_json_to_api(data, router='status/')
-                    logger.debug(f'{file_path=}')
-                    logger.debug(f'API Response: {response.status_code}')
-                    logger.debug(f'API Response: {response.text}')
-                    if response.status_code == 200:  # Placeholder for successful sending check
-                        remount('/', False)
-                        remove(file_path) 
-                        remount('/', True)
-                else:
-                    # send to django APi
-                    response = WifiUtil.send_json_to_api(data)
-                    logger.debug(f'{file_path=}')
-                    logger.debug(f'API Response: {response.status_code}')
-                    logger.debug(f'API Response: {response.text}')
-                    if response.status_code in (200, 422):  # Placeholder for successful sending check
-                        remount('/', False)
-                        remove(file_path) 
-                        remount('/', True)

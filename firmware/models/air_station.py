@@ -152,55 +152,14 @@ class AirStation(LdProductModel):
         pass
 
     def get_info(self):
-        current_time = time.localtime()
-        formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
-
-        device_info = {
-            "station": {
-                "time": formatted_time,
-                "device": self.device_id,
-                "firmware": uname()[3],
-                "apikey": self.api_key,
-                "source": 1,
-                "location": {
-                    "lat": Config.settings.get("latitude", None),
-                    "lon": Config.settings.get("longitude", None),
-                    "height": Config.settings.get("height", None)
-                }
-            }
+        device_info = super().get_info()
+        device_info['station']['location'] = {
+            "lat": Config.settings.get("latitude", None),
+            "lon": Config.settings.get("longitude", None),
+            "height": Config.settings.get("height", None)
         }
 
-        return device_info
-
-    def save_data(self, data: dict, tag = 'normal'):
-        current_time = time.localtime()
-        formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
-        remount('/', False) 
-        file_name = formatted_time.replace(':', '_').replace('.', '_')
-        with open(f'{Config.runtime_settings["JSON_QUEUE"]}/{file_name}_{tag}.json', 'w') as f:
-            dump(data, f)
-        remount('/', False)
-
-    def read_all_sensors(self):
-        for sensor in self.sensors:
-            try:
-                sensor.read()
-            except:
-                logger.error(f"Error reading sensor {sensor.model_id}, using previous values")
-
-    def get_json(self):
-        self.read_all_sensors()
-        sensor_values = {}
-        for id, sensor in enumerate(self.sensors):
-            sensor_values[id] = {
-                "type": sensor.model_id,
-                "data": sensor.current_values
-            }
-
-        data = self.get_info()
-        data["sensors"] = sensor_values
-
-        return data
+        return device_info 
     
     def get_json_list_sensor_community(self):
         '''
@@ -262,55 +221,7 @@ class AirStation(LdProductModel):
 
             dict_list.append((header, data))
 
-        return dict_list
-
-    def send_to_api(self):
-        for file_path in (f'{Config.runtime_settings["JSON_QUEUE"]}/{f}' for f in listdir(Config.runtime_settings["JSON_QUEUE"])):
-            logger.debug(f'process file: {file_path}')
-            with open(file_path, 'r') as f:
-                data = load(f)
-
-                if 'tmp_log.txt' in file_path:
-                    # send status to Luftdaten APi
-                    status_list = []
-                    for line in f.readlines():
-                        status_list.append(loads(line))
-
-                    data = self.get_info()
-                    data["status_list"] = status_list
-
-                    response = WifiUtil.send_json_to_api(data, router='status')
-                    logger.debug(f'{file_path=}')
-                    logger.debug(f'API Response: {response.status_code}')
-                    logger.debug(f'API Response: {response.text}')
-                    if response.status_code == 200:  # Placeholder for successful sending check
-                        remount('/', False)
-                        remove(file_path) 
-                        remount('/', True)
-                elif 'sensor_community' in file_path:
-                    # data = List[Tuple(header, data)]
-                    for header, d in data:
-                        response = WifiUtil.send_json_to_sensor_community(header=header, data=d)
-                        logger.debug(f'{file_path=}')
-                        logger.debug(f'API Response: {response.status_code}')
-                        logger.debug(f'API Response: {response.text}')
-                        if response.status_code != 200:
-                            break
-                    else:
-                        remount('/', False)
-                        remove(file_path) 
-                        remount('/', True)
-                else:
-                    # send to Luftdaten APi
-                    response = WifiUtil.send_json_to_api(data)
-                    logger.debug(f'{file_path=}')
-                    logger.debug(f'API Response: {response.status_code}')
-                    logger.debug(f'API Response: {response.text}')
-                    if response.status_code in (200, 422):  # Placeholder for successful sending check
-                        remount('/', False)
-                        remove(file_path) 
-                        remount('/', True)
-                
+        return dict_list 
 
     def tick(self):
         if not Config.runtime_settings['rtc_is_set'] and WifiUtil.radio.connected:

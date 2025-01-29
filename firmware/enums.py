@@ -133,9 +133,15 @@ class Dimension():
     ADJUSTED_TEMP_CUBE = 19
     UVS = 20
     LIGHT = 21
-    ACCELERATION = 22
-    GYRO = 23
-    ALTITUDE = 24
+    ALTITUDE = 22
+    UVI = 23
+    LUX = 24
+    ACCELERATION_X = 25
+    ACCELERATION_Y = 26
+    ACCELERATION_Z = 27
+    GYRO_X = 28
+    GYRO_Y = 29
+    GYRO_Z = 30
 
 
     thresholds = {
@@ -144,6 +150,7 @@ class Dimension():
         TVOC: ([220, 1430], [Color.GREEN, Color.YELLOW, Color.RED]),
         CO2: ([800, 1000, 1400], [Color.GREEN, Color.YELLOW, Color.ORANGE, Color.RED]),
         ADJUSTED_TEMP_CUBE: ([18, 24], [Color.BLUE, Color.GREEN, Color.RED]),
+        UVI: ([3, 6, 8, 11], [Color.GREEN, Color.YELLOW, Color.ORANGE, Color.RED, Color.PURPLE])
     }
 
     # Dictionary für die Einheiten der Dimensionen
@@ -167,8 +174,14 @@ class Dimension():
         SGP40_RAW_GAS: "Ω",
         SGP40_ADJUSTED_GAS: "Ω",
         ADJUSTED_TEMP_CUBE: "°C",
-        ACCELERATION: "m/s²",
-        GYRO: "radians/s"
+        ACCELERATION_X: "m/s²",
+        ACCELERATION_Y: "m/s²",
+        ACCELERATION_Z: "m/s²",
+        GYRO_X: "radians/s",
+        GYRO_Y: "radians/s",
+        GYRO_Z: "radians/s",
+        UVI: "UV Index",
+        LUX: "lx"
     }
 
     _names = {
@@ -193,8 +206,14 @@ class Dimension():
         ADJUSTED_TEMP_CUBE: "Adjusted Temperature Air Cube",
         UVS: "UVS",
         LIGHT: "Light",
-        ACCELERATION: "acceleration",
-        GYRO: "gyro"
+        ACCELERATION_X: "acceleration X",
+        ACCELERATION_Y: "acceleration Y",
+        ACCELERATION_Z: "acceleration Z",
+        GYRO_X: "gyro X",
+        GYRO_Y: "gyro Y",
+        GYRO_Z: "gyro Z",
+        UVI: "UV Index",
+        LUX: "Lux"
     }
 
     _required_sensors = {
