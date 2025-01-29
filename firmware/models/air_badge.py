@@ -1,6 +1,9 @@
 import neopixel
 import board
+import time
 
+from wifi_client import WifiUtil
+from config import Config
 from led_controller import LedController
 from models.ld_product_model import LdProductModel
 from enums import LdProduct, BleCommands
@@ -17,6 +20,8 @@ class AirBadge(LdProductModel):
 
     def __init__(self, ble_service, sensors, battery_monitor):
         super().__init__(ble_service, sensors, battery_monitor)
+
+        self.last_measurement = None
 
         # init status led
         self.status_led = LedController(
@@ -36,3 +41,14 @@ class AirBadge(LdProductModel):
         if cmd == BleCommands.READ_SENSOR_DATA_AND_BATTERY_STATUS:
             self.update_ble_battery_status()
             logger.debug("Battery status updated")
+
+    def tick(self):
+        if self.last_measurement is None or time.monotonic() - self.last_measurement >= Config.settings['measurement_interval']:
+            # set last measurement to now
+            self.last_measurement = time.monotonic()
+
+            # send to API
+            data = self.get_json()
+            self.save_data(data=data)
+            if WifiUtil.radio.connected:
+                self.send_to_api()
