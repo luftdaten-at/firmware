@@ -136,6 +136,8 @@ class Dimension():
     ACCELERATION = 22
     GYRO = 23
     ALTITUDE = 24
+    UVI = 25
+    LUX = 26
 
 
     thresholds = {
@@ -144,6 +146,7 @@ class Dimension():
         TVOC: ([220, 1430], [Color.GREEN, Color.YELLOW, Color.RED]),
         CO2: ([800, 1000, 1400], [Color.GREEN, Color.YELLOW, Color.ORANGE, Color.RED]),
         ADJUSTED_TEMP_CUBE: ([18, 24], [Color.BLUE, Color.GREEN, Color.RED]),
+        UVI: ([3, 6, 8, 11], [Color.GREEN, Color.YELLOW, Color.ORANGE, Color.RED, Color.PURPLE])
     }
 
     # Dictionary für die Einheiten der Dimensionen
@@ -168,7 +171,9 @@ class Dimension():
         SGP40_ADJUSTED_GAS: "Ω",
         ADJUSTED_TEMP_CUBE: "°C",
         ACCELERATION: "m/s²",
-        GYRO: "radians/s"
+        GYRO: "radians/s",
+        UVI: "UV Index",
+        LUX: "lx"
     }
 
     _names = {
@@ -194,7 +199,9 @@ class Dimension():
         UVS: "UVS",
         LIGHT: "Light",
         ACCELERATION: "acceleration",
-        GYRO: "gyro"
+        GYRO: "gyro",
+        UVI: "UV Index",
+        LUX: "Lux"
     }
 
     _required_sensors = {
