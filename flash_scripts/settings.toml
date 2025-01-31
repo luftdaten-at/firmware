@@ -1,0 +1,5 @@
+MODEL = -1
+TEST_MODE =  true
+SSID = "luftdaten.at"
+PASSWORD = "clientpassword"
+SEND_TO_SENSOR_COMMUNITY = false

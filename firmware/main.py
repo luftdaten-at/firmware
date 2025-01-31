@@ -23,7 +23,7 @@ from util import get_battery_monitor, get_connected_sensors, get_model_id_from_s
 def main():
     logger.debug('loaded main.py')
     # simple lighting at initialization
-    led = neopixel.NeoPixle(board.IO8, 1)
+    led = neopixel.NeoPixel(board.IO8, 1)
     led[0] = Color.YELLOW
 
     # Load startup config
