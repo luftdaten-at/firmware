@@ -103,16 +103,18 @@ class LdProductModel:
         return data
     
     def send_to_api(self):
-        logger.debug(f'Use Memory: {gc.mem_alloc()}, Free Memory: {gc.mem_free()}')
         for file_path in (f'{Config.runtime_settings["JSON_QUEUE"]}/{f}' for f in os.listdir(Config.runtime_settings["JSON_QUEUE"])):
             logger.debug(f'process file: {file_path}')
             with open(file_path, 'r') as f:
                 data = json.load(f)
+                lines = f.readlines()
 
-                if 'tmp_log.txt' in file_path:
+                if 'tmp_log.txt' in file_path and lines:
                     # status should always be sent to DATAHUB
+                    logger.debug(f'Use Memory: {gc.mem_alloc()}, Free Memory: {gc.mem_free()}')
+
                     status_list = []
-                    for line in f.readlines():
+                    for line in lines:
                         status_list.append(json.loads(line))
 
                     data = self.get_info()
