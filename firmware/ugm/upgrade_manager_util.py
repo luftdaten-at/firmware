@@ -90,7 +90,7 @@ class WifiUtil:
         if not Config.settings['SSID'] or not Config.settings['PASSWORD']:
             return False
         try:
-            logger.debug('Connecting to Wifi:', Config.settings['SSID'], Config.settings['PASSWORD'])
+            logger.debug('Connecting to Wifi:', Config.settings['SSID'])
             wifi_radio.connect(Config.settings['SSID'], Config.settings['PASSWORD'])
             logger.debug('Connection established to Wifi', Config.settings['SSID'])
 

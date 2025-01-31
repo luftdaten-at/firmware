@@ -2,6 +2,7 @@ import time
 import storage
 import json
 import os
+import gc
 
 from logger import logger
 from wifi_client import WifiUtil
@@ -27,6 +28,8 @@ class LdProductModel:
         self.sensors = sensors
         self.battery_monitor = battery_monitor
         self.status = bytearray([0, 0, 0, 0])
+        self.last_api_send = None
+        self.api_send_interval = 30 # 30 seconds
 
         # try to connect to wifi if not connected
         if not WifiUtil.radio.connected:
@@ -106,17 +109,27 @@ class LdProductModel:
             logger.debug(f'process file: {file_path}')
             with open(file_path, 'r') as f:
                 data = json.load(f)
+                lines = f.readlines()
 
-                if 'tmp_log.txt' in file_path:
-                    # send status to Luftdaten APi
+                if 'tmp_log.txt' in file_path and lines:
+                    # status should always be sent to DATAHUB
+                    logger.debug(f'Use Memory: {gc.mem_alloc()}, Free Memory: {gc.mem_free()}')
+
                     status_list = []
-                    for line in f.readlines():
+                    for line in lines:
                         status_list.append(json.loads(line))
 
                     data = self.get_info()
                     data["status_list"] = status_list
 
-                    response = WifiUtil.send_json_to_api(data, router='status/')
+                    api_url = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
+
+                    response = WifiUtil.send_json_to_api(
+                        data=data, 
+                        api_url=api_url,
+                        router='status/'
+                    )
+
                     logger.debug(f'{file_path=}')
                     logger.debug(f'API Response: {response.status_code}')
                     logger.debug(f'API Response: {response.text}')
