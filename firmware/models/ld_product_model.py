@@ -2,6 +2,7 @@ import time
 import storage
 import json
 import os
+import gc
 
 from logger import logger
 from wifi_client import WifiUtil
@@ -102,13 +103,14 @@ class LdProductModel:
         return data
     
     def send_to_api(self):
+        logger.debug(f'Use Memory: {gc.mem_alloc()}, Free Memory: {gc.mem_free()}')
         for file_path in (f'{Config.runtime_settings["JSON_QUEUE"]}/{f}' for f in os.listdir(Config.runtime_settings["JSON_QUEUE"])):
             logger.debug(f'process file: {file_path}')
             with open(file_path, 'r') as f:
                 data = json.load(f)
 
                 if 'tmp_log.txt' in file_path:
-                    # send status to Luftdaten APi
+                    # status should always be sent to DATAHUB
                     status_list = []
                     for line in f.readlines():
                         status_list.append(json.loads(line))
@@ -116,7 +118,14 @@ class LdProductModel:
                     data = self.get_info()
                     data["status_list"] = status_list
 
-                    response = WifiUtil.send_json_to_api(data, router='status/')
+                    api_url = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
+
+                    response = WifiUtil.send_json_to_api(
+                        data=data, 
+                        api_url=api_url,
+                        router='status/'
+                    )
+
                     logger.debug(f'{file_path=}')
                     logger.debug(f'API Response: {response.status_code}')
                     logger.debug(f'API Response: {response.text}')
