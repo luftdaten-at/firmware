@@ -252,5 +252,7 @@ class AirStation(LdProductModel):
                 if Config.settings['SEND_TO_SENSOR_COMMUNITY']:
                     self.save_data(sensor_community_data, tag='sensor_community')
 
-        if WifiUtil.radio.connected:
-            self.send_to_api()
+        if not self.last_api_send or time.monotonic() - self.last_api_send > self.api_send_interval:
+            if WifiUtil.radio.connected:
+                self.last_api_send = time.monotonic()
+                self.send_to_api()

@@ -28,6 +28,8 @@ class LdProductModel:
         self.sensors = sensors
         self.battery_monitor = battery_monitor
         self.status = bytearray([0, 0, 0, 0])
+        self.last_api_send = None
+        self.api_send_interval = 30 # 30 seconds
 
         # try to connect to wifi if not connected
         if not WifiUtil.radio.connected:
