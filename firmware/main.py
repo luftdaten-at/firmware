@@ -22,6 +22,9 @@ from util import get_battery_monitor, get_connected_sensors, get_model_id_from_s
 
 def main():
     logger.debug('loaded main.py')
+    # simple lighting at initialization
+    led = neopixel.NeoPixle(board.IO8, 1)
+    led[0] = Color.YELLOW
 
     # Load startup config
     Config.init()
@@ -81,6 +84,8 @@ def main():
     ble.name = "Luftdaten.at-" + Config.settings['mac']
 
     # Select correct Device base on Config.settings['MODEL']
+    # de initialize simple lighting, because models have to user the same pin for led controller
+    led.deinit()
     device = None
     if Config.settings['MODEL'] == LdProduct.AIR_AROUND or Config.settings['MODEL'] == LdProduct.AIR_BIKE:
         from models.air_around import AirAround
