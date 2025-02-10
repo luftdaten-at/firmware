@@ -2,7 +2,7 @@
 
 # variables
 port="/dev/ttyACM0"
-circuitpython="/home/nik/Downloads/adafruit-circuitpython-espressif_esp32s3_devkitc_1_n8r8-en_US-9.2.4"
+circuitpython="/home/nik/Downloads/adafruit-circuitpython-espressif_esp32s3_devkitc_1_n8r8-en_US-9.2.4.bin"
 firmware="/home/nik/Documents/firmware/firmware/*"
 target="/media/nik/CIRCUITPY/"
 settings="/home/nik/Documents/firmware/flash_scripts/settings.toml"
