@@ -1,11 +1,12 @@
 #!/bin/bash
+# RUN AS SUPER USER
 
 # variables
-port="/dev/ttyACM0"
-circuitpython="/home/nik/Downloads/adafruit-circuitpython-espressif_esp32s3_devkitc_1_n8r8-en_US-9.2.4.bin"
-firmware="/home/nik/Documents/firmware/firmware/*"
-target="/media/nik/CIRCUITPY/"
-settings="/home/nik/Documents/firmware/flash_scripts/settings.toml"
+circuitpython="circuitpython/adafruit-circuitpython-espressif_esp32s3_devkitc_1_n8r8-en_US-9.2.4.bin"
+firmware="../firmware/*" # must no be changed
+settings="settings.toml" # change if necessary
+port="/dev/ttyACM0" # change depending on operating system
+target="/media/nik/CIRCUITPY/" # change depending on operating system
 
 
 esptool.py --port $port erase_flash
@@ -24,3 +25,5 @@ cp -r $firmware $target
 echo "Copy settings.toml"
 # copy settings.toml
 cp $settings $target
+
+echo "Finished sucessfully ✅"

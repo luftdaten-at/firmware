@@ -1,5 +1,8 @@
 MODEL = 3
-TEST_MODE = false 
+TEST_MODE = true
 SSID = "luftdaten.at"
 PASSWORD = "clientpassword"
 SEND_TO_SENSOR_COMMUNITY = false
+longitude = "48.202475"
+latitude = "16.342945"
+height = "8"
