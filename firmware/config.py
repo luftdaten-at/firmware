@@ -48,6 +48,7 @@ class Config:
 
         # API config
         'TEST_MODE': 'settings.toml',
+        'CALIBRATION_MODE': 'settings.toml',
         'API_URL': 'boot.toml',
         'TEST_API_URL': 'boot.toml',
         'UPDATE_SERVER': 'boot.toml',
@@ -91,6 +92,7 @@ class Config:
 
         # API config
         'TEST_MODE': None,
+        'CALIBRATION_MODE': False,
         'API_URL': None,
         'TEST_API_URL': None,
         'UPDATE_SERVER': None,
