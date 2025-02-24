@@ -52,7 +52,7 @@ class Sen5xSensor(Sensor):
         }
     
     def get_serial_number(self):
-        return self.sen5x_device.get_serial_number().encode('ascii')
+        return str(self.sen5x_device.get_serial_number())
         
     def attempt_connection(self, i2c):
         try:

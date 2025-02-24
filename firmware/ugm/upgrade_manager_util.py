@@ -93,7 +93,7 @@ class Config:
                 Config.settings[key] = val
 
         # set correct update server
-        Config.runtime_settings['UPDATE_SERVER'] = Config.settings['TEST_UPDATE_SERVER'] if Config.settings['TEST_MODE'] else Config.runtime_settings['UPDATE_SERVER']
+        Config.runtime_settings['UPDATE_SERVER'] = Config.settings['TEST_UPDATE_SERVER'] if Config.settings['TEST_MODE'] else Config.settings['UPDATE_SERVER']
 
 
 class WifiUtil:
