@@ -163,7 +163,7 @@ class Config:
         Config.set_api_url()
 
         # set correct update server
-        Config.runtime_settings['UPDATE_SERVER'] = Config.settings['TEST_UPDATE_SERVER'] if Config.settings['TEST_MODE'] else Config.runtime_settings['UPDATE_SERVER']
+        Config.runtime_settings['UPDATE_SERVER'] = Config.settings['TEST_UPDATE_SERVER'] if Config.settings['TEST_MODE'] else Config.settings['UPDATE_SERVER']
         
         # when the device boots the first time
         # some informations have to be generated
