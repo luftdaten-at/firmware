@@ -44,9 +44,13 @@ class Config:
 
         # API config
         'UPDATE_SERVER': 'boot.toml',
+        'TEST_UPDATE_SERVER': 'boot.toml',
 
         # update config
         'ROLLBACK': 'settings.toml',
+
+        # test mode
+        'TEST_MODE': 'settings.toml',
 
         # path for https certificates
         'CERTIFICATE_PATH': 'boot.toml'
@@ -66,10 +70,18 @@ class Config:
         'PASSWORD': None,
 
         'UPDATE_SERVER': None,
+        'TEST_UPDATE_SERVER': None,
         'ROLLBACK': False,
+
+        # test mode
+        'TEST_MODE': None,
 
         'CERTIFICATE_PATH': "certs/isrgrootx1.pem" 
     }, toml_file=key_to_toml_file)
+
+    runtime_settings = {
+        'UPDATE_SERVER': None
+    }
 
     @staticmethod
     def init(only_settings = False):
@@ -79,6 +91,10 @@ class Config:
             val = fetch(key, toml=Config.key_to_toml_file.get(key, 'settings.toml'))
             if val is not None:
                 Config.settings[key] = val
+
+        # set correct update server
+        Config.runtime_settings['UPDATE_SERVER'] = Config.settings['TEST_UPDATE_SERVER'] if Config.settings['TEST_MODE'] else Config.runtime_settings['UPDATE_SERVER']
+
 
 class WifiUtil:
     radio = wifi_radio

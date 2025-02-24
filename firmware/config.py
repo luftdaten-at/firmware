@@ -52,6 +52,7 @@ class Config:
         'API_URL': 'boot.toml',
         'TEST_API_URL': 'boot.toml',
         'UPDATE_SERVER': 'boot.toml',
+        'TEST_UPDATE_SERVER': 'boot.toml',
         'DATAHUB_API_URL': 'boot.toml',
         'DATAHUB_TEST_API_URL': 'boot.toml',
         'SEND_TO_SENSOR_COMMUNITY': 'settings.toml',
@@ -96,6 +97,7 @@ class Config:
         'API_URL': None,
         'TEST_API_URL': None,
         'UPDATE_SERVER': None,
+        'TEST_UPDATE_SERVER': None,
         'DATAHUB_API_URL': None,
         'DATAHUB_TEST_API_URL': None,
         'SEND_TO_SENSOR_COMMUNITY': None,
@@ -159,6 +161,9 @@ class Config:
 
         # Handle the API_URL based on TEST_MODE after initialization
         Config.set_api_url()
+
+        # set correct update server
+        Config.runtime_settings['UPDATE_SERVER'] = Config.settings['TEST_UPDATE_SERVER'] if Config.settings['TEST_MODE'] else Config.runtime_settings['UPDATE_SERVER']
         
         # when the device boots the first time
         # some informations have to be generated
