@@ -50,6 +50,9 @@ class Sen5xSensor(Sensor):
             Dimension.VOC_INDEX: Quality.HIGH,
             Dimension.NOX_INDEX: Quality.HIGH,
         }
+    
+    def get_serial_number(self):
+        return self.sen5x_device.get_serial_number().encode('ascii')
         
     def attempt_connection(self, i2c):
         try:

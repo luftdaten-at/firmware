@@ -26,6 +26,10 @@ class Sensor:
         """Called just before the main loop is started. Allows sensor to access device state.
         Used by SGP40 to link with SHT3X or SHT4X sensor."""
         pass
+
+    def get_serial_number(self) -> str:
+        """Return the serial number of the Sensor as String"""
+        return None
     
     # The following methods do not need to be overridden by subclasses.
     def get_device_info(self):

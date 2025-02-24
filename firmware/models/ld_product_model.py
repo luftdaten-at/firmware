@@ -56,7 +56,8 @@ class LdProductModel:
         device_info['station']['sensor_list'] = [
             {
                 "model_id": sensor.model_id,
-                "dimension_list": sensor.measures_values
+                "dimension_list": sensor.measures_values,
+                "serial_number": sensor.get_serial_number()
             } for sensor in self.sensors
         ]
 
