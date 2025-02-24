@@ -36,7 +36,7 @@ class Ugm:
         return: str: file_name if update available else None
         '''
 
-        url=f'{Config.settings['UPDATE_SERVER']}/{Ugm.LATEST_VERSION}/{Config.settings['MODEL']}'
+        url=f'{Config.runtime_settings['UPDATE_SERVER']}/{Ugm.LATEST_VERSION}/{Config.settings['MODEL']}'
         text = ''
         if not (text := Ugm.get(url)):
             return None
@@ -90,7 +90,7 @@ class Ugm:
         cur_ignore = set(join_path('.', x) for x in ignore)
         cur_tree = FolderEntry('.', ignore=cur_ignore)
 
-        url=f'{Config.settings['UPDATE_SERVER']}/{Ugm.FILE_LIST}/{folder}'
+        url=f'{Config.runtime_settings['UPDATE_SERVER']}/{Ugm.FILE_LIST}/{folder}'
         text = ''
         if not (text := Ugm.get(url)):
             return False
@@ -123,7 +123,7 @@ class Ugm:
                     pass
             if isinstance(entry, FileEntry):
                 # download file
-                url=f'{Config.settings['UPDATE_SERVER']}/{Ugm.DOWNLOAD}?filename={join_path(folder, entry.path)}'
+                url=f'{Config.runtime_settings['UPDATE_SERVER']}/{Ugm.DOWNLOAD}?filename={join_path(folder, entry.path)}'
                 content = Ugm.get(url)
                 with open(entry.path, 'w') as f:
                     f.write(content)
