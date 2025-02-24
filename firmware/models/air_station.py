@@ -31,7 +31,7 @@ class AirStation(LdProductModel):
         self.last_measurement = None
 
         # Load settings from boot.toml
-        self.device_id = Config.settings['device_id'] 
+        self.device_id = Config.settings['device_id']
         self.api_key = Config.settings['api_key']
 
         # init status led
@@ -156,10 +156,11 @@ class AirStation(LdProductModel):
         device_info['station']['location'] = {
             "lat": Config.settings.get("latitude", None),
             "lon": Config.settings.get("longitude", None),
-            "height": Config.settings.get("height", None)
+            "height": Config.settings.get("height", None),
         }
+        device_info['station']['calibration_mode'] = Config.runtime_settings['CALIBRATION_MODE']
 
-        return device_info 
+        return device_info
     
     def get_json_list_sensor_community(self):
         '''

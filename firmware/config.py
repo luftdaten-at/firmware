@@ -48,6 +48,7 @@ class Config:
 
         # API config
         'TEST_MODE': 'settings.toml',
+        'CALIBRATION_MODE': 'settings.toml',
         'API_URL': 'boot.toml',
         'TEST_API_URL': 'boot.toml',
         'UPDATE_SERVER': 'boot.toml',
@@ -91,6 +92,7 @@ class Config:
 
         # API config
         'TEST_MODE': None,
+        'CALIBRATION_MODE': None,
         'API_URL': None,
         'TEST_API_URL': None,
         'UPDATE_SERVER': None,
@@ -134,7 +136,8 @@ class Config:
         if Config.settings['MODEL'] == LdProduct.AIR_STATION:
             Config.runtime_settings['API_URL'] = Config.settings['API_URL']
             if Config.settings['TEST_MODE']:
-                Config.runtime_settings['API_URLS'] = [Config.settings['TEST_API_URL']]
+                #Config.runtime_settings['API_URLS'] = [Config.settings['TEST_API_URL']]
+                Config.runtime_settings['API_URL'] = Config.settings['TEST_API_URL']
 
         elif Config.settings['MODEL'] in (LdProduct.AIR_CUBE, LdProduct.AIR_BADGE):
             Config.runtime_settings['API_URL'] = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
@@ -145,6 +148,14 @@ class Config:
             val = fetch(key, toml=Config.key_to_toml_file.get(key, 'settings.toml'))
             if val is not None:
                 Config.settings[key] = val
+        
+        # Calibration mode
+        Config.runtime_settings['CALIBRATION_MODE'] = Config.settings['CALIBRATION_MODE']
+        if Config.settings['CALIBRATION_MODE'] is not None:
+            Config.runtime_settings['CALIBRATION_MODE'] = Config.settings['CALIBRATION_MODE']
+        else:
+            # if we are connected to our special notwork always active calibration mode
+            Config.runtime_settings['CALIBRATION_MODE'] = (Config.settings['SSID'] == 'luftdaten.at')
 
         # Handle the API_URL based on TEST_MODE after initialization
         Config.set_api_url()
