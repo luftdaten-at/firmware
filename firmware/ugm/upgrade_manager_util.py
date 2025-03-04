@@ -16,22 +16,22 @@ class AutoSaveDict(dict):
 
     def __setitem__(self, key, value):
         super().__setitem__(key, value)
-        storage.remount('/', False)
-        put(key, value, toml=f'/{self.toml_file.get(key, 'settings.toml')}')
-        storage.remount('/', True)
+        
+        put(key, value, toml=f'/{self.toml_file.get(key, 'write/settings.toml')}')
+        
 
     def set_toml_file(self, filepath):
         self.toml_file = filepath
 
 class Config:
     '''
-    settings.toml: holds all the device spcific settings and informations
+   write/settings.toml: holds all the device spcific settings and informations
     boot.toml: information not bound to a single device, variables arent ever changed by the code itself
     '''
 
     key_to_toml_file = {
         # model id 
-        'MODEL': 'settings.toml',
+        'MODEL': 'write/settings.toml',
 
         # firmware Config
         'FIRMWARE_MAJOR': 'boot.toml',
@@ -39,18 +39,18 @@ class Config:
         'FIRMWARE_PATCH': 'boot.toml',
 
         # wifi Config
-        'SSID': 'settings.toml',
-        'PASSWORD': 'settings.toml',
+        'SSID': 'write/settings.toml',
+        'PASSWORD': 'write/settings.toml',
 
         # API config
         'UPDATE_SERVER': 'boot.toml',
         'TEST_UPDATE_SERVER': 'boot.toml',
 
         # update config
-        'ROLLBACK': 'settings.toml',
+        'ROLLBACK': 'write/settings.toml',
 
         # test mode
-        'TEST_MODE': 'settings.toml',
+        'TEST_MODE': 'write/settings.toml',
 
         # path for https certificates
         'CERTIFICATE_PATH': 'boot.toml'
@@ -86,9 +86,9 @@ class Config:
     @staticmethod
     def init(only_settings = False):
         for key in Config.settings:
-            if only_settings and Config.key_to_toml_file.get(key, 'settings.toml') != 'settings.toml':
+            if only_settings and Config.key_to_toml_file.get(key, 'write/settings.toml') != 'write/settings.toml':
                 continue
-            val = fetch(key, toml=Config.key_to_toml_file.get(key, 'settings.toml'))
+            val = fetch(key, toml=Config.key_to_toml_file.get(key, 'write/settings.toml'))
             if val is not None:
                 Config.settings[key] = val
 

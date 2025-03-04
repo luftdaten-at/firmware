@@ -4,14 +4,14 @@ from enums import AutoUpdateMode, AirStationMeasurementInterval, BatterySaverMod
 
 class AutoSaveDict(dict):
     def __init__(self, *args, **kwargs):
-        self.toml_file = kwargs.pop('toml_file', 'settings.toml')
+        self.toml_file = kwargs.pop('toml_file')
         super().__init__(*args, **kwargs)
 
     def __setitem__(self, key, value):
         super().__setitem__(key, value)
-        remount('/', False)
-        put(key, value, toml=f'/{self.toml_file.get(key, 'settings.toml')}')
-        remount('/', True)
+        
+        put(key, value, toml=f'/{self.toml_file.get(key, 'write/settings.toml')}')
+        
 
     def set_toml_file(self, filepath):
         self.toml_file = filepath
@@ -25,15 +25,15 @@ class Config:
 
     key_to_toml_file = {
         # model id 
-        'MODEL': 'settings.toml',
+        'MODEL': 'write/settings.toml',
 
         # boot option
-        'boot_into': 'settings.toml',
+        'boot_into': 'write/settings.toml',
 
         # wifi mac should not be changed
-        'mac': 'settings.toml',
-        'api_key': 'settings.toml',
-        'device_id': 'settings.toml',
+        'mac': 'write/settings.toml',
+        'api_key': 'write/settings.toml',
+        'device_id': 'write/settings.toml',
 
         # firmware Config
         'FIRMWARE_MAJOR': 'boot.toml',
@@ -43,27 +43,27 @@ class Config:
         'MANUFACTURE_ID': 'boot.toml',
 
         # wifi Config
-        'SSID': 'settings.toml',
-        'PASSWORD': 'settings.toml',
+        'SSID': 'write/settings.toml',
+        'PASSWORD': 'write/settings.toml',
 
         # API config
-        'TEST_MODE': 'settings.toml',
-        'CALIBRATION_MODE': 'settings.toml',
+        'TEST_MODE': 'write/settings.toml',
+        'CALIBRATION_MODE': 'write/settings.toml',
         'API_URL': 'boot.toml',
         'TEST_API_URL': 'boot.toml',
         'UPDATE_SERVER': 'boot.toml',
         'TEST_UPDATE_SERVER': 'boot.toml',
         'DATAHUB_API_URL': 'boot.toml',
         'DATAHUB_TEST_API_URL': 'boot.toml',
-        'SEND_TO_SENSOR_COMMUNITY': 'settings.toml',
+        'SEND_TO_SENSOR_COMMUNITY': 'write/settings.toml',
 
         # AirStationConfig must not be specified in settings.toml
-        'longitude': 'settings.toml',
-        'latitude': 'settings.toml',
-        'height': 'settings.toml',
-        'auto_update_mode': 'settings.toml',
-        'battery_save_mode': 'settings.toml',
-        'measurement_interval': 'settings.toml',
+        'longitude': 'write/settings.toml',
+        'latitude': 'write/settings.toml',
+        'height': 'write/settings.toml',
+        'auto_update_mode': 'write/settings.toml',
+        'battery_save_mode': 'write/settings.toml',
+        'measurement_interval': 'write/settings.toml',
 
         'CERTIFICATE_PATH': 'boot.toml',
     }
@@ -116,7 +116,7 @@ class Config:
     # Runtime settings (non-persistent)
     runtime_settings = {
         'rtc_is_set': False,
-        'JSON_QUEUE': 'json_queue',
+        'JSON_QUEUE': 'write/json_queue',
         'FIRMWARE_FOLDER': 'new_firmware',
         'CERTIFICATE_PATH': 'certs/isrgrootx1.pem',
         'SENSOR_COMMUNITY_CERTIFICATE_PATH': 'certs/api-sensor-community-chain.pem',
@@ -147,7 +147,7 @@ class Config:
     @staticmethod
     def init():
         for key in Config.settings:
-            val = fetch(key, toml=Config.key_to_toml_file.get(key, 'settings.toml'))
+            val = fetch(key, toml=Config.key_to_toml_file.get(key, 'write/settings.toml'))
             if val is not None:
                 Config.settings[key] = val
         

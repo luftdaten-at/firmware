@@ -85,11 +85,11 @@ class LdProductModel:
     def save_data(self, data: dict, tag = 'normal'):
         current_time = time.localtime()
         formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
-        storage.remount('/', False) 
+         
         file_name = formatted_time.replace(':', '_').replace('.', '_')
         with open(f'{Config.runtime_settings["JSON_QUEUE"]}/{file_name}_{tag}.json', 'w') as f:
             json.dump(data, f)
-        storage.remount('/', False)
+        
     
     def get_json(self):
         self.read_all_sensors()
@@ -135,9 +135,9 @@ class LdProductModel:
                     logger.debug(f'API Response: {response.status_code}')
                     logger.debug(f'API Response: {response.text}')
                     if response.status_code == 200:  # Placeholder for successful sending check
-                        storage.remount('/', False)
+                        
                         os.remove(file_path) 
-                        storage.remount('/', True)
+                        
                 elif 'sensor_community' in file_path:
                     # data = List[Tuple(header, data)]
                     for header, d in data:
@@ -148,9 +148,9 @@ class LdProductModel:
                         if response.status_code != 200:
                             break
                     else:
-                        storage.remount('/', False)
+                        
                         os.remove(file_path) 
-                        storage.remount('/', True)
+                        
                 else:
                     # send to Luftdaten APi
                     response = WifiUtil.send_json_to_api(data)
@@ -158,9 +158,9 @@ class LdProductModel:
                     logger.debug(f'API Response: {response.status_code}')
                     logger.debug(f'API Response: {response.text}')
                     if response.status_code in (200, 422):  # Placeholder for successful sending check
-                        storage.remount('/', False)
+                        
                         os.remove(file_path) 
-                        storage.remount('/', True)
+                        
 
     def read_all_sensors(self):
         for sensor in self.sensors:
