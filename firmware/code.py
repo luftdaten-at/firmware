@@ -1,12 +1,10 @@
 import supervisor
 import board
 import neopixel
-import storage
 from ugm.upgrade_mananger import Ugm
 from ugm.upgrade_manager_util import Config, WifiUtil
 from logger import logger
 
-storage.remount('/', False)
 
 Config.init(only_settings=True)
 Ugm.init(None, Config)

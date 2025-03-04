@@ -34,10 +34,10 @@ class SimpleLogger:
             self.save(log_entry)
 
     def save(self, data):
-        
-        with open('write/json_queue/tmp_log.txt', 'a') as f:
+        storage.remount('/', False)
+        with open('json_queue/tmp_log.txt', 'a') as f:
             print(json.dumps(data), file=f)
-        
+        storage.remount('/', True)
 
     def debug(self, *args):
         self.log(self.format_message(*args), 'DEBUG')
