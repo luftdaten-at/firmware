@@ -7,6 +7,11 @@ class AutoSaveDict(dict):
         self.toml_file = kwargs.pop('toml_file', 'settings.toml')
         super().__init__(*args, **kwargs)
 
+        for key in self:
+            val = fetch(key, toml=self.toml_file.get(key, 'settings.toml'))
+            if val is not None:
+                super().__setitem__(key, val)
+
     def __setitem__(self, key, value):
         super().__setitem__(key, value)
         remount('/', False)
@@ -145,12 +150,7 @@ class Config:
             Config.runtime_settings['API_URL'] = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
 
     @staticmethod
-    def init():
-        for key in Config.settings:
-            val = fetch(key, toml=Config.key_to_toml_file.get(key, 'settings.toml'))
-            if val is not None:
-                Config.settings[key] = val
-        
+    def init(): 
         # Calibration mode
         Config.runtime_settings['CALIBRATION_MODE'] = Config.settings['CALIBRATION_MODE']
         if Config.settings['CALIBRATION_MODE'] is not None:

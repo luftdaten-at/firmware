@@ -3,10 +3,6 @@ import board
 import struct
 import neopixel
 from wifi_client import WifiUtil
-from storage import remount
-from json import dump, load, loads
-from lib.cptoml import fetch
-from os import listdir, remove, uname
 
 from led_controller import LedController
 from config import Config
@@ -222,7 +218,7 @@ class AirStation(LdProductModel):
 
             dict_list.append((header, data))
 
-        return dict_list 
+        return dict_list
 
     def tick(self):
         if not Config.runtime_settings['rtc_is_set'] and WifiUtil.radio.connected:

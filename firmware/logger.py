@@ -14,6 +14,7 @@ LOG_LEVELS = {
 class SimpleLogger:
     def __init__(self, level='DEBUG'):
         self.level = LOG_LEVELS.get(level, 0)  # Default to DEBUG level
+        self.log_list = []
 
     def log(self, message, level='DEBUG'):
         level_num = LOG_LEVELS.get(level, 0)
@@ -34,10 +35,13 @@ class SimpleLogger:
             self.save(log_entry)
 
     def save(self, data):
+        self.log_list.append(data)
+        '''
         storage.remount('/', False)
         with open('json_queue/tmp_log.txt', 'a') as f:
             print(json.dumps(data), file=f)
         storage.remount('/', True)
+        '''
 
     def debug(self, *args):
         self.log(self.format_message(*args), 'DEBUG')

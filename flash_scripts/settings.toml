@@ -6,3 +6,6 @@ SEND_TO_SENSOR_COMMUNITY = false
 longitude = "48.202475"
 latitude = "16.342945"
 height = "8"
+device_id = "D83BDA43D471AAA"
+api_key = "ylqfovwcd2dz2t1hkg3ajzlveu16xgnb"
+CALIBRATION_MODE = false

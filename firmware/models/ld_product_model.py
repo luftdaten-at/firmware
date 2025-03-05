@@ -12,6 +12,7 @@ from sensors.sensor import Sensor
 class LdProductModel:
     def __init__(self, ble_service, sensors: list[Sensor], battery_monitor):
         self.model_id = None
+        self.measurements = {}
         """Product model."""
         
         self.polling_interval = 0.1
@@ -83,13 +84,16 @@ class LdProductModel:
         return device_info
     
     def save_data(self, data: dict, tag = 'normal'):
+        self.measurements[tag] = self.measurements.get(tag, []) + [data]
+        '''
+        storage.remount('/', False)
         current_time = time.localtime()
         formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
-        storage.remount('/', False) 
         file_name = formatted_time.replace(':', '_').replace('.', '_')
         with open(f'{Config.runtime_settings["JSON_QUEUE"]}/{file_name}_{tag}.json', 'w') as f:
             json.dump(data, f)
         storage.remount('/', False)
+        '''
     
     def get_json(self):
         self.read_all_sensors()
@@ -106,61 +110,38 @@ class LdProductModel:
         return data
     
     def send_to_api(self):
-        for file_path in (f'{Config.runtime_settings["JSON_QUEUE"]}/{f}' for f in os.listdir(Config.runtime_settings["JSON_QUEUE"])):
-            logger.debug(f'process file: {file_path}')
-            with open(file_path, 'r') as f:
-                data = json.load(f)
-                lines = f.readlines()
-
-                if 'tmp_log.txt' in file_path and lines:
-                    # status should always be sent to DATAHUB
-                    logger.debug(f'Use Memory: {gc.mem_alloc()}, Free Memory: {gc.mem_free()}')
-
-                    status_list = []
-                    for line in lines:
-                        status_list.append(json.loads(line))
-
-                    data = self.get_info()
-                    data["status_list"] = status_list
-
-                    api_url = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
-
-                    response = WifiUtil.send_json_to_api(
-                        data=data, 
-                        api_url=api_url,
-                        router='status/'
-                    )
-
-                    logger.debug(f'{file_path=}')
-                    logger.debug(f'API Response: {response.status_code}')
-                    logger.debug(f'API Response: {response.text}')
-                    if response.status_code == 200:  # Placeholder for successful sending check
-                        storage.remount('/', False)
-                        os.remove(file_path) 
-                        storage.remount('/', True)
-                elif 'sensor_community' in file_path:
-                    # data = List[Tuple(header, data)]
+        # contains all measurements that failed to transmitt
+        new_measurements = {}
+        for tag, data_list in self.measurements.items():
+            if tag == 'sensor_community':
+                for data in data_list:
+                    transmission_failed = False 
                     for header, d in data:
                         response = WifiUtil.send_json_to_sensor_community(header=header, data=d)
-                        logger.debug(f'{file_path=}')
-                        logger.debug(f'API Response: {response.status_code}')
-                        logger.debug(f'API Response: {response.text}')
                         if response.status_code != 200:
+                            transmission_failed = True
                             break
-                    else:
-                        storage.remount('/', False)
-                        os.remove(file_path) 
-                        storage.remount('/', True)
-                else:
-                    # send to Luftdaten APi
+                    if transmission_failed:
+                        new_measurements[tag] = new_measurements.get(tag, []) + [data]
+            elif tag == 'normal':
+                for data in data_list:
                     response = WifiUtil.send_json_to_api(data)
-                    logger.debug(f'{file_path=}')
-                    logger.debug(f'API Response: {response.status_code}')
-                    logger.debug(f'API Response: {response.text}')
-                    if response.status_code in (200, 422):  # Placeholder for successful sending check
-                        storage.remount('/', False)
-                        os.remove(file_path) 
-                        storage.remount('/', True)
+                    if response.status_code not in (200, 422):
+                        new_measurements[tag] = new_measurements.get(tag, []) + [data]
+                
+        self.measurements = new_measurements
+
+        data = self.get_info()
+        data["status_list"] = logger.log_list
+        api_url = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
+        response = WifiUtil.send_json_to_api(
+            data=data, 
+            api_url=api_url,
+            router='status/'
+        )
+        if response.status_code == 200:
+            logger.log_list.clear()
+
 
     def read_all_sensors(self):
         for sensor in self.sensors:
