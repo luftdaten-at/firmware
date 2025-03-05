@@ -11,8 +11,13 @@ from logger import logger
 
 class AutoSaveDict(dict):
     def __init__(self, *args, **kwargs):
-        self.toml_file = kwargs.pop('toml_file')
+        self.toml_file = kwargs.pop('toml_file', 'settings.toml')
         super().__init__(*args, **kwargs)
+
+        for key in self:
+            val = fetch(key, toml=self.toml_file.get(key, 'settings.toml'))
+            if val is not None:
+                super().__setitem__(key, val)
 
     def __setitem__(self, key, value):
         super().__setitem__(key, value)
@@ -85,13 +90,6 @@ class Config:
 
     @staticmethod
     def init(only_settings = False):
-        for key in Config.settings:
-            if only_settings and Config.key_to_toml_file.get(key, 'settings.toml') != 'settings.toml':
-                continue
-            val = fetch(key, toml=Config.key_to_toml_file.get(key, 'settings.toml'))
-            if val is not None:
-                Config.settings[key] = val
-
         # set correct update server
         Config.runtime_settings['UPDATE_SERVER'] = Config.settings['TEST_UPDATE_SERVER'] if Config.settings['TEST_MODE'] else Config.settings['UPDATE_SERVER']
 
