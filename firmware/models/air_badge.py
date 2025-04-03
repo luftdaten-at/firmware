@@ -22,6 +22,7 @@ class AirBadge(LdProductModel):
         super().__init__(ble_service, sensors, battery_monitor)
 
         self.last_measurement = None
+        self.ble_on = True
 
         # init status led
         self.status_led = LedController(

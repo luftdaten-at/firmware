@@ -1,5 +1,10 @@
 MODEL = -1
 TEST_MODE = false 
-SSID = ""
-PASSWORD = ""
+SSID = "luftdaten.at"
+PASSWORD = "clientpassword"
 SEND_TO_SENSOR_COMMUNITY = false
+measurement_interval = 60
+battery_save_mode = 0
+latitude = "48.2024391"
+longitude = "16.343175"
+height = "0.0"
