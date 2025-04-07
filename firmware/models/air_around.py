@@ -1,11 +1,14 @@
 import board
 import neopixel
+import time
 
 from led_controller import LedController
 from models.ld_product_model import LdProductModel
 from led_controller import RepeatMode
 from enums import Color, BleCommands
 from logger import logger
+from config import Config
+from wifi_client import WifiUtil
 
 class AirAround(LdProductModel): 
     NEOPIXEL_PIN = board.IO8
@@ -19,6 +22,8 @@ class AirAround(LdProductModel):
         self.polling_interval = 0.01
         self.model_id = model
         self.ble_on = True
+
+        self.last_measurement = None
 
         # init status led
         self.status_led = LedController(
@@ -51,7 +56,25 @@ class AirAround(LdProductModel):
         pass
     
     def tick(self):
-        pass
+        if self.last_measurement is None or time.monotonic() - self.last_measurement >= Config.settings['measurement_interval']:
+            # set last measurement to now
+            self.last_measurement = time.monotonic()
+
+            # send to API
+            data = self.get_json()
+            self.save_data(data=data)
+            if WifiUtil.radio.connected:
+                self.send_to_api()
+
+    def get_info(self):
+        device_info = super().get_info()
+        device_info['station']['battery'] = {
+            # cell_voltage() -> returns mili volt / 1000 to convert to volts
+            "voltage": self.battery_monitor.cell_voltage() / 1000 if self.battery_monitor else None,
+            "percentage": self.battery_monitor.cell_soc() if self.battery_monitor else None,
+        }
+
+        return device_info
 
     def connection_update(self, connected):
         if connected:
