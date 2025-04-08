@@ -33,7 +33,8 @@ class AirAround(LdProductModel):
             ),
             n=AirAround.NEOPIXLE_N
         )
-        
+
+
     def receive_command(self, command):
         if not command:
             return
@@ -55,7 +56,7 @@ class AirAround(LdProductModel):
     def receive_button_press(self):
         pass
     
-    def tick(self):
+    def tick(self): 
         if self.last_measurement is None or time.monotonic() - self.last_measurement >= Config.settings['measurement_interval']:
             # set last measurement to now
             self.last_measurement = time.monotonic()
@@ -79,11 +80,8 @@ class AirAround(LdProductModel):
     def connection_update(self, connected):
         if connected:
             self.status_led.show_led({
-                'repeat_mode': RepeatMode.FOREVER,
-                'elements': [
-                    {'color': Color.GREEN, 'duration': 0.5},
-                    {'color': Color.OFF, 'duration': 0.5},
-                ],
+                'repeat_mode': RepeatMode.PERMANENT,
+                'color': Color.GREEN_LOW,
             })
         else:
             self.status_led.show_led({

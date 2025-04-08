@@ -205,6 +205,8 @@ def main():
         elif not ble.connected and ble_connected:
             ble_connected = False
             logger.debug("Disconnected from BLE device")
+        
+        device.connection_update(ble_connected)
 
         if button.value and not button_state:
             button_state = True
