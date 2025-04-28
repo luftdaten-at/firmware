@@ -16,19 +16,16 @@ class MAX17048:
         )
             
     def cell_voltage(self):
-        """Read and return the battery voltage in millivolts."""
+        """Read and return the battery voltage in volts."""
         voltage = self.i2c_device.cell_voltage
-        logger.debug(f"Battery voltage: {voltage:.2f} Volts")
         return voltage
     
     def cell_soc(self):
         """Read and return the state of charge (SOC) percentage."""
         soc = self.i2c_device.cell_percent
-        logger.debug(f"Battery state  : {soc:.1f} %")
         return soc
     
     def quick_start(self):
-        logger.debug('Quick starting battery monitor')
         self.i2c_device.quick_start = True
         self.cell_voltage()
     
