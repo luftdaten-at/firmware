@@ -1,6 +1,7 @@
 import board
 import neopixel
 import time
+import json
 
 from led_controller import LedController
 from models.ld_product_model import LdProductModel
@@ -52,6 +53,21 @@ class AirAround(LdProductModel):
         if cmd == BleCommands.READ_SENSOR_DATA_AND_BATTERY_STATUS:
             self.update_ble_battery_status()
             logger.debug("Battery status updated")
+    
+    # The following methods do not need to be overridden by subclasses.
+    def update_ble_sensor_data(self):
+        """Read out sensors values and update BLE characteristic."""
+        vals_array = bytearray()
+        for sensor in self.sensors:
+            try:
+                sensor.read()
+            except:
+                logger.error(f"Error reading sensor {sensor.model_id}, using previous values")
+            vals_array.extend(sensor.get_current_values())
+
+        print(f'[{json.dumps(self.get_json())}, {list(vals_array)}]'.encode('utf-8'))
+        #self.ble_service.sensor_values_characteristic = vals_array
+        self.ble_service.sensor_values_characteristic = f'[{json.dumps(self.get_json())}, {list(vals_array)}]'.encode('utf-8')
     
     def receive_button_press(self):
         pass
