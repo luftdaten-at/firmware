@@ -40,6 +40,7 @@ class SensorModel():
     BMP390 = 21
     LSM6DS = 22
     SEN66 = 23
+    MLX90640 = 24
 
     _names = {
         SEN5X: "SEN5X",
@@ -65,6 +66,7 @@ class SensorModel():
         BMP390: "BMP390",
         LSM6DS: "lsm6ds",
         SEN66: "SEN66",
+        MLX90640: "MLX90640",
     }
 
     _manufacturer = {
@@ -86,7 +88,8 @@ class SensorModel():
         PMS5003: "Plantower",
         PMS7003: "Plantower",
         VIRTUAL_SENSOR: "Luftdaten.at",
-        SEN66: "Sensirion"
+        SEN66: "Sensirion",
+        MLX90640: "Mouser Electronics", 
     }
 
     _pins = {
@@ -144,6 +147,7 @@ class Dimension():
     GYRO_X = 28
     GYRO_Y = 29
     GYRO_Z = 30
+    THERMAL_ARRAY = 31
 
 
     thresholds = {
@@ -215,7 +219,8 @@ class Dimension():
         GYRO_Y: "gyro Y",
         GYRO_Z: "gyro Z",
         UVI: "UV Index",
-        LUX: "Lux"
+        LUX: "Lux",
+        THERMAL_ARRAY: "Thermal Image",
     }
 
     _required_sensors = {
