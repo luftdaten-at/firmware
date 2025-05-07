@@ -39,6 +39,7 @@ class SensorModel():
     BMP388 = 20
     BMP390 = 21
     LSM6DS = 22
+    SEN66 = 23
 
     _names = {
         SEN5X: "SEN5X",
@@ -60,10 +61,10 @@ class SensorModel():
         PMS7003: "PMS7003",
         VIRTUAL_SENSOR: "VIRTUAL_SENSOR",
         LTR390: "LTR390",
-        BMP388: 'BMP388',
-        BMP390: 'BMP390',
-        LSM6DS: 'lsm6ds',
-        
+        BMP388: "BMP388",
+        BMP390: "BMP390",
+        LSM6DS: "lsm6ds",
+        SEN66: "SEN66",
     }
 
     _manufacturer = {
@@ -84,7 +85,8 @@ class SensorModel():
         SPS30: "Sensirion",
         PMS5003: "Plantower",
         PMS7003: "Plantower",
-        VIRTUAL_SENSOR: "Luftdaten.at"
+        VIRTUAL_SENSOR: "Luftdaten.at",
+        SEN66: "Sensirion"
     }
 
     _pins = {

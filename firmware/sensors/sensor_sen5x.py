@@ -2,7 +2,7 @@ from sensirion_i2c_sen5x import Sen5xI2cDevice # type: ignore
 from sensirion_i2c_driver import I2cTransceiver,I2cConnection # type: ignore
 from sensors.sensor import Sensor
 from enums import Dimension, SensorModel, Quality
-import time, sys
+import time
 from logger import logger
 
 SEN5X_DEFAULT_ADDRESS = 0x69
