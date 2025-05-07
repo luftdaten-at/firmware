@@ -284,6 +284,7 @@ class LdProduct():
 class Quality():
     HIGH = 1
     LOW = 2
+    MEDIUM = 3
 
 class BleCommands:
     READ_SENSOR_DATA = 0x01

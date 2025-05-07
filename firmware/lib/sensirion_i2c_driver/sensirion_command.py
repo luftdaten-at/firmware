@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # (c) Copyright 2019 Sensirion AG, Switzerland
 
-# from __future__ import absolute_import, division, print_function
+# 
 from .command import I2cCommand
 from .errors import I2cChecksumError
 from struct import pack
