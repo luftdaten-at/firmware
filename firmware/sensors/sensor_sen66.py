@@ -56,9 +56,16 @@ class Sen66Sensor(Sensor):
         self.sen66_device.device_reset()
         time.sleep(1.0)
 
-        logger.debug(f"SEN66 device found on I2C bus {i2c}, serial: {self.sen66_device.get_serial_number()}")
         serial = self.sen66_device.get_serial_number()
-        self.sensor_details = bytearray(serial.encode('ascii'))
+        version = self.sen66_device.get_version()  # returns (major, minor)
+
+        logger.debug(f"SEN66 device found on I2C bus {i2c}, version: {version}, serial: {serial}")
+
+        self.sensor_details = bytearray([
+            version[0],  # firmware major
+            version[1],  # firmware minor
+        ])
+        self.sensor_details.extend(serial.encode('ascii'))
 
         self.sen66_device.start_continuous_measurement()
         return True
