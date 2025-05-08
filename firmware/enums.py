@@ -39,6 +39,9 @@ class SensorModel():
     BMP388 = 20
     BMP390 = 21
     LSM6DS = 22
+    SEN66 = 23
+    MLX90640 = 24
+    TSL2591 = 25
 
     _names = {
         SEN5X: "SEN5X",
@@ -60,10 +63,12 @@ class SensorModel():
         PMS7003: "PMS7003",
         VIRTUAL_SENSOR: "VIRTUAL_SENSOR",
         LTR390: "LTR390",
-        BMP388: 'BMP388',
-        BMP390: 'BMP390',
-        LSM6DS: 'lsm6ds',
-        
+        BMP388: "BMP388",
+        BMP390: "BMP390",
+        LSM6DS: "lsm6ds",
+        SEN66: "SEN66",
+        MLX90640: "MLX90640",
+        TSL2591: "TSL_2591",
     }
 
     _manufacturer = {
@@ -84,7 +89,10 @@ class SensorModel():
         SPS30: "Sensirion",
         PMS5003: "Plantower",
         PMS7003: "Plantower",
-        VIRTUAL_SENSOR: "Luftdaten.at"
+        VIRTUAL_SENSOR: "Luftdaten.at",
+        SEN66: "Sensirion",
+        MLX90640: "Mouser Electronics", 
+        TSL2591: "Berry Base",
     }
 
     _pins = {
@@ -142,7 +150,11 @@ class Dimension():
     GYRO_X = 28
     GYRO_Y = 29
     GYRO_Z = 30
-
+    THERMAL_ARRAY = 31
+    VISIBLE = 32
+    INFRARED = 33
+    FULL_SPECTRUM = 34
+    RAW_LUMINOSITY = 35
 
     thresholds = {
         TEMPERATURE: ([18, 24], [Color.BLUE, Color.GREEN, Color.RED]),
@@ -213,7 +225,8 @@ class Dimension():
         GYRO_Y: "gyro Y",
         GYRO_Z: "gyro Z",
         UVI: "UV Index",
-        LUX: "Lux"
+        LUX: "Lux",
+        THERMAL_ARRAY: "Thermal Image",
     }
 
     _required_sensors = {
@@ -282,6 +295,7 @@ class LdProduct():
 class Quality():
     HIGH = 1
     LOW = 2
+    MEDIUM = 3
 
 class BleCommands:
     READ_SENSOR_DATA = 0x01
