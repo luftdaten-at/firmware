@@ -242,11 +242,11 @@ class AirStation(LdProductModel):
             if not self.last_measurement or cur_time - self.last_measurement >= Config.settings['measurement_interval']:
                 self.last_measurement = cur_time
                 data = self.get_json()
-                sensor_community_data = self.get_json_list_sensor_community()
 
                 self.save_data(data)
 
                 if Config.settings['SEND_TO_SENSOR_COMMUNITY']:
+                    sensor_community_data = self.get_json_list_sensor_community()
                     self.save_data(sensor_community_data, tag='sensor_community')
 
         if not self.last_api_send or time.monotonic() - self.last_api_send > self.api_send_interval:

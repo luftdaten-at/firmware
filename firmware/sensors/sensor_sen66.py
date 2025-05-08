@@ -85,15 +85,15 @@ class Sen66Sensor(Sensor):
             ) = self.sen66_device.read_measured_values()
 
             self.current_values = {
-                Dimension.PM1_0: pm1,
-                Dimension.PM2_5: pm2_5,
-                Dimension.PM4_0: pm4,
-                Dimension.PM10_0: pm10,
-                Dimension.HUMIDITY: humidity,
-                Dimension.TEMPERATURE: temperature,
-                Dimension.VOC_INDEX: voc,
-                Dimension.NOX_INDEX: nox,
-                Dimension.CO2: co2,
+                Dimension.PM1_0: pm1.value,
+                Dimension.PM2_5: pm2_5.value,
+                Dimension.PM4_0: pm4.value,
+                Dimension.PM10_0: pm10.value,
+                Dimension.HUMIDITY: humidity.value,
+                Dimension.TEMPERATURE: temperature.value,
+                Dimension.VOC_INDEX: voc.value,
+                Dimension.NOX_INDEX: nox.value,
+                Dimension.CO2: co2.value,
             }
         except Exception as e:
             logger.error(f"Error reading SEN66 sensor data: {e}")
