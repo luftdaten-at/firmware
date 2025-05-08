@@ -42,7 +42,7 @@ class Mlx90640Sensor(Sensor):
             self.sensor_details = bytearray()
 
         try:
-            self.mlx.refresh_rate = adafruit_mlx90640.RefreshRate.REFRESH_2_HZ
+            self.mlx.refresh_rate = adafruit_mlx90640.RefreshRate.REFRESH_1_HZ
         except Exception as e:
             logger.warning(f"Failed to set refresh rate: {e}")
 
