@@ -125,7 +125,7 @@ class WifiUtil:
 
 
     @staticmethod
-    def get(url: str):
+    def get(url: str, binary = False):
         try:
             response = WifiUtil.session.request(
                 method='GET',
@@ -136,8 +136,16 @@ class WifiUtil:
                 logger.error(f'GET failed, url: {url}, status code: {response.status_code}, text: {response.text}')
 
                 return False
+            
+            if binary:
+                return response.content
 
             return response.text
         except Exception as e:
+            import traceback
+            full_traceback = traceback.format_exception(e)
+
+            logger.critical(f"{e}\n{full_traceback}")
+
             logger.error(f'GET faild: {e}')
             return False

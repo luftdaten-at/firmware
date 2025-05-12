@@ -26,8 +26,8 @@ class Ugm:
 
 
     @staticmethod
-    def get(url: str):
-        return WifiUtil.get(url)
+    def get(url: str, binary = False):
+        return WifiUtil.get(url, binary)
 
 
     @staticmethod
@@ -124,8 +124,8 @@ class Ugm:
             if isinstance(entry, FileEntry):
                 # download file
                 url=f'{Config.runtime_settings['UPDATE_SERVER']}/{Ugm.DOWNLOAD}?filename={join_path(folder, entry.path)}'
-                content = Ugm.get(url)
-                with open(entry.path, 'w') as f:
+                content = Ugm.get(url, binary=True)
+                with open(entry.path, 'wb') as f:
                     f.write(content)
 
         storage.remount('/', True)
