@@ -77,6 +77,8 @@ class LdProductModel:
                 "model": Config.settings['MODEL'],
                 "apikey": Config.settings['api_key'],
                 "source": 1,
+                "test_mode": Config.settings['TEST_MODE'],
+                "calibration_mode": Config.settings['CALIBRATION_MODE']
             },
             "sensors": {}
         }
@@ -141,6 +143,8 @@ class LdProductModel:
         )
         if response.status_code == 200:
             logger.log_list.clear()
+            # updaet flags if they exist
+            print(response.json())
 
 
     def read_all_sensors(self):

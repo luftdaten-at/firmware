@@ -47,7 +47,7 @@ class WifiUtil:
     
 
     @staticmethod
-    def get(url: str):
+    def get(url: str, binary = False):
         try:
             response = WifiUtil.api_session.request(
                 method='GET',
@@ -58,6 +58,9 @@ class WifiUtil:
                 logger.error(f'GET failed, url: {url}, status code: {response.status_code}, text: {response.text}')
 
                 return False
+
+            if binary:
+                return response.content
 
             return response.text
         except Exception as e:

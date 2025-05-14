@@ -1,0 +1,9 @@
+device_id = "D83BDA43DBF5AAA"
+api_key = "fqxo247lpi2rbn4xgxg1fypv2lks97d0"
+mac = "D83BDA43DBF5"
+MODEL = 3
+TEST_MODE = false
+SSID = "luftdaten.at"
+PASSWORD = "clientpassword"
+SEND_TO_SENSOR_COMMUNITY = false
+CALIBRATION_MODE = false
