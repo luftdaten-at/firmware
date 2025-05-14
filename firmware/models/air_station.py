@@ -154,7 +154,7 @@ class AirStation(LdProductModel):
             "lon": Config.settings.get("longitude", None),
             "height": Config.settings.get("height", None),
         }
-        device_info['station']['calibration_mode'] = Config.runtime_settings['CALIBRATION_MODE']
+        #device_info['station']['calibration_mode'] = Config.runtime_settings['CALIBRATION_MODE']
 
         return device_info
     
