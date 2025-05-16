@@ -19,9 +19,29 @@ from wifi_client import WifiUtil
 from ugm.upgrade_mananger import Ugm
 from logger import logger
 from util import get_battery_monitor, get_connected_sensors, get_model_id_from_sensors
+from ugm2.upgrade_manager_util import Config as Ugm2Config, WifiUtil as Ugm2WifiUtil
+from ugm2.upgrade_mananger import Ugm as Ugm2
 
 def main():
     logger.debug('loaded main.py')
+    logger.debug('umg2')
+
+    Ugm2Config.init()
+    Ugm2WifiUtil.connect()
+    Ugm2.init(Ugm2WifiUtil, Ugm2Config)
+
+    # check if update available
+    if Ugm2WifiUtil.radio.connected and (folder := Ugm2.check_if_upgrade_available()):
+        # Assume model is AirStation
+        status_led = neopixel.NeoPixel(board.IO8, 1)
+        status_led[0] = (200, 0, 80)
+        logger.debug(f'Installing new firmware from folder: {folder}')
+        try:
+            Ugm2.install_update(folder)
+        except Exception as e:
+            logger.critical(f'Upgrade failed: {e}')
+            supervisor.reload()
+
     # simple lighting at initialization
     led = neopixel.NeoPixel(board.IO8, 1)
     led[0] = Color.YELLOW
