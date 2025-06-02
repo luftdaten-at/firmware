@@ -32,8 +32,13 @@ def main():
 
     Ugm.init(WifiUtil, Config)
 
+    # overwrite standard config if configured in settings.toml
+    scl = Config.settings['SCL'] if Config.settings['SCL'] else board.IO5
+    sda = Config.settings['SDA'] if Config.settings['SDA'] else board.IO4
+    button_pin = Config.settings['BUTTON_PIN'] if Config.settings['BUTTON_PIN'] else board.IO9
+
     # init bus
-    i2c = busio.I2C(scl=board.IO5, sda=board.IO4, frequency=20000)
+    i2c = busio.I2C(scl=scl, sda=sda, frequency=20000)
 
     # set correct time if rtc module is connected
     try:
@@ -47,7 +52,6 @@ def main():
         pass
 
     # Initialize the button at GPIO9
-    button_pin = board.IO9
     button = digitalio.DigitalInOut(button_pin)
     button.direction = digitalio.Direction.INPUT
 
