@@ -16,7 +16,7 @@ from config import Config
 from enums import LdProduct, SensorModel, Color
 from led_controller import LedController, RepeatMode
 from wifi_client import WifiUtil
-from ugm.upgrade_mananger import Ugm
+from ugm2.upgrade_mananger import Ugm
 from logger import logger
 from util import get_battery_monitor, get_connected_sensors, get_model_id_from_sensors
 
@@ -185,11 +185,25 @@ def main():
         if not WifiUtil.radio.connected:
             WifiUtil.connect()
 
+        '''
         # Check for updates
         if WifiUtil.radio.connected:
             if Ugm.check_if_upgrade_available():
                 logger.info('Upgrade available, reload to install')
                 supervisor.set_next_code_file('code.py')
+                supervisor.reload()
+        '''
+
+        # perforem ugm2 update mostly for upgrading ugm
+        # check if update available
+        if WifiUtil.radio.connected and (folder := Ugm.check_if_upgrade_available()):
+            # Assume model is AirStation
+            device.status_led.status_led[0] = (200, 0, 80)
+            logger.debug(f'Installing new firmware from folder: {folder}')
+            try:
+                Ugm.install_update(folder)
+            except Exception as e:
+                logger.critical(f'Upgrade failed: {e}')
                 supervisor.reload()
 
         if not ble.advertising and device.ble_on:
