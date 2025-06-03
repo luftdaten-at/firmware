@@ -202,6 +202,7 @@ def main():
             logger.debug(f'Installing new firmware from folder: {folder}')
             try:
                 Ugm.install_update(folder)
+                supervisor.reload()
             except Exception as e:
                 logger.critical(f'Upgrade failed: {e}')
                 supervisor.reload()
