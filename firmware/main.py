@@ -177,6 +177,7 @@ def main():
     button_state = False
     ble_connected = False
 
+    ble.start_advertising(advertisement)
     # Main loop
     while True:
         # Clean memory
