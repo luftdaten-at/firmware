@@ -70,6 +70,10 @@ class Config:
         'battery_save_mode': 'settings.toml',
         'measurement_interval': 'settings.toml',
 
+        'SCL': 'settings.toml',
+        'SDA': 'settings.toml',
+        'BUTTON_PIN': 'settings.toml',
+
         'CERTIFICATE_PATH': 'boot.toml',
     }
     # Normal settings (persistent)
@@ -114,6 +118,10 @@ class Config:
         'auto_update_mode': AutoUpdateMode.on,
         'battery_save_mode': BatterySaverMode.off,
         'measurement_interval': AirStationMeasurementInterval.sec30,
+
+        'SCL': None,
+        'SDA': None,
+        'BUTTON_PIN': None,
 
         'CERTIFICATE_PATH': 'certs/isrgrootx1.pem',
     }, toml_file=key_to_toml_file)
