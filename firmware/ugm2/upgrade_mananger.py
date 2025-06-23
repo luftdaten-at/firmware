@@ -83,7 +83,7 @@ class Ugm:
         try:
             with open(Ugm.IGNORE_FILE_PATH, 'r') as f:
                 ignore = set(f.read().split())
-        except FileNotFoundError:
+        except Exception:
             return False
 
         # list current dir
