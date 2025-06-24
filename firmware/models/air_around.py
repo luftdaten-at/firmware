@@ -65,9 +65,9 @@ class AirAround(LdProductModel):
                 logger.error(f"Error reading sensor {sensor.model_id}, using previous values")
             vals_array.extend(sensor.get_current_values())
 
-        print(f'[{json.dumps(self.get_json())}, {list(vals_array)}]'.encode('utf-8'))
-        #self.ble_service.sensor_values_characteristic = vals_array
-        self.ble_service.sensor_values_characteristic = f'[{json.dumps(self.get_json())}, {list(vals_array)}]'.encode('utf-8')
+        #print(f'[{json.dumps(self.get_json())}, {list(vals_array)}]'.encode('utf-8'))
+        #self.ble_service.sensor_values_characteristic = f'[{json.dumps(self.get_json())}, {list(vals_array)}]'.encode('utf-8')
+        self.ble_service.sensor_values_characteristic = vals_array
     
     def receive_button_press(self):
         pass

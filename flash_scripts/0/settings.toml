@@ -1,9 +1,9 @@
-device_id = "28372F843441AAA"
-api_key = "gn8md7oeo1bbp5qae22l20htykgazwpz"
-mac = "28372F843441"
-ROLLBACK = false
+device_id = "D83BDA6D3815AAA"
+api_key = "fetjrd9kyfdzi858av9tyuriglxzpq4v"
+mac = "D83BDA6D3815"
 MODEL = 1
 TEST_MODE = false
 SSID = "luftdaten.at"
 PASSWORD = "clientpassword"
 SEND_TO_SENSOR_COMMUNITY = false
+CALIBRATION_MODE = false
