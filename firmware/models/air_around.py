@@ -100,9 +100,6 @@ class AirAround(LdProductModel):
             })
         else:
             self.status_led.show_led({
-                'repeat_mode': RepeatMode.FOREVER,
-                'elements': [
-                    {'color': Color.CYAN, 'duration': 0.5},
-                    {'color': Color.OFF, 'duration': 0.5},
-                ],
+                'repeat_mode': RepeatMode.PERMANENT,
+                'color': Color.CYAN,
             })

@@ -49,7 +49,7 @@ class LedController:
         if pattern['repeat_mode'] == RepeatMode.FOREVER:
             self.default_pattern[led_id] = pattern
         elif pattern['repeat_mode'] == RepeatMode.PERMANENT:
-            pattern['elements'] = [{'color': pattern['color'], 'duration': float('inf')}]
+            pattern['elements'] = [{'color': pattern['color'], 'duration': 0}]
             self.default_pattern[led_id] = pattern
         else:
             self.pattern_queue[led_id].append(pattern)

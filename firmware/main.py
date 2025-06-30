@@ -211,13 +211,14 @@ def main():
             except Exception as e:
                 logger.critical(f'Upgrade failed: {e}')
                 supervisor.reload()
-
+        '''
         if not ble.advertising and device.ble_on:
             ble.start_advertising(advertisement)
             logger.debug("Started advertising")
         elif ble.advertising and not device.ble_on:
             ble.stop_advertising()
             logger.debug("Stopped advertising")
+        '''
 
         if ble.connected and not ble_connected:
             ble_connected = True
@@ -225,6 +226,8 @@ def main():
         elif not ble.connected and ble_connected:
             ble_connected = False
             logger.debug("Disconnected from BLE device")
+            ble.stop_advertising()
+            ble.start_advertising(advertisement)
         
         device.connection_update(ble_connected)
 
