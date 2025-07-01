@@ -1,7 +1,7 @@
 ROLLBACK = false
-device_id = "28372F821ADDAAA"
-api_key = "ho8evb5hur2udv2fl1487y748ugp42wt"
-mac = "28372F821ADD"
+device_id = "D83BDA6D3D2DAAA"
+api_key = "zcsaj5j5hk8c1dw6jvclq23a8zpr62b4"
+mac = "D83BDA6D3D2D"
 MODEL = 1
 TEST_MODE = false
 SSID = "luftdaten.at"
