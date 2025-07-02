@@ -228,6 +228,7 @@ def main():
             logger.debug("BLE connection established")
         elif not ble.connected and ble_connected:
             ble_connected = False
+            ble.stop_advertising()
             ble.start_advertising(advertisement)
             logger.debug("Disconnected from BLE device")
         
