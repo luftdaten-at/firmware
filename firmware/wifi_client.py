@@ -16,12 +16,26 @@ class WifiUtil:
 
     @staticmethod
     def connect() -> bool:
-        if not Config.settings['SSID'] or not Config.settings['PASSWORD']:
+        if not Config.settings['SSID']:
             return False
         try:
-            logger.debug('Connecting to Wifi:', Config.settings['SSID'])
-            wifi_radio.connect(Config.settings['SSID'], Config.settings['PASSWORD'])
-            logger.debug('Connection established to Wifi', Config.settings['SSID'])
+            if Config.settings['PASSWORD']:
+                logger.debug('Connecting to Wifi:', Config.settings['SSID'])
+                wifi_radio.connect(Config.settings['SSID'], Config.settings['PASSWORD'])
+                logger.debug('Connection established to Wifi', Config.settings['SSID'])
+            elif all(
+                Config.settings['EAP_IDENTITY'],
+                Config.settings['EAP_USERNAME'],
+                Config.settings['EAP_PASSWORD'],
+            ):
+                wifi_radio.connect(
+                    Config.settings['SSID'],
+                    eap_identity = Config.settings['EAP_IDENTITY'],
+                    eap_username = Config.settings['EAP_USERNAME'],
+                    eap_password = Config.settings['EAP_PASSWORD'],
+                )
+            else:
+                wifi_radio.connect(Config.settings['SSID'])
 
             # init pool
             WifiUtil.pool = SocketPool(WifiUtil.radio)
