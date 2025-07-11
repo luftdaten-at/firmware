@@ -20,7 +20,7 @@ class WifiUtil:
             return False
         try:
             if Config.settings['PASSWORD']:
-                logger.debug('Connecting to Wifi:', Config.settings['SSID'])
+                logger.debug(f'Try to connect to: {Config.settings['SSID']} with standard encryption')
                 wifi_radio.connect(Config.settings['SSID'], Config.settings['PASSWORD'])
                 logger.debug('Connection established to Wifi', Config.settings['SSID'])
             elif all(
@@ -28,6 +28,7 @@ class WifiUtil:
                 Config.settings['EAP_USERNAME'],
                 Config.settings['EAP_PASSWORD'],
             ):
+                logger.debug(f'Try to connect to: {Config.settings['SSID']} with enterprise encryption')
                 wifi_radio.connect(
                     Config.settings['SSID'],
                     eap_identity = Config.settings['EAP_IDENTITY'],
@@ -35,6 +36,7 @@ class WifiUtil:
                     eap_password = Config.settings['EAP_PASSWORD'],
                 )
             else:
+                logger.debug(f'Try to connect to: {Config.settings['SSID']} without encryption')
                 wifi_radio.connect(Config.settings['SSID'])
 
             # init pool
