@@ -22,6 +22,8 @@ def get_connected_sensors(i2c):
         #from sensors.sensor_sen66 import Sen66Sensor
         from sensors.sensor_mlx90640 import Mlx90640Sensor
         from sensors.sensor_tsl2591 import Tsl2591Sensor
+        from sensors.sensor_AS7331 import AS7331Sensor
+        #from sensors.sensor_BMP581 import BMP581Sensor
 
         # List of sensors that we will attempt to connect to
         defined_sensors = [
@@ -43,6 +45,8 @@ def get_connected_sensors(i2c):
             #Sen66Sensor(),
             Mlx90640Sensor(),
             Tsl2591Sensor(),
+            AS7331Sensor(),
+            #BMP581Sensor(),
         ]
 
         connected_sensors = {}

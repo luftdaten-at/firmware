@@ -155,6 +155,10 @@ class Dimension():
     INFRARED = 33
     FULL_SPECTRUM = 34
     RAW_LUMINOSITY = 35
+    UVA = 36
+    UVB = 37
+    UVC = 38
+
 
     thresholds = {
         TEMPERATURE: ([18, 24], [Color.BLUE, Color.GREEN, Color.RED]),
