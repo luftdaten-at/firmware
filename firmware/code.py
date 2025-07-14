@@ -2,11 +2,12 @@ import supervisor
 import board
 import neopixel
 from ugm.upgrade_mananger import Ugm
-from ugm.upgrade_manager_util import Config, WifiUtil
+from ugm.wifi_client import WifiUtil
+from ugm.config import Config
 from logger import logger
 
 
-Config.init(only_settings=True)
+Config.init()
 Ugm.init(None, Config)
 
 # check rollback
