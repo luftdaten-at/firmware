@@ -78,6 +78,8 @@ class Config:
         'BUTTON_PIN': 'settings.toml',
 
         'CERTIFICATE_PATH': 'boot.toml',
+
+        'ROLLBACK': 'settings.toml'
     }
     # Normal settings (persistent)
     settings = AutoSaveDict({
@@ -130,6 +132,8 @@ class Config:
         'BUTTON_PIN': None,
 
         'CERTIFICATE_PATH': 'certs/isrgrootx1.pem',
+
+        'ROLLBACK': False,
     }, toml_file=key_to_toml_file)
 
     # Runtime settings (non-persistent)
