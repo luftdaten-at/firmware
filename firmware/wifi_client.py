@@ -23,11 +23,11 @@ class WifiUtil:
                 logger.debug(f'Try to connect to: {Config.settings['SSID']} with standard encryption')
                 wifi_radio.connect(Config.settings['SSID'], Config.settings['PASSWORD'])
                 logger.debug('Connection established to Wifi', Config.settings['SSID'])
-            elif all(
+            elif all([
                 Config.settings['EAP_IDENTITY'],
                 Config.settings['EAP_USERNAME'],
                 Config.settings['EAP_PASSWORD'],
-            ):
+            ]):
                 logger.debug(f'Try to connect to: {Config.settings['SSID']} with enterprise encryption')
                 wifi_radio.connect(
                     Config.settings['SSID'],
