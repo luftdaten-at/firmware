@@ -1,8 +1,6 @@
 from sensors.sensor import Sensor
 from enums import Dimension, SensorModel, Quality
-import time
 import iorodeo_as7331 as as7331
-import board
 from logger import logger
 
 class AS7331Sensor(Sensor):

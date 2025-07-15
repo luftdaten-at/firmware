@@ -42,6 +42,7 @@ class SensorModel():
     SEN66 = 23
     MLX90640 = 24
     TSL2591 = 25
+    AS7331 = 26
 
     _names = {
         SEN5X: "SEN5X",
