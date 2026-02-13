@@ -65,9 +65,15 @@ class AirAround(LdProductModel):
                 logger.error(f"Error reading sensor {sensor.model_id}, using previous values")
             vals_array.extend(sensor.get_current_values())
 
-        #print(f'[{json.dumps(self.get_json())}, {list(vals_array)}]'.encode('utf-8'))
-        #self.ble_service.sensor_values_characteristic = f'[{json.dumps(self.get_json())}, {list(vals_array)}]'.encode('utf-8')
-        self.ble_service.sensor_values_characteristic = vals_array
+        # Use JSON format [metadata, raw_bytes] so the app receives station.api.key for workshop uploads
+        try:
+            metadata = self.get_json()
+            payload = [metadata, list(vals_array)]
+            self.ble_service.sensor_values_characteristic = bytes(json.dumps(payload).encode('utf-8'))
+        except Exception as e:
+            logger.error(f"JSON format failed, using binary: {e}")
+            self.ble_service.sensor_values_characteristic = bytes(vals_array)
+    
     
     def receive_button_press(self):
         pass
@@ -85,6 +91,7 @@ class AirAround(LdProductModel):
 
     def get_info(self):
         device_info = super().get_info()
+        device_info['station']['api'] = { "key": Config.settings['api_key'] }
         device_info['station']['battery'] = {
             "voltage": self.battery_monitor.cell_voltage() if self.battery_monitor else None,
             "percentage": self.battery_monitor.cell_soc() if self.battery_monitor else None,
