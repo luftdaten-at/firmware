@@ -8,60 +8,65 @@ Flash the CircuitPython **`.bin`** with **esptool**, then copy the project tree 
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/) (standalone installer or `pip install uv`). Python 3.10+ is required.
 
-From the **`deploy/`** directory:
+From the **repository root** (parent of `deploy/`):
 
 ```bash
-cd deploy
 uv sync
 ```
 
-That creates a **`.venv/`** in `deploy/` (gitignored) and installs **`esptool`**, **`jupyter`**, and **`pyserial`** from [`pyproject.toml`](pyproject.toml).
+That creates a **`.venv/`** at the **repo root** (gitignored) and installs **`esptool`**, **`jupyter`**, and **`pyserial`** from the root [`pyproject.toml`](../pyproject.toml).
 
-Start Jupyter using that environment (kernel cwd must stay **`deploy/`** so `utils.py` imports work):
+Start Jupyter from the repo root; the notebook’s first code cell **`chdir`s into `deploy/`** so imports work:
 
 ```bash
-uv run jupyter notebook deploy.ipynb
+uv run jupyter notebook deploy/deploy.ipynb
 ```
 
 Or activate the venv and run Jupyter yourself:
 
 ```bash
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-jupyter notebook deploy.ipynb
+jupyter notebook deploy/deploy.ipynb
 ```
 
-In the notebook, pick the **Python interpreter** from `deploy/.venv` if your editor does not pick it up automatically.
+In the notebook or IDE, pick the **Python interpreter** from **`<repo>/.venv`** if it is not selected automatically.
 
 ### Without uv
 
+From the **repository root**:
+
 ```bash
-cd deploy
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install esptool jupyter pyserial
-jupyter notebook deploy.ipynb
+jupyter notebook deploy/deploy.ipynb
 ```
 
 ### Workflow
 
-1. Edit **`CFG`** in [`deploy.ipynb`](deploy.ipynb), then uncomment the steps you need (`flash_with_esptool`, `copy_firmware_to_circuitpy`, `run_update_only`, or `run_full_flash`).
+The notebook is organized as **three steps**: (1) **flash the board** (`flash_with_esptool`), (2) **copy firmware to a new board** (`copy_firmware_to_circuitpy` after `CIRCUITPY` mounts), (3) **update firmware on an existing board** (`run_update_only`). For a brand-new install you typically run 1 then 2; for an already-configured device run 3 only. **`run_full_flash`** is a shortcut for 1+2.
 
-2. Download the **`.bin`** for your board from [circuitpython.org — ESP32-S3-DevKitC-1 N8R8](https://circuitpython.org/board/espressif_esp32s3_devkitc_1_n8r8/) and place it under `deploy/board_firmware/` (that directory is gitignored).
+1. Edit **`CFG`** in [`deploy.ipynb`](deploy.ipynb) if needed, then run the **Step 1–3** cells that match your task (they are ready to run; avoid **Run all** unless you intend the full sequence).
+
+2. **CircuitPython `.bin`**: put a build under **`deploy/bin/`** (only `*.bin` is gitignored; the folder is tracked), or let **`flash_with_esptool` / `run_full_flash`** download automatically: it picks the newest **`adafruit-circuitpython-<board_id>*.bin`** in `bin/`, else parses the [downloads index](https://downloads.circuitpython.org/bin/espressif_esp32s3_devkitc_1_n8r8/de_DE/) for your **`circuitpython_locale`**, else uses **`circuitpython_download_fallback_url`** (default is a pinned `de_DE` build). Override **`circuitpython_board_id`**, **`circuitpython_locale`**, or **`circuitpython_bin`** on **`DeployConfig`** as needed.
+
+   If you still have images under the old **`deploy/board_firmware/`** path, move them into **`deploy/bin/`** once.
 
 3. **ESP32-S3**: if the board does not enumerate for flashing, hold **BOOT** (or **B0**), tap **RESET**, release **RESET**, then release **BOOT**.
 
-4. Serial port examples: macOS `/dev/tty.usbmodem*`, Linux `/dev/ttyACM*` or `/dev/ttyUSB*`, Windows `COM*` (Device Manager). Optional: run `list_serial_ports()` from `utils` in a notebook cell.
+4. Serial port: the notebook **Configuration** section runs **`pick_serial_port_interactive(CFG)`** to list ports and choose one (default **`/dev/tty.usbmodem101`**). Examples: macOS `/dev/tty.usbmodem*`, Linux `/dev/ttyACM*` or `/dev/ttyUSB*`, Windows `COM*`. You can also call **`list_serial_ports()`** from `utils` without changing **`CFG`**.
 
 ## Layout
 
 | Path | Purpose |
 |------|---------|
-| `pyproject.toml` | Declares dependencies for **`uv sync`** |
-| `deploy.ipynb` | Minimal notebook — config + run |
+| [`../pyproject.toml`](../pyproject.toml) (repo root) | Declares dependencies for **`uv sync`**; venv lives at **`<repo>/.venv`** |
+| `deploy.ipynb` | Notebook — config, Step 1 flash / Step 2 new board / Step 3 update |
+| `notebook_env.py` | Shared **`activate()`** so setup and serial cells find **`deploy/`** after a kernel restart |
 | `utils.py` | Esptool wrapper, mount wait, tree copy, full flash / update |
 | `settings.toml` | Copied to the device on **full flash** |
 | `settings_backups/slot_0/` … `slot_2/` | Each holds a `settings.toml` stash for **update only** (one logical device per slot) |
-| `board_firmware/*.bin` | Board CircuitPython image for esptool (gitignored) |
+| `bin/*.bin` | Board CircuitPython image for esptool (auto-downloaded or manual; `*.bin` gitignored, folder kept with `.gitkeep`) |
 
 ## Deployment notes
 
@@ -90,5 +95,7 @@ This flow copies the whole [`../firmware/`](../firmware/) tree. For day-to-day l
 
 ## Pipelines
 
-- **Full flash**: `run_full_flash` in [`utils.py`](utils.py) runs esptool then USB copy, or run the same steps separately: `flash_with_esptool` then `copy_firmware_to_circuitpy`.
-- **Update only**: copy device `settings.toml` → `deploy/settings_backups/slot_N/settings.toml`, refresh firmware tree from the repo, restore that file to the device. **`settings_slot`** (`N`) must be `0`, `1`, or `2`.
+- **Step 1 — Flash the board**: `flash_with_esptool` — esptool only; **`ensure_circuitpython_bin`** resolves a `.bin` (file at `circuitpython_bin`, newest in `deploy/bin/`, index, or **`circuitpython_download_fallback_url`**).
+- **Step 2 — Copy firmware to a new board**: `copy_firmware_to_circuitpy` — wait for `CIRCUITPY`, copy repo `firmware/` + `deploy/settings.toml`.
+- **Step 3 — Update firmware (existing board)**: `run_update_only` — backup device `settings.toml` to `settings_backups/slot_N/`, copy `firmware/`, restore that slot file; **`settings_slot`** must be `0`, `1`, or `2`.
+- **Shortcut**: `run_full_flash` = Step 1 + Step 2 (not Step 3).

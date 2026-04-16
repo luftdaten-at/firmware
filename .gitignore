@@ -45,7 +45,8 @@ dist/
 
 # firmware
 firmware/test.py
-deploy/board_firmware
+# CircuitPython board images (keep deploy/bin/.gitkeep tracked)
+deploy/bin/*.bin
 
 # backup files
 0048/
