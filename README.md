@@ -114,6 +114,8 @@ esptool.py --port /dev/ttyUSB0 write_flash -z 0x0 circuitpython.bin
 
 Download the latest [Release](https://github.com/luftdaten-at/firmware/releases)  and copy all files from the firmware folder to the ESP32.
 
+For a scripted flow (erase flash, install CircuitPython `.bin`, copy the `firmware/` tree, and manage `settings.toml`), use the Jupyter notebook [deploy/deploy.ipynb](deploy/deploy.ipynb); see [deploy/readme.md](deploy/readme.md). Install tools with **`uv sync`** from the **repository root** (see `pyproject.toml`); the venv is **`.venv/`** at the repo root.
+
 ## 4 - Start and Configure
 
 Configure the device using the app. You can find it in the Google Play or Apple App Store. [Links here](https://luftdaten.at/mobile-app/)

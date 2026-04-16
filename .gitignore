@@ -1,2 +1,52 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+
+# Python packages
+*.egg-info/
+*.egg
+*.eggs/
+*.eggs-info/
+*.eggs-info
+
+# Python virtual environments
+.venv/
+venv/
+env/
+env.bak/
+env.bak
+
+# Python cache
+.cache/
+.cache-*/
+.cache-info/
+.cache-info
+
+
+# Python build
+build/
+dist/
+
+.ipynb_checkpoints/
+
+
+# firmware
 firmware/test.py
-flash_scripts/circuitpython
+# CircuitPython board images (keep deploy/bin/.gitkeep tracked)
+deploy/bin/*.bin
+
+# backup files
+0048/

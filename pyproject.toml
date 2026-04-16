@@ -1,0 +1,11 @@
+[project]
+name = "firmware-deploy"
+version = "0.1.0"
+description = "Tools to flash CircuitPython (esptool) and copy firmware to CIRCUITPY"
+readme = "deploy/readme.md"
+requires-python = ">=3.10"
+dependencies = [
+    "esptool>=4.0",
+    "jupyter",
+    "pyserial",
+]
