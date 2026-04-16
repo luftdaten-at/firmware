@@ -243,8 +243,8 @@ class AirStation(LdProductModel):
                 self.status_led.show_led({
                     'repeat_mode': RepeatMode.FOREVER,
                     'elements': [
-                        {'color': Color.BLUE, 'duration': 0.5},
                         {'color': Color.RED, 'duration': 0.5},
+                        {'color': Color.YELLOW, 'duration': 0.5},
                     ],
                 })
 
