@@ -51,6 +51,12 @@ Führe nun Circup aus, um die benötigten Bibliotheken zu installieren:
 circup install --auto
 ```
 
+Für **Air Station im Wifiless-Modus** (Messdaten auf SD-Karte) zusätzlich:
+
+```bash
+circup install adafruit_sdcard
+```
+
 Drücke den Reset-Knopf am ESP32, um die Installation abzuschließen.
 
 ## 4 - Gerät konfigurieren

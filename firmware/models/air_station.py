@@ -11,6 +11,7 @@ from ld_service import LdService
 from enums import LdProduct, Color, BleCommands, AirstationConfigFlags, Dimension, SensorModel
 from logger import logger
 from led_controller import RepeatMode
+from sd_logger import append_measurement_jsonl
 
 class AirStation(LdProductModel):
     NEOPIXEL_PIN = board.IO8
@@ -220,7 +221,38 @@ class AirStation(LdProductModel):
 
         return dict_list
 
+    def _tick_wifiless(self):
+        """Log measurements to SD; no WiFi/API or in-RAM measurement queue."""
+        cur_time = time.monotonic()
+        if not self.last_measurement or cur_time - self.last_measurement >= Config.settings['measurement_interval']:
+            self.last_measurement = cur_time
+            data = self.get_json()
+            ok = append_measurement_jsonl(data)
+            if ok and Config.runtime_settings['rtc_is_set']:
+                self.status_led.show_led({
+                    'repeat_mode': RepeatMode.PERMANENT,
+                    'color': Color.GREEN_LOW,
+                })
+            elif ok and not Config.runtime_settings['rtc_is_set']:
+                logger.warning('Wifiless: SD write ok but RTC not set from DS3231; timestamps may be wrong')
+                self.status_led.show_led({
+                    'repeat_mode': RepeatMode.PERMANENT,
+                    'color': Color.YELLOW,
+                })
+            else:
+                self.status_led.show_led({
+                    'repeat_mode': RepeatMode.FOREVER,
+                    'elements': [
+                        {'color': Color.BLUE, 'duration': 0.5},
+                        {'color': Color.RED, 'duration': 0.5},
+                    ],
+                })
+
     def tick(self):
+        if Config.is_air_station_wifiless():
+            self._tick_wifiless()
+            return
+
         if not Config.runtime_settings['rtc_is_set'] and WifiUtil.radio.connected:
             WifiUtil.set_RTC()
 

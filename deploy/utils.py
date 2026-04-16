@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import os
 import re
 import shutil
@@ -271,8 +272,14 @@ def copy_firmware_tree(
     *,
     ignore_names: Iterable[str] | None = None,
     show_progress: bool = True,
+    use_progress_bar: bool = True,
 ) -> None:
-    """Mirror `cp -r src/* dst` with ignores at every directory level."""
+    """Mirror `cp -r src/* dst` with ignores at every directory level.
+
+    When ``tqdm`` is installed (``uv sync``) and ``use_progress_bar`` is true, shows
+    a notebook-friendly progress bar over files; otherwise falls back to a
+    throttled one-line text progress indicator.
+    """
     ign = frozenset(ignore_names or DEFAULT_IGNORE_NAMES)
     if not src.is_dir():
         raise NotADirectoryError(src)
@@ -285,20 +292,40 @@ def copy_firmware_tree(
         print(f"No files to copy under {src}", flush=True)
         return
 
-    report_every = 1
-    if total > 120:
-        report_every = max(1, total // 60)
+    tqdm_cls = None
+    if show_progress and use_progress_bar:
+        try:
+            from tqdm.auto import tqdm as tqdm_cls
+        except ImportError:
+            tqdm_cls = None
 
     if show_progress:
         print(f"Firmware copy: {total} files -> {dst}", flush=True)
 
-    for i, (sub, sub_dst) in enumerate(jobs, start=1):
-        sub_dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(sub, sub_dst)
-        if show_progress and (i == 1 or i == total or i % report_every == 0):
-            line = _format_copy_progress_line(i, total, sub, src)
-            end = "\n" if i == total else "\r"
-            print(line + " " * max(0, 100 - len(line)), flush=True, end=end)
+    if tqdm_cls is not None:
+        with tqdm_cls(jobs, desc="Firmware copy", unit="file", leave=True) as pbar:
+            for sub, sub_dst in pbar:
+                sub_dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(sub, sub_dst)
+                try:
+                    rel = str(sub.relative_to(src))
+                except ValueError:
+                    rel = sub.name
+                if len(rel) > 52:
+                    rel = rel[:24] + "…" + rel[-25:]
+                pbar.set_postfix_str(rel, refresh=False)
+    else:
+        report_every = 1
+        if total > 120:
+            report_every = max(1, total // 60)
+
+        for i, (sub, sub_dst) in enumerate(jobs, start=1):
+            sub_dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(sub, sub_dst)
+            if show_progress and (i == 1 or i == total or i % report_every == 0):
+                line = _format_copy_progress_line(i, total, sub, src)
+                end = "\n" if i == total else "\r"
+                print(line + " " * max(0, 100 - len(line)), flush=True, end=end)
 
     if hasattr(os, "sync"):
         os.sync()
@@ -327,6 +354,90 @@ def restore_settings_backup(cfg: DeployConfig) -> None:
     if not src.is_file():
         raise FileNotFoundError(src)
     copy_file(src, cfg.circuitpy_root / "settings.toml")
+
+
+def _merge_toml_add_missing_keys(old: dict, new: dict) -> dict:
+    """Deep copy of ``old``; add any key from ``new`` that is missing in ``old`` (recursive for dict values)."""
+    merged = copy.deepcopy(old)
+    for key, new_val in new.items():
+        if key not in merged:
+            merged[key] = copy.deepcopy(new_val)
+        elif isinstance(merged[key], dict) and isinstance(new_val, dict):
+            merged[key] = _merge_toml_add_missing_keys(merged[key], new_val)
+    return merged
+
+
+def _list_toml_keys_added_by_merge(old: dict, new: dict, prefix: str = "") -> list[str]:
+    """Human-readable paths for keys present in ``new`` but not in ``old`` (recursive)."""
+    added: list[str] = []
+    for key, new_val in new.items():
+        label = f"{prefix}.{key}" if prefix else str(key)
+        if key not in old:
+            added.append(label)
+        elif isinstance(old.get(key), dict) and isinstance(new_val, dict):
+            added.extend(_list_toml_keys_added_by_merge(old[key], new_val, label))
+    return added
+
+
+def merge_repo_settings_into_backup(cfg: DeployConfig) -> None:
+    """After ``copy_firmware_tree``, merge the repo ``settings.toml`` on CIRCUITPY into the slot backup.
+
+    Preserves every value from the backed-up device file. Any key (including nested
+    tables) that exists only in the template on the drive is added, then
+    :func:`restore_settings_backup` writes the result back to the device.
+    """
+    backup_path = settings_backup_dir(cfg) / "settings.toml"
+    template_path = cfg.circuitpy_root / "settings.toml"
+    if not template_path.is_file():
+        print(
+            f"No {template_path.name} on device after copy; skipping template merge.",
+            flush=True,
+        )
+        return
+    try:
+        import tomli
+        import tomli_w
+    except ImportError:
+        print("tomli/tomli-w missing (run ``uv sync``); skipping settings merge.", flush=True)
+        return
+
+    try:
+        old_data = tomli.loads(backup_path.read_text(encoding="utf-8"))
+    except Exception as ex:
+        raise ValueError(f"Could not parse backup settings {backup_path}: {ex}") from ex
+
+    try:
+        new_data = tomli.loads(template_path.read_text(encoding="utf-8"))
+    except Exception as ex:
+        print(
+            f"Warning: could not parse template {template_path}: {ex}; "
+            "keeping backup unchanged.",
+            flush=True,
+        )
+        return
+
+    added = _list_toml_keys_added_by_merge(old_data, new_data)
+    if not added:
+        print("Settings merge: no new keys in repo template (backup unchanged).", flush=True)
+        return
+
+    merged = _merge_toml_add_missing_keys(old_data, new_data)
+    tmp = backup_path.with_suffix(".toml.merged.tmp")
+    try:
+        tmp.write_text(tomli_w.dumps(merged), encoding="utf-8")
+        tmp.replace(backup_path)
+    except Exception:
+        if tmp.is_file():
+            tmp.unlink(missing_ok=True)
+        raise
+
+    preview = ", ".join(added[:24])
+    if len(added) > 24:
+        preview += ", …"
+    print(
+        f"Settings merge: added {len(added)} key(s) from repo template into backup: {preview}",
+        flush=True,
+    )
 
 
 def deploy_full_flash_settings(cfg: DeployConfig) -> None:
@@ -376,6 +487,7 @@ def run_update_only(cfg: DeployConfig) -> None:
         )
     backup_settings_from_device(cfg)
     copy_firmware_tree(firmware_src(), cfg.circuitpy_root)
+    merge_repo_settings_into_backup(cfg)
     restore_settings_backup(cfg)
     print("Update finished.", flush=True)
 

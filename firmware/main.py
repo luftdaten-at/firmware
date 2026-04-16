@@ -41,16 +41,16 @@ def main():
     # init bus
     i2c = busio.I2C(scl=scl, sda=sda, frequency=20000)
 
-    # set correct time if rtc module is connected
+    # set correct time if DS3231 RTC module is connected (same I2C as sensors)
     try:
         rtc_with_battery = adafruit_ds3231.DS3231(i2c)
         rtc.RTC().datetime = rtc_with_battery.datetime
 
         Config.runtime_settings['rtc_is_set'] = True
         Config.runtime_settings['rtc_module'] = rtc_with_battery
-    except:
-        # rtc module not connected
-        pass
+        logger.info('DS3231 found: system RTC set from module time')
+    except Exception as e:
+        logger.warning(f'DS3231 not available or I2C error ({type(e).__name__}: {e}); using existing RTC if any')
 
     # Initialize the button at GPIO9
     button = digitalio.DigitalInOut(button_pin)
@@ -223,8 +223,9 @@ def main():
         # Clean memory
         gc.collect()
 
-        if not WifiUtil.radio.connected:
-            WifiUtil.connect()
+        if not Config.is_air_station_wifiless():
+            if not WifiUtil.radio.connected:
+                WifiUtil.connect()
 
         '''
         # Check for updates
@@ -237,7 +238,11 @@ def main():
 
         # perforem ugm2 update mostly for upgrading ugm
         # check if update available
-        if WifiUtil.radio.connected and (folder := Ugm.check_if_upgrade_available()):
+        if (
+            not Config.is_air_station_wifiless()
+            and WifiUtil.radio.connected
+            and (folder := Ugm.check_if_upgrade_available())
+        ):
             # Assume model is AirStation
             device.status_led.status_led[0] = (200, 0, 80)
             logger.debug(f'Installing new firmware from folder: {folder}')
