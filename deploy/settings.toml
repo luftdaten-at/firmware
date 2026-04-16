@@ -4,3 +4,4 @@ TEST_MODE = false
 SSID = "luftdaten.at"
 PASSWORD = "clientpassword"
 SEND_TO_SENSOR_COMMUNITY = false
+CALIBRATION_MODE = false

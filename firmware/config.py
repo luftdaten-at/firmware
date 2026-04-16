@@ -50,9 +50,6 @@ class Config:
         # wifi Config
         'SSID': 'settings.toml',
         'PASSWORD': 'settings.toml',
-        'EAP_IDENTITY': 'settings.toml',
-        'EAP_USERNAME': 'settings.toml',
-        'EAP_PASSWORD': 'settings.toml',
 
         # API config
         'TEST_MODE': 'settings.toml',
@@ -102,9 +99,6 @@ class Config:
         # wifi Config
         'SSID': None,
         'PASSWORD': None,
-        'EAP_IDENTITY': None,
-        'EAP_USERNAME': None,
-        'EAP_PASSWORD': None,
 
         # API config
         'TEST_MODE': None,

@@ -1,4 +1,5 @@
 import time
+import json
 import board  # type: ignore
 import digitalio  # type: ignore
 import busio  # type: ignore
@@ -108,27 +109,60 @@ def main():
         from models.air_station import AirStation
         device = AirStation(service, sensors, battery_monitor)
 
-    # Set up device info characteristic
-    device_info_data = bytearray([
-        Config.settings['PROTOCOL_VERSION'],
-        Config.settings['FIRMWARE_MAJOR'],
-        Config.settings['FIRMWARE_MINOR'],
-        Config.settings['FIRMWARE_PATCH'],
-        # Device Name (e.g. F001). To be retrieved from Datahub, otherwise use 0x00 0x00 0x00 0x00
-        0x00, 0x00, 0x00, 0x00,  # Not yet implemented
-        Config.settings['MODEL'],  # Device model (e.g. AIR_AROUND)
-    ])
+    # Use JSON format when api_key is set so the app can read it for workshop uploads.
+    # Binary format is used when no api_key (backward compat / first boot).
+    # Ensure portable devices have api_key for workshop uploads
+    if Config.settings['MODEL'] in (LdProduct.AIR_AROUND, LdProduct.AIR_BIKE, LdProduct.AIR_BADGE):
+        if not Config.settings.get('api_key'):
+            Config.settings['api_key'] = Config.generate_random_api_key()
+            logger.info('Generated api_key for workshop uploads')
+    try:
+        if Config.settings['api_key']:
+            device_info_json = device.get_info()
+            device_info_json['station']['sensor_list'] = [
+                {"model_id": s.model_id, "dimension_list": s.measures_values, "serial_number": s.get_serial_number()}
+                for s in sensors
+            ]
+            service.device_info_characteristic = bytes(json.dumps(device_info_json).encode('utf-8'))
+        else:
+            device_info_data = bytearray([
+                Config.settings['PROTOCOL_VERSION'],
+                Config.settings['FIRMWARE_MAJOR'],
+                Config.settings['FIRMWARE_MINOR'],
+                Config.settings['FIRMWARE_PATCH'],
+                0x00, 0x00, 0x00, 0x00,  # Device Name - not yet implemented
+                Config.settings['MODEL'],
+            ])
+            device_info_data.extend(connected_sensors_status)
+            # Append api_key (length-prefixed) for workshop uploads when JSON path fails
+            api_key_str = Config.settings.get('api_key') or ''
+            api_key_bytes = api_key_str.encode('utf-8') if isinstance(api_key_str, str) else bytes()
+            device_info_data.append(min(len(api_key_bytes), 255))
+            device_info_data.extend(api_key_bytes[:255])
+            service.device_info_characteristic = bytes(device_info_data)
+    except Exception as e:
+        logger.error(f"Device info setup failed, using binary fallback: {e}")
+        device_info_data = bytearray([
+            Config.settings['PROTOCOL_VERSION'],
+            Config.settings['FIRMWARE_MAJOR'],
+            Config.settings['FIRMWARE_MINOR'],
+            Config.settings['FIRMWARE_PATCH'],
+            0x00, 0x00, 0x00, 0x00,
+            Config.settings['MODEL'],
+        ])
+        device_info_data.extend(connected_sensors_status)
+        api_key_str = Config.settings.get('api_key') or ''
+        api_key_bytes = api_key_str.encode('utf-8') if isinstance(api_key_str, str) else bytes()
+        device_info_data.append(min(len(api_key_bytes), 255))
+        device_info_data.extend(api_key_bytes[:255])
+        service.device_info_characteristic = bytes(device_info_data)
 
-    # set characteristics
-    device_info_data.extend(connected_sensors_status)
-    service.device_info_characteristic = device_info_data
-
-    # Set up sensor info characteristic
+    # Set up sensor info characteristic (use bytes() for BLE compatibility)
     if len(sensors) > 0:
         sensor_info = bytearray()
         for sensor in sensors:
             sensor_info.extend(sensor.get_device_info())
-        service.sensor_info_characteristic = sensor_info
+        service.sensor_info_characteristic = bytes(sensor_info)
     else:
         service.sensor_info_characteristic = bytes([0x06])
 
@@ -147,6 +181,8 @@ def main():
             0,  # Error status: 0 = no error
         ])
 
+    # Allow BLE stack to register characteristic values before advertising
+    time.sleep(0.2)
     # Create services advertisement
     advertisement = ProvideServicesAdvertisement(service)
 
