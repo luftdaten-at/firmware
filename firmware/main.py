@@ -19,7 +19,8 @@ from led_controller import LedController, RepeatMode
 from wifi_client import WifiUtil
 from ugm2.upgrade_mananger import Ugm
 from logger import logger
-from util import get_battery_monitor, get_connected_sensors, get_model_id_from_sensors
+from util import get_battery_monitor, get_connected_sensors
+from startup_actions import run_startup_actions, run_startup_actions_after_sensors
 
 def main():
     logger.debug('loaded main.py')
@@ -52,6 +53,9 @@ def main():
     except Exception as e:
         logger.warning(f'DS3231 not available or I2C error ({type(e).__name__}: {e}); using existing RTC if any')
 
+    # One-shot flags in startup.toml (e.g. NTP → RTC/DS3231); uses Wi-Fi from settings.toml
+    run_startup_actions()
+
     # Initialize the button at GPIO9
     button = digitalio.DigitalInOut(button_pin)
     button.direction = digitalio.Direction.INPUT
@@ -60,10 +64,8 @@ def main():
     connected_sensors = get_connected_sensors(i2c)
     battery_monitor = get_battery_monitor(i2c)
 
-    # auto detect model if model=-1
-    if Config.settings['MODEL'] == -1:
-        Config.settings['MODEL'] = get_model_id_from_sensors(connected_sensors, battery_monitor)
-        Config.set_api_url()
+    # Model from sensors: startup.toml DETECT_MODEL_FROM_SENSORS and/or legacy MODEL == -1
+    run_startup_actions_after_sensors(connected_sensors, battery_monitor)
 
     # prepare connected sensors status for ble 
     connected_sensors_status = bytearray([

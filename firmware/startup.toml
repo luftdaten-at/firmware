@@ -1,0 +1,9 @@
+# One-shot startup actions (read at boot). Set a flag to true, reboot; on success the
+# firmware clears the flag. Wi-Fi credentials stay in settings.toml (SSID / PASSWORD).
+
+# When true: connect Wi-Fi once, set time from NTP to CircuitPython RTC and DS3231 (if present), then clear this flag.
+SYNC_RTC_FROM_NTP = false
+
+# When true: after scanning I2C sensors, set settings.toml MODEL from hardware and clear this flag.
+# Transitional: MODEL = -1 in settings.toml still triggers the same detect until you migrate to this flag only.
+DETECT_MODEL_FROM_SENSORS = false

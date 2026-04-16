@@ -97,5 +97,5 @@ This flow copies the whole [`../firmware/`](../firmware/) tree. For day-to-day l
 
 - **Step 1 — Flash the board**: `flash_with_esptool` — esptool only; **`ensure_circuitpython_bin`** resolves a `.bin` (file at `circuitpython_bin`, newest in `deploy/bin/`, index, or **`circuitpython_download_fallback_url`**).
 - **Step 2 — Copy firmware to a new board**: `copy_firmware_to_circuitpy` — wait for `CIRCUITPY`, copy repo `firmware/` + `deploy/settings.toml`.
-- **Step 3 — Update firmware (existing board)**: `run_update_only` — backup device `settings.toml` to `settings_backups/slot_N/`, copy `firmware/`, merge any **new keys** from the repo `firmware/settings.toml` on `CIRCUITPY` into the backup (existing keys keep device values), then restore that merged file; **`settings_slot`** must be `0`, `1`, or `2`.
+- **Step 3 — Update firmware (existing board)**: `run_update_only` — backup device `settings.toml` (and `startup.toml` if present) to `settings_backups/slot_N/`, copy `firmware/`, merge any **new keys** from the repo `firmware/settings.toml` and `firmware/startup.toml` on `CIRCUITPY` into those backups when a backup file exists, then restore merged files to the board; **`settings_slot`** must be `0`, `1`, or `2`.
 - **Shortcut**: `run_full_flash` = Step 1 + Step 2 (not Step 3).

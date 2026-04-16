@@ -61,16 +61,26 @@ Drücke den Reset-Knopf am ESP32, um die Installation abzuschließen.
 
 ## 4 - Gerät konfigurieren
 
-Öffne die `settings.toml`-Datei im `CIRCUITPY`-Laufwerk und passe die Konfiguration an. Momentan ist es nur möglich, den Gerätetypen zu ändern. Setze dafür die Variable `model` auf `1` für Air aRound, `2` für Cube, `3` für Station und `4` für Badge (vgl. Konstanten in `modules/enums.py`).
+Öffne die `settings.toml`-Datei im `CIRCUITPY`-Laufwerk und passe die Konfiguration an. Setze **`MODEL`** auf die gewünschte Geräte-ID (`1` … `5`, vgl. Tabelle und `enums.py`). **`MODEL = -1`** löst weiterhin beim Start eine **Sensor-basierte Auto-Erkennung** aus (wird nach dem Scan in `settings.toml` persistiert). Neu: dieselbe Erkennung kann einmalig über **`DETECT_MODEL_FROM_SENSORS`** in **`startup.toml`** ausgelöst werden (siehe unten).
 
 | ID | Modelname |
 | --- | --- |
-| -1 | Autoerkennung beim nächsten Start |
+| -1 | Autoerkennung beim nächsten Start (legacy; alternativ Flag in `startup.toml`) |
 | 1 | Air aRound |
 | 2 | Air Cube |
 | 3 | Air Station |
 | 4 | Air Badge |
 | 5 | Air Bike |
+
+### `startup.toml` (Einmal-Aktionen beim Start)
+
+Neben `settings.toml` gibt es **`startup.toml`** im Firmware-Root (wird mit auf `CIRCUITPY` kopiert). Darin stehen **Booleans für einmalige Aktionen**: Flag auf `true` setzen, Gerät neu starten; **nach erfolgreicher Ausführung setzt die Firmware das Flag wieder auf `false`**. Bei Fehler bleibt das Flag `true` für einen erneuten Versuch.
+
+- **`SYNC_RTC_FROM_NTP`**: Wenn `true` und in `settings.toml` **SSID** (und ggf. Passwort) gesetzt sind: einmalig **WLAN verbinden**, Zeit per **NTP** holen, **CircuitPython-RTC** und ggf. **DS3231** setzen (wie bei `WifiUtil.set_RTC()`), danach Flag löschen. Nützlich z. B. für **Wifiless**-Stationen, die sonst nie verbinden.
+
+- **`DETECT_MODEL_FROM_SENSORS`**: Wenn `true`: nach dem **I2C-Sensor-Scan** wird **`MODEL`** in `settings.toml` aus der Hardware abgeleitet, **`set_api_url()`** aufgerufen, danach wird das Flag wieder **`false`**. **Übergang:** **`MODEL == -1`** in `settings.toml` löst dieselbe Erkennung weiterhin aus (wie bisher). Zusätzlich kann man mit diesem Flag **einmalig neu erkennen**, auch wenn **`MODEL`** schon eine konkrete ID hat (überschreibt `MODEL`).
+
+Wi‑Fi-Zugangsdaten bleiben ausschließlich in **`settings.toml`**.
 
 
 ## 5 - Gerät initialisieren

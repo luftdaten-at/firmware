@@ -347,6 +347,9 @@ def backup_settings_from_device(cfg: DeployConfig) -> None:
     dest_dir = settings_backup_dir(cfg)
     dest_dir.mkdir(parents=True, exist_ok=True)
     copy_file(src, dest_dir / "settings.toml")
+    startup_src = cfg.circuitpy_root / "startup.toml"
+    if startup_src.is_file():
+        copy_file(startup_src, dest_dir / "startup.toml")
 
 
 def restore_settings_backup(cfg: DeployConfig) -> None:
@@ -354,6 +357,9 @@ def restore_settings_backup(cfg: DeployConfig) -> None:
     if not src.is_file():
         raise FileNotFoundError(src)
     copy_file(src, cfg.circuitpy_root / "settings.toml")
+    startup_backup = settings_backup_dir(cfg) / "startup.toml"
+    if startup_backup.is_file():
+        copy_file(startup_backup, cfg.circuitpy_root / "startup.toml")
 
 
 def _merge_toml_add_missing_keys(old: dict, new: dict) -> dict:
@@ -379,18 +385,18 @@ def _list_toml_keys_added_by_merge(old: dict, new: dict, prefix: str = "") -> li
     return added
 
 
-def merge_repo_settings_into_backup(cfg: DeployConfig) -> None:
-    """After ``copy_firmware_tree``, merge the repo ``settings.toml`` on CIRCUITPY into the slot backup.
-
-    Preserves every value from the backed-up device file. Any key (including nested
-    tables) that exists only in the template on the drive is added, then
-    :func:`restore_settings_backup` writes the result back to the device.
-    """
-    backup_path = settings_backup_dir(cfg) / "settings.toml"
-    template_path = cfg.circuitpy_root / "settings.toml"
+def _merge_toml_template_into_backup(
+    backup_path: Path,
+    template_path: Path,
+    log_label: str,
+) -> None:
+    """Merge repo template on CIRCUITPY into slot backup: keep backup values, add missing keys from template."""
+    if not backup_path.is_file():
+        print(f"{log_label} merge: no backup at {backup_path}; skipping.", flush=True)
+        return
     if not template_path.is_file():
         print(
-            f"No {template_path.name} on device after copy; skipping template merge.",
+            f"No {template_path.name} on device after copy; skipping {log_label} merge.",
             flush=True,
         )
         return
@@ -398,27 +404,27 @@ def merge_repo_settings_into_backup(cfg: DeployConfig) -> None:
         import tomli
         import tomli_w
     except ImportError:
-        print("tomli/tomli-w missing (run ``uv sync``); skipping settings merge.", flush=True)
+        print(f"tomli/tomli-w missing (run ``uv sync``); skipping {log_label} merge.", flush=True)
         return
 
     try:
         old_data = tomli.loads(backup_path.read_text(encoding="utf-8"))
     except Exception as ex:
-        raise ValueError(f"Could not parse backup settings {backup_path}: {ex}") from ex
+        raise ValueError(f"Could not parse backup {backup_path}: {ex}") from ex
 
     try:
         new_data = tomli.loads(template_path.read_text(encoding="utf-8"))
     except Exception as ex:
         print(
             f"Warning: could not parse template {template_path}: {ex}; "
-            "keeping backup unchanged.",
+            f"keeping {log_label} backup unchanged.",
             flush=True,
         )
         return
 
     added = _list_toml_keys_added_by_merge(old_data, new_data)
     if not added:
-        print("Settings merge: no new keys in repo template (backup unchanged).", flush=True)
+        print(f"{log_label} merge: no new keys in repo template (backup unchanged).", flush=True)
         return
 
     merged = _merge_toml_add_missing_keys(old_data, new_data)
@@ -435,8 +441,26 @@ def merge_repo_settings_into_backup(cfg: DeployConfig) -> None:
     if len(added) > 24:
         preview += ", …"
     print(
-        f"Settings merge: added {len(added)} key(s) from repo template into backup: {preview}",
+        f"{log_label} merge: added {len(added)} key(s) from repo template into backup: {preview}",
         flush=True,
+    )
+
+
+def merge_repo_settings_into_backup(cfg: DeployConfig) -> None:
+    """After ``copy_firmware_tree``, merge repo ``settings.toml`` on CIRCUITPY into the slot backup."""
+    _merge_toml_template_into_backup(
+        settings_backup_dir(cfg) / "settings.toml",
+        cfg.circuitpy_root / "settings.toml",
+        "Settings",
+    )
+
+
+def merge_repo_startup_into_backup(cfg: DeployConfig) -> None:
+    """Merge repo ``startup.toml`` on CIRCUITPY into slot backup (same rules as settings)."""
+    _merge_toml_template_into_backup(
+        settings_backup_dir(cfg) / "startup.toml",
+        cfg.circuitpy_root / "startup.toml",
+        "Startup",
     )
 
 
@@ -488,6 +512,7 @@ def run_update_only(cfg: DeployConfig) -> None:
     backup_settings_from_device(cfg)
     copy_firmware_tree(firmware_src(), cfg.circuitpy_root)
     merge_repo_settings_into_backup(cfg)
+    merge_repo_startup_into_backup(cfg)
     restore_settings_backup(cfg)
     print("Update finished.", flush=True)
 
