@@ -1,5 +1,5 @@
 {
-    "station": {
+    "device": {
         "time": "2024-04-29T08:25:20.766Z",
         "device": "00112233AABB",
         "firmware": "1.2",

@@ -6,7 +6,7 @@ from wifi_client import WifiUtil
 
 from led_controller import LedController
 from config import Config
-from models.ld_product_model import LdProductModel
+from models.ld_product_model import API_JSON_DEVICE_KEY, LdProductModel
 from ld_service import LdService
 from enums import LdProduct, Color, BleCommands, AirstationConfigFlags, Dimension, SensorModel
 from logger import logger
@@ -150,12 +150,12 @@ class AirStation(LdProductModel):
 
     def get_info(self):
         device_info = super().get_info()
-        device_info['station']['location'] = {
+        device_info[API_JSON_DEVICE_KEY]['location'] = {
             "lat": Config.settings.get("latitude", None),
             "lon": Config.settings.get("longitude", None),
             "height": Config.settings.get("height", None),
         }
-        #device_info['station']['calibration_mode'] = Config.runtime_settings['CALIBRATION_MODE']
+        #device_info[API_JSON_DEVICE_KEY]['calibration_mode'] = Config.runtime_settings['CALIBRATION_MODE']
 
         return device_info
     

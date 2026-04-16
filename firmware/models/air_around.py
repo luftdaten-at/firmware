@@ -4,7 +4,7 @@ import time
 import json
 
 from led_controller import LedController
-from models.ld_product_model import LdProductModel
+from models.ld_product_model import API_JSON_DEVICE_KEY, LdProductModel
 from led_controller import RepeatMode
 from enums import Color, BleCommands
 from logger import logger
@@ -65,7 +65,7 @@ class AirAround(LdProductModel):
                 logger.error(f"Error reading sensor {sensor.model_id}, using previous values")
             vals_array.extend(sensor.get_current_values())
 
-        # Use JSON format [metadata, raw_bytes] so the app receives station.api.key for workshop uploads
+        # Use JSON format [metadata, raw_bytes] so the app receives device.api.key for workshop uploads
         try:
             metadata = self.get_json()
             payload = [metadata, list(vals_array)]
@@ -91,8 +91,8 @@ class AirAround(LdProductModel):
 
     def get_info(self):
         device_info = super().get_info()
-        device_info['station']['api'] = { "key": Config.settings['api_key'] }
-        device_info['station']['battery'] = {
+        device_info[API_JSON_DEVICE_KEY]['api'] = { "key": Config.settings['api_key'] }
+        device_info[API_JSON_DEVICE_KEY]['battery'] = {
             "voltage": self.battery_monitor.cell_voltage() if self.battery_monitor else None,
             "percentage": self.battery_monitor.cell_soc() if self.battery_monitor else None,
         }

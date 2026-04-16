@@ -19,6 +19,7 @@ from led_controller import LedController, RepeatMode
 from wifi_client import WifiUtil
 from ugm2.upgrade_mananger import Ugm
 from logger import logger
+from models.ld_product_model import API_JSON_DEVICE_KEY
 from util import get_battery_monitor, get_connected_sensors
 from startup_actions import run_startup_actions, run_startup_actions_after_sensors
 
@@ -121,7 +122,7 @@ def main():
     try:
         if Config.settings['api_key']:
             device_info_json = device.get_info()
-            device_info_json['station']['sensor_list'] = [
+            device_info_json[API_JSON_DEVICE_KEY]['sensor_list'] = [
                 {"model_id": s.model_id, "dimension_list": s.measures_values, "serial_number": s.get_serial_number()}
                 for s in sensors
             ]
