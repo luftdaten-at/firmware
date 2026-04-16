@@ -7,3 +7,11 @@ SYNC_RTC_FROM_NTP = false
 # When true: after scanning I2C sensors, set settings.toml MODEL from hardware and clear this flag.
 # Transitional: MODEL = -1 in settings.toml still triggers the same detect until you migrate to this flag only.
 DETECT_MODEL_FROM_SENSORS = false
+
+# Air Station wifiless only: after sensor scan, connect Wi-Fi and POST each line of SD_LOG_PATH (JSONL) to
+# the datahub data/ API; on full success truncate the log file and clear this flag. SSID required in settings.toml.
+UPLOAD_SD_LOG_TO_DATAHUB = false
+
+# Air Station wifiless only: after sensor scan (and after UPLOAD_SD_LOG_TO_DATAHUB if enabled), delete all files
+# and folders under /sd, then clear this flag. No Wi-Fi required. Destructive — use for a factory-style wipe.
+CLEAR_SD_CARD = false

@@ -22,8 +22,7 @@ BIN_DIR = DEPLOY_DIR / "bin"
 
 # Used when directory index cannot be parsed (CDN errors, HTML changes).
 DEFAULT_CIRCUITPYTHON_FALLBACK_URL = (
-    "https://downloads.circuitpython.org/bin/espressif_esp32s3_devkitc_1_n8r8/de_DE/"
-    "adafruit-circuitpython-espressif_esp32s3_devkitc_1_n8r8-de_DE-10.1.4.bin"
+    "https://downloads.circuitpython.org/bin/espressif_esp32s3_devkitc_1_n8r8/en_GB/adafruit-circuitpython-espressif_esp32s3_devkitc_1_n8r8-en_GB-10.1.4.bin"
 )
 
 _BIN_VERSION_SUFFIX = re.compile(r"-(\d+)\.(\d+)\.(\d+)\.bin$", re.IGNORECASE)

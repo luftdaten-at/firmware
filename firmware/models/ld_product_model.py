@@ -138,6 +138,10 @@ class LdProductModel:
                 
         self.measurements = new_measurements
 
+        if not logger.log_list:
+            # Datahub ``status/`` rejects empty ``status_list`` (400 missing device/status_list).
+            return
+
         data = self.get_info()
         data["status_list"] = logger.log_list
         api_url = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']

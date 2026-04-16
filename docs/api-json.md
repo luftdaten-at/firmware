@@ -4,16 +4,22 @@ This document describes the **JSON object shapes** produced by the firmware and 
 
 The top-level metadata object uses the key **`device`** ([`API_JSON_DEVICE_KEY`](../firmware/models/ld_product_model.py)); the inner field **`device`** (string) is still the **device ID** (`device_id` from settings).
 
+The **station** backend for Air Station **Wi‑Fi** measurements (`Config.runtime_settings['API_URL']` from `API_URL` / `TEST_API_URL` in `boot.toml` + `data/`) expects that block under **`station`** instead. [`WifiUtil.send_json_to_api`](../firmware/wifi_client.py) renames **`device` → `station`** on the wire for **`MODEL == AIR_STATION`** when posting to that base URL only (not in **wifiless** mode).
+
+**Wifiless** Air Station sets `runtime_settings['API_URL']` to **`DATAHUB_API_URL`** / **`DATAHUB_TEST_API_URL`** (same as portable models); `send_json_to_api` keeps the **`device`** key for those posts.
+
 ## Base URLs and routes
 
 | Use case | Base URL (from config) | HTTP path | Typical caller |
 |----------|-------------------------|-----------|------------------|
 | Datahub measurement / initial device info | `DATAHUB_API_URL` or `DATAHUB_TEST_API_URL` (`settings.toml` / `boot.toml`) | `data/` (default router) | [`WifiUtil.send_json_to_api(..., router='data/')`](../firmware/wifi_client.py) — e.g. [`LdProductModel`](../firmware/models/ld_product_model.py) boot `get_initial_info` |
 | Datahub status + logs | Same datahub base | `status/` | [`send_to_api`](../firmware/models/ld_product_model.py) tail |
-| Station measurement API | `API_URL` / `TEST_API_URL` → [`Config.runtime_settings['API_URL']`](../firmware/config.py) after `set_api_url()` | `data/` (default) | Queued `send_json_to_api(data)` without overriding `api_url` |
+| Station measurement API | Wi‑Fi Air Station: `API_URL` / `TEST_API_URL` → `runtime_settings['API_URL']`. **Wifiless** Air Station: **`DATAHUB_API_URL`** / **`DATAHUB_TEST_API_URL`** (see [`set_api_url()`](../firmware/config.py)) | `data/` (default) | `send_json_to_api(data)` — Wi‑Fi station uses **`station`** on the wire; wifiless uses **`device`** (datahub) |
 | Sensor.Community | `SENSOR_COMMUNITY_API` in runtime | full URL constant | [`send_json_to_sensor_community`](../firmware/wifi_client.py) with extra **headers** |
 
 Full URL pattern for datahub HTTP session: **`{base}/{router}`** (e.g. `https://…/data/`).
+
+On Air Station wifiless, each non-empty line of the SD JSONL log is one `get_json()` object (top-level **`device`**). With `startup.toml` **`UPLOAD_SD_LOG_TO_DATAHUB`**, lines are replayed via `send_json_to_api` to **`DATAHUB_API_URL`** / **`DATAHUB_TEST_API_URL`** (same as `runtime_settings['API_URL']` for wifiless), still using **`device`** on the wire.
 
 ---
 
@@ -45,20 +51,20 @@ Most payloads are built from [`get_info()`](../firmware/models/ld_product_model.
 
 ### Air Station — extra `device.location`
 
-[`AirStation.get_info()`](../firmware/models/air_station.py) adds:
+[`AirStation.get_info()`](../firmware/models/air_station.py) always adds **`location`** with **`lat`**, **`lon`**, and **`height`**. Values are **floats** when set in `settings.toml`, otherwise **`null`** (empty or unparseable strings are treated as unset). The station **`data/`** API requires this object to be present.
 
 ```json
 "device": {
   …,
   "location": {
-    "lat": "<string or null>",
-    "lon": "<string or null>",
-    "height": "<string or null>"
+    "lat": <float or null>,
+    "lon": <float or null>,
+    "height": <float or null>
   }
 }
 ```
 
-Values come from `settings.toml` (`latitude`, `longitude`, `height`).
+For POSTs to the station **`API_URL`** `data/` route, [`WifiUtil.send_json_to_api`](../firmware/wifi_client.py) ensures **`location`** exists and normalizes **`location`** on replayed SD JSONL (e.g. legacy lines missing **`location`** or using `""` for lat/lon/height).
 
 ### Portable models (Air aRound / Bike, Cube, Badge) — extra `device` fields
 

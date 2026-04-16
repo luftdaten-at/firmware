@@ -80,6 +80,10 @@ Neben `settings.toml` gibt es **`startup.toml`** im Firmware-Root (wird mit auf 
 
 - **`DETECT_MODEL_FROM_SENSORS`**: Wenn `true`: nach dem **I2C-Sensor-Scan** wird **`MODEL`** in `settings.toml` aus der Hardware abgeleitet, **`set_api_url()`** aufgerufen, danach wird das Flag wieder **`false`**. **Übergang:** **`MODEL == -1`** in `settings.toml` löst dieselbe Erkennung weiterhin aus (wie bisher). Zusätzlich kann man mit diesem Flag **einmalig neu erkennen**, auch wenn **`MODEL`** schon eine konkrete ID hat (überschreibt `MODEL`).
 
+- **`UPLOAD_SD_LOG_TO_DATAHUB`**: Nur **Air Station mit `WIFILESS_MODE`**: nach dem Sensor-Scan **WLAN** (SSID in `settings.toml`) verbinden, Datei **`SD_LOG_PATH`** (Standard `/sd/measurements.jsonl`) **Zeile für Zeile** als Mess-JSON an die **Datahub-`data/`-API** senden. **Voller Erfolg** (HTTP 200/422 pro Zeile): Logdatei **leeren**, Flag **`false`**. **Teilfehler** oder kein WLAN: Datei unverändert, Flag bleibt **`true`** (erneuter Versuch nach Fix). Leere/fehlende Datei: Flag wird gelöscht (nichts zu tun). Jede **HTTP-Antwort** (Status + gekürzter Body) wird zusätzlich in **`/datahub_upload.log`** auf dem CIRCUITPY-Root angehängt.
+
+- **`CLEAR_SD_CARD`**: Nur **Air Station mit `WIFILESS_MODE`**: nach dem Sensor-Scan und **nach** `UPLOAD_SD_LOG_TO_DATAHUB` (falls aktiv) werden **alle Dateien und Ordner unter `/sd`** gelöscht (kein WLAN nötig). Bei **Erfolg** wird das Flag **`false`**. Bei Fehler (z. B. SD nicht mountbar) bleibt **`true`**. **Vorsicht:** alles auf der SD-Karte im Wurzelverzeichnis geht verloren.
+
 Wi‑Fi-Zugangsdaten bleiben ausschließlich in **`settings.toml`**.
 
 

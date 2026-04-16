@@ -16,8 +16,8 @@ from sd_logger import append_measurement_jsonl
 class AirStation(LdProductModel):
     NEOPIXEL_PIN = board.IO8
     NEOPIXLE_N = 1
-    SCL = None
-    SDA = None
+    SCL = board.IO5
+    SDA = board.IO4
     BUTTON_PIN = None
 
     def __init__(self, ble_service: LdService, sensors, battery_monitor):
@@ -52,6 +52,19 @@ class AirStation(LdProductModel):
         })
     
     def connection_update(self, connected):
+        # Wifiless: SD/RTC status in ``_tick_wifiless`` owns the LED. Do not apply the
+        # non-wifiless "BLE disconnected" cyan blink here — ``main`` calls this every loop
+        # *before* ``tick()``, which would override green/yellow/red SD feedback.
+        if Config.is_air_station_wifiless():
+            if connected:
+                self.status_led.show_led({
+                    'repeat_mode': RepeatMode.FOREVER,
+                    'elements': [
+                        {'color': Color.GREEN, 'duration': 0.5},
+                        {'color': Color.OFF, 'duration': 0.5},
+                    ],
+                })
+            return
         if connected:
             self.status_led.show_led({
                 'repeat_mode': RepeatMode.FOREVER,
@@ -148,13 +161,26 @@ class AirStation(LdProductModel):
     def receive_button_press(self):
         pass
 
+    @staticmethod
+    def _api_location_dict():
+        """Lat/lon/height as floats or ``None`` for the station API (never empty strings)."""
+        def num(v):
+            if v is None or (isinstance(v, str) and not str(v).strip()):
+                return None
+            try:
+                return float(str(v).strip())
+            except (TypeError, ValueError):
+                return None
+
+        lat = num(Config.settings.get("latitude"))
+        lon = num(Config.settings.get("longitude"))
+        height = num(Config.settings.get("height"))
+        # Station API requires ``location`` with lat/lon/height (use null when unset).
+        return {"lat": lat, "lon": lon, "height": height}
+
     def get_info(self):
         device_info = super().get_info()
-        device_info[API_JSON_DEVICE_KEY]['location'] = {
-            "lat": Config.settings.get("latitude", None),
-            "lon": Config.settings.get("longitude", None),
-            "height": Config.settings.get("height", None),
-        }
+        device_info[API_JSON_DEVICE_KEY]["location"] = AirStation._api_location_dict()
         #device_info[API_JSON_DEVICE_KEY]['calibration_mode'] = Config.runtime_settings['CALIBRATION_MODE']
 
         return device_info

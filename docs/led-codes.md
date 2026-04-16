@@ -67,6 +67,8 @@ Source: [`firmware/models/air_station.py`](../firmware/models/air_station.py).
 | **Connected** | **Green / off** 0.5 s each, forever. |
 | **Not connected** | **Cyan / off** 0.5 s each, forever. |
 
+**Wifiless:** when **not** BLE-connected, `connection_update` does **not** change the LED (so SD/RTC status from `_tick_wifiless` is not overwritten every main-loop iteration). When BLE **is** connected, the same **green / off** pattern as above applies.
+
 ### Normal (WiFi API) measurement path
 
 When WiFi is up, `rtc_is_set`, and latitude, longitude, and height are all set:

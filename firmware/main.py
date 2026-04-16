@@ -6,7 +6,9 @@ import busio  # type: ignore
 import gc
 import neopixel  # type: ignore
 import traceback
+import sys
 import supervisor
+
 import adafruit_ds3231
 import rtc
 from ld_service import LdService
@@ -111,6 +113,11 @@ def main():
     if Config.settings['MODEL'] == LdProduct.AIR_STATION:
         from models.air_station import AirStation
         device = AirStation(service, sensors, battery_monitor)
+
+    if device is None:
+        logger.error(
+            f"main: device is None for MODEL={Config.settings.get('MODEL')!r} — no matching device class"
+        )
 
     # Use JSON format when api_key is set so the app can read it for workshop uploads.
     # Binary format is used when no api_key (backward compat / first boot).
@@ -302,6 +309,6 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as e:
-        full_traceback = traceback.format_exception(e)
+        full_traceback = traceback.format_exception(*sys.exc_info())
         logger.critical(f"{e}\n{full_traceback}")
         supervisor.reload()

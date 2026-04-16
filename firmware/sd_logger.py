@@ -3,6 +3,7 @@
 Hardware: SCK=IO12, MISO=IO11, MOSI=IO10, CS=IO13 (ESP32-S3 / board.IO*).
 """
 import json
+import os
 
 import adafruit_sdcard  # type: ignore
 import board  # type: ignore
@@ -25,6 +26,49 @@ def _reset_mount_state():
     _spi = None
     _cs_pin = None
     _sdcard = None
+
+
+def _sd_join(root: str, name: str) -> str:
+    r = root.rstrip("/")
+    return f"{r}/{name}"
+
+
+def _delete_sd_path(full: str) -> None:
+    """Remove a file or recursively remove a directory under ``/sd``."""
+    try:
+        entries = os.listdir(full)
+    except OSError:
+        os.remove(full)
+        return
+    for n in entries:
+        if n in (".", ".."):
+            continue
+        _delete_sd_path(_sd_join(full, n))
+    try:
+        os.rmdir(full)
+    except OSError:
+        pass
+
+
+def clear_sd_volume() -> bool:
+    """Delete all files and directories under ``/sd`` (not the mount itself).
+
+    Mounts the card if needed. Returns ``True`` if every entry was removed without error.
+    """
+    if not ensure_sd_mounted():
+        return False
+    try:
+        for name in os.listdir("/sd"):
+            if name in (".", ".."):
+                continue
+            _delete_sd_path(_sd_join("/sd", name))
+        if hasattr(os, "sync"):
+            os.sync()
+        logger.info("SD card: all entries under /sd removed")
+        return True
+    except Exception as e:
+        logger.error(f"SD card clear failed ({type(e).__name__}: {e})")
+        return False
 
 
 def ensure_sd_mounted():
