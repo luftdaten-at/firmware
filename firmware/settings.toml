@@ -3,6 +3,7 @@ TEST_MODE = false
 SSID = ""
 PASSWORD = ""
 SEND_TO_SENSOR_COMMUNITY = false
+# LOG_LEVEL = "INFO"
 
 # Timestamps for API/logs: default Europe/Vienna if omitted. See docs/settings.md (TZ).
 # TZ = "UTC"

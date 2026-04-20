@@ -50,6 +50,7 @@ Per-device and user-facing options: Wi‑Fi, model, keys, Air Station behaviour,
 | `TEST_MODE` | boolean | If true: staging station URL, staging datahub, staging update server, and related test endpoints. |
 | `CALIBRATION_MODE` | boolean / null | Calibration flag from settings or API. If `null`, runtime calibration is inferred when `SSID == "luftdaten.at"`. |
 | `SEND_TO_SENSOR_COMMUNITY` | boolean | When true (Air Station path), also push to Sensor.Community in addition to other telemetry. |
+| `LOG_LEVEL` | string | Minimum log level for [`SimpleLogger`](../firmware/logger.py): `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` (case-insensitive). Messages below this are not printed or added to `logger.log_list`. Default **`DEBUG`**. Unknown values are treated like **`DEBUG`**. |
 | `longitude` | string | Air Station / location: longitude (string in settings; APIs normalize to float or null). |
 | `latitude` | string | Air Station / location: latitude. |
 | `height` | string | Air Station / location: height above sea level. |
