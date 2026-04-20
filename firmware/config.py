@@ -86,6 +86,17 @@ class Config:
         'ROLLBACK': 'settings.toml',
 
         'CERTIFICATE_PATH': 'boot.toml',
+
+        # Home Assistant / MQTT (optional; see docs/mqtt-home-assistant.md)
+        'MQTT_ENABLED': 'settings.toml',
+        'MQTT_BROKER': 'settings.toml',
+        'MQTT_PORT': 'settings.toml',
+        'MQTT_USE_TLS': 'settings.toml',
+        'MQTT_USERNAME': 'settings.toml',
+        'MQTT_PASSWORD': 'settings.toml',
+        'MQTT_DISCOVERY_PREFIX': 'settings.toml',
+        'MQTT_DEVICE_NAME': 'settings.toml',
+        'MQTT_CERTIFICATE_PATH': 'settings.toml',
     }
     # Normal settings (persistent)
     settings = AutoSaveDict({
@@ -143,6 +154,16 @@ class Config:
         'ROLLBACK': False,
 
         'CERTIFICATE_PATH': 'certs/isrgrootx1.pem',
+
+        'MQTT_ENABLED': False,
+        'MQTT_BROKER': '',
+        'MQTT_PORT': 1883,
+        'MQTT_USE_TLS': False,
+        'MQTT_USERNAME': '',
+        'MQTT_PASSWORD': '',
+        'MQTT_DISCOVERY_PREFIX': 'homeassistant',
+        'MQTT_DEVICE_NAME': '',
+        'MQTT_CERTIFICATE_PATH': '',
     }, toml_file=key_to_toml_file)
 
     # Runtime settings (non-persistent)

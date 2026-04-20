@@ -52,6 +52,7 @@ Both receive the **same** byte buffer.
 | `0x04` | `TURN_OFF_STATUS_LIGHT` | LED controller. |
 | `0x05` | `TURN_ON_STATUS_LIGHT` | LED controller. |
 | `0x06` | `SET_AIR_STATION_CONFIGURATION` | [`AirStation.receive_command`](../firmware/models/air_station.py): payload after `0x06` is TLV data (next section). |
+| `0x07` | `SET_CUBE_MQTT_CONFIGURATION` | [`AirCube.receive_command`](../firmware/models/air_cube.py): payload after `0x07` is **MQTT-only** TLV records (same encoding and flag numbers as flags `9…17` below). |
 
 Air Station does not implement `READ_SENSOR_DATA` in `receive_command`; only `SET_AIR_STATION_CONFIGURATION` is handled there.
 
@@ -79,8 +80,19 @@ After the leading `0x06`, the payload is a sequence of records:
 | `6` | `SSID` | `SSID` | UTF-8 string (triggers `WifiUtil.connect()` if changed) |
 | `7` | `PASSWORD` | `PASSWORD` | UTF-8 string (same) |
 | `8` | `DEVICE_ID` | — | Present in [`encode_configurations`](../firmware/models/air_station.py) for **read** TLV; **not** written in [`decode_configuration`](../firmware/models/air_station.py) (read-only over the wire from central’s perspective). |
+| `9` | `MQTT_ENABLED` | `MQTT_ENABLED` | int32 (`0` / non-zero → bool) |
+| `10` | `MQTT_BROKER` | `MQTT_BROKER` | UTF-8 string |
+| `11` | `MQTT_PORT` | `MQTT_PORT` | int32 |
+| `12` | `MQTT_USE_TLS` | `MQTT_USE_TLS` | int32 (`0` / non-zero → bool) |
+| `13` | `MQTT_USERNAME` | `MQTT_USERNAME` | UTF-8 string |
+| `14` | `MQTT_PASSWORD` | `MQTT_PASSWORD` | UTF-8 string (writable; **never** in read-back TLV) |
+| `15` | `MQTT_DISCOVERY_PREFIX` | `MQTT_DISCOVERY_PREFIX` | UTF-8 string (default `homeassistant`) |
+| `16` | `MQTT_DEVICE_NAME` | `MQTT_DEVICE_NAME` | UTF-8 string (HA device display name) |
+| `17` | `MQTT_CERTIFICATE_PATH` | `MQTT_CERTIFICATE_PATH` | UTF-8 string (optional PEM path for MQTT TLS; omitted from read-back if empty) |
 
-**Read-back:** [`AirStation.send_configuration`](../firmware/models/air_station.py) assigns `air_station_configuration` from `encode_configurations()`, which includes flags `0…5` and `8` (`DEVICE_ID`), **not** SSID/password (secrets are not mirrored on the read characteristic).
+**Read-back:** [`AirStation.send_configuration`](../firmware/models/air_station.py) assigns `air_station_configuration` from `encode_configurations()`, which includes flags `0…5`, `8` (`DEVICE_ID`), and **non-secret** MQTT fields `9…13`, `15`, `16`, and `17` when set — **not** SSID, Wi‑Fi password, or **`MQTT_PASSWORD`** (secrets are not mirrored on the read characteristic).
+
+**Air Cube MQTT TLV:** the same flag bytes and value encodings as in the table (`9…17`) are used after command byte **`0x07`**. There is **no** `air_station_configuration` read characteristic on the Cube; the app may keep local UI state after write. See [`docs/companion-app-mqtt-ble.md`](companion-app-mqtt-ble.md).
 
 ---
 
@@ -150,13 +162,13 @@ Four bytes (extended by error code in [`update_ble_error_status`](../firmware/mo
 
 ### `air_station_configuration` (read)
 
-TLV format **same flag bytes as write**, but payload built only from non-secret fields in [`encode_configurations()`](../firmware/models/air_station.py) (flags 0–5 and 8 as in the table above).
+TLV format **same flag bytes as write**, but payload built only from **non-secret** fields in [`encode_configurations()`](../firmware/models/air_station.py): flags `0…5`, `8`, and MQTT flags **`9…13`, `15`, `16`, `17`** when applicable (see table above).
 
 ---
 
 ## Not exposed over BLE (non-exhaustive)
 
-These `settings.toml` / runtime items are **not** part of the Air Station TLV protocol and **not** in the JSON `device` blob today, including:
+These `settings.toml` / runtime items are **not** in the JSON `device` blob today, and either **not** in the Air Station TLV or only partially covered, including:
 
 - **`TZ`** (timezone for [`format_iso8601_tz()`](../firmware/tz_format.py))
 - **`LOG_LEVEL`**

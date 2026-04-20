@@ -118,6 +118,16 @@ def main():
             f"main: device is None for MODEL={Config.settings.get('MODEL')!r} — no matching device class"
         )
 
+    mqtt_loop_step = None
+    if device is not None:
+        _m = Config.settings.get("MODEL")
+        if _m == LdProduct.AIR_CUBE or (
+            _m == LdProduct.AIR_STATION and not Config.is_air_station_wifiless()
+        ):
+            from mqtt_ha import MqttHa as _MqttHa
+
+            mqtt_loop_step = _MqttHa.loop_step
+
     # Use JSON format when api_key is set so the app can read it for workshop uploads.
     # Binary format is used when no api_key (backward compat / first boot).
     # Ensure portable devices have api_key for workshop uploads
@@ -301,6 +311,9 @@ def main():
 
         device.tick()
         device.status_led.tick()
+
+        if mqtt_loop_step is not None:
+            mqtt_loop_step()
 
         time.sleep(device.polling_interval)
 

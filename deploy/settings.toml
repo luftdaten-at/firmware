@@ -10,3 +10,14 @@ CALIBRATION_MODE = false
 # Air Station only: log measurements to SPI SD (no WiFi/API). DS3231 on the same I2C as SCL/SDA for time at boot.
 WIFILESS_MODE = false
 # SD_LOG_PATH = "/sd/measurements.jsonl"
+
+# Home Assistant MQTT (Air Cube / Air Station Wi‑Fi). See docs/mqtt-home-assistant.md
+# MQTT_ENABLED = true
+# MQTT_BROKER = "homeassistant.local"
+# MQTT_PORT = 1883
+# MQTT_USE_TLS = false
+# MQTT_USERNAME = ""
+# MQTT_PASSWORD = ""
+# MQTT_DISCOVERY_PREFIX = "homeassistant"
+# MQTT_DEVICE_NAME = "Living room"
+# MQTT_CERTIFICATE_PATH = ""

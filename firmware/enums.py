@@ -304,6 +304,7 @@ class BleCommands:
     TURN_OFF_STATUS_LIGHT = 0x04
     TURN_ON_STATUS_LIGHT = 0x05
     SET_AIR_STATION_CONFIGURATION = 0x06
+    SET_CUBE_MQTT_CONFIGURATION = 0x07
 
 class AirstationConfigFlags:
     AUTO_UPDATE_MODE = 0  # Bit 0
@@ -315,6 +316,16 @@ class AirstationConfigFlags:
     SSID = 6  # Bit 6
     PASSWORD = 7  # Bit 7
     DEVICE_ID = 8
+    # Home Assistant / MQTT (same TLV encoding; Air Station: with 0x06, Air Cube: with 0x07)
+    MQTT_ENABLED = 9
+    MQTT_BROKER = 10
+    MQTT_PORT = 11
+    MQTT_USE_TLS = 12
+    MQTT_USERNAME = 13
+    MQTT_PASSWORD = 14  # write-only over BLE; not in read-back characteristic
+    MQTT_DISCOVERY_PREFIX = 15
+    MQTT_DEVICE_NAME = 16
+    MQTT_CERTIFICATE_PATH = 17
 
 class AirStationMeasurementInterval:
     sec30 = 30

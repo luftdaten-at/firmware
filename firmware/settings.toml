@@ -11,3 +11,9 @@ SEND_TO_SENSOR_COMMUNITY = false
 # Air Station: SD log instead of API (SPI SCK=IO12 MISO=IO11 MOSI=IO10 CS=IO13). DS3231 uses I2C from SCL/SDA in settings.
 WIFILESS_MODE = false
 # SD_LOG_PATH = "/sd/measurements.jsonl"
+
+# Home Assistant MQTT (optional; Air Cube / Air Station Wi‑Fi). See docs/mqtt-home-assistant.md
+# MQTT_ENABLED = true
+# MQTT_BROKER = ""
+# MQTT_PORT = 1883
+# MQTT_USE_TLS = false
