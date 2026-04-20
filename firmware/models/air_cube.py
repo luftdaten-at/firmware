@@ -8,7 +8,7 @@ from json import dump, load, loads, dumps
 from led_controller import LedController
 from wifi_client import WifiUtil
 from led_controller import RepeatMode
-from models.ld_product_model import LdProductModel
+from models.ld_product_model import API_JSON_DEVICE_KEY, LdProductModel
 from logger import logger
 from config import Config
 from enums import Color, LdProduct, Dimension, Quality, BleCommands
@@ -121,7 +121,7 @@ class AirCube(LdProductModel):
 
     def get_info(self):
         device_info = super().get_info()
-        device_info['station']['battery'] = {
+        device_info[API_JSON_DEVICE_KEY]['battery'] = {
             "voltage": self.battery_monitor.cell_voltage() if self.battery_monitor else None,
             "percentage": self.battery_monitor.cell_soc() if self.battery_monitor else None,
         }

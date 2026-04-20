@@ -6,7 +6,9 @@ import busio  # type: ignore
 import gc
 import neopixel  # type: ignore
 import traceback
+import sys
 import supervisor
+
 import adafruit_ds3231
 import rtc
 from ld_service import LdService
@@ -19,7 +21,9 @@ from led_controller import LedController, RepeatMode
 from wifi_client import WifiUtil
 from ugm2.upgrade_mananger import Ugm
 from logger import logger
-from util import get_battery_monitor, get_connected_sensors, get_model_id_from_sensors
+from models.ld_product_model import API_JSON_DEVICE_KEY
+from util import get_battery_monitor, get_connected_sensors
+from startup_actions import run_startup_actions, run_startup_actions_after_sensors
 
 def main():
     logger.debug('loaded main.py')
@@ -41,16 +45,19 @@ def main():
     # init bus
     i2c = busio.I2C(scl=scl, sda=sda, frequency=20000)
 
-    # set correct time if rtc module is connected
+    # set correct time if DS3231 RTC module is connected (same I2C as sensors)
     try:
         rtc_with_battery = adafruit_ds3231.DS3231(i2c)
         rtc.RTC().datetime = rtc_with_battery.datetime
 
         Config.runtime_settings['rtc_is_set'] = True
         Config.runtime_settings['rtc_module'] = rtc_with_battery
-    except:
-        # rtc module not connected
-        pass
+        logger.info('DS3231 found: system RTC set from module time')
+    except Exception as e:
+        logger.warning(f'DS3231 not available or I2C error ({type(e).__name__}: {e}); using existing RTC if any')
+
+    # One-shot flags in startup.toml (e.g. NTP → RTC/DS3231); uses Wi-Fi from settings.toml
+    run_startup_actions()
 
     # Initialize the button at GPIO9
     button = digitalio.DigitalInOut(button_pin)
@@ -60,10 +67,8 @@ def main():
     connected_sensors = get_connected_sensors(i2c)
     battery_monitor = get_battery_monitor(i2c)
 
-    # auto detect model if model=-1
-    if Config.settings['MODEL'] == -1:
-        Config.settings['MODEL'] = get_model_id_from_sensors(connected_sensors, battery_monitor)
-        Config.set_api_url()
+    # Model from sensors: startup.toml DETECT_MODEL_FROM_SENSORS and/or legacy MODEL == -1
+    run_startup_actions_after_sensors(connected_sensors, battery_monitor)
 
     # prepare connected sensors status for ble 
     connected_sensors_status = bytearray([
@@ -109,6 +114,11 @@ def main():
         from models.air_station import AirStation
         device = AirStation(service, sensors, battery_monitor)
 
+    if device is None:
+        logger.error(
+            f"main: device is None for MODEL={Config.settings.get('MODEL')!r} — no matching device class"
+        )
+
     # Use JSON format when api_key is set so the app can read it for workshop uploads.
     # Binary format is used when no api_key (backward compat / first boot).
     # Ensure portable devices have api_key for workshop uploads
@@ -119,7 +129,7 @@ def main():
     try:
         if Config.settings['api_key']:
             device_info_json = device.get_info()
-            device_info_json['station']['sensor_list'] = [
+            device_info_json[API_JSON_DEVICE_KEY]['sensor_list'] = [
                 {"model_id": s.model_id, "dimension_list": s.measures_values, "serial_number": s.get_serial_number()}
                 for s in sensors
             ]
@@ -223,8 +233,9 @@ def main():
         # Clean memory
         gc.collect()
 
-        if not WifiUtil.radio.connected:
-            WifiUtil.connect()
+        if not Config.is_air_station_wifiless():
+            if not WifiUtil.radio.connected:
+                WifiUtil.connect()
 
         '''
         # Check for updates
@@ -237,7 +248,11 @@ def main():
 
         # perforem ugm2 update mostly for upgrading ugm
         # check if update available
-        if WifiUtil.radio.connected and (folder := Ugm.check_if_upgrade_available()):
+        if (
+            not Config.is_air_station_wifiless()
+            and WifiUtil.radio.connected
+            and (folder := Ugm.check_if_upgrade_available())
+        ):
             # Assume model is AirStation
             device.status_led.status_led[0] = (200, 0, 80)
             logger.debug(f'Installing new firmware from folder: {folder}')
@@ -294,6 +309,6 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as e:
-        full_traceback = traceback.format_exception(e)
+        full_traceback = traceback.format_exception(*sys.exc_info())
         logger.critical(f"{e}\n{full_traceback}")
         supervisor.reload()

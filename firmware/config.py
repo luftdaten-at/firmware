@@ -74,6 +74,13 @@ class Config:
         'SDA': 'settings.toml',
         'BUTTON_PIN': 'settings.toml',
 
+        # Air Station: log to SD instead of API when true
+        'WIFILESS_MODE': 'settings.toml',
+        'SD_LOG_PATH': 'settings.toml',
+
+        # UGM rollback flag (written by upgrade manager; see code.py)
+        'ROLLBACK': 'settings.toml',
+
         'CERTIFICATE_PATH': 'boot.toml',
     }
     # Normal settings (persistent)
@@ -123,6 +130,11 @@ class Config:
         'SDA': None,
         'BUTTON_PIN': None,
 
+        'WIFILESS_MODE': False,
+        'SD_LOG_PATH': '/sd/measurements.jsonl',
+
+        'ROLLBACK': False,
+
         'CERTIFICATE_PATH': 'certs/isrgrootx1.pem',
     }, toml_file=key_to_toml_file)
 
@@ -149,10 +161,18 @@ class Config:
     @staticmethod
     def set_api_url():
         if Config.settings['MODEL'] == LdProduct.AIR_STATION:
-            Config.runtime_settings['API_URL'] = Config.settings['API_URL']
-            if Config.settings['TEST_MODE']:
-                #Config.runtime_settings['API_URLS'] = [Config.settings['TEST_API_URL']]
-                Config.runtime_settings['API_URL'] = Config.settings['TEST_API_URL']
+            if Config.is_air_station_wifiless():
+                # Wifiless: measurements (and SD replay) go to the datahub base URL like portable models.
+                Config.runtime_settings['API_URL'] = (
+                    Config.settings['DATAHUB_TEST_API_URL']
+                    if Config.settings['TEST_MODE']
+                    else Config.settings['DATAHUB_API_URL']
+                )
+            else:
+                Config.runtime_settings['API_URL'] = Config.settings['API_URL']
+                if Config.settings['TEST_MODE']:
+                    #Config.runtime_settings['API_URLS'] = [Config.settings['TEST_API_URL']]
+                    Config.runtime_settings['API_URL'] = Config.settings['TEST_API_URL']
 
         elif Config.settings['MODEL'] in (LdProduct.AIR_CUBE, LdProduct.AIR_BADGE, LdProduct.AIR_AROUND):
             Config.runtime_settings['API_URL'] = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
@@ -186,3 +206,13 @@ class Config:
         # set device id
         if Config.settings['device_id'] is None:
             Config.settings['device_id'] = f'{Config.settings['mac']}{Config.settings["MANUFACTURE_ID"]}'
+
+    @staticmethod
+    def is_air_station_wifiless():
+        """Air Station with SD logging instead of WiFi/API (see WIFILESS_MODE in settings.toml)."""
+        if Config.settings.get('MODEL') != LdProduct.AIR_STATION:
+            return False
+        v = Config.settings.get('WIFILESS_MODE', False)
+        if isinstance(v, str):
+            return v.strip().lower() in ('1', 'true', 'yes')
+        return bool(v)

@@ -1,6 +1,7 @@
 import gc
 from wifi import radio as wifi_radio
 from config import Config
+from enums import LdProduct
 from socketpool import SocketPool
 from ssl import create_default_context
 from adafruit_requests import Session
@@ -106,23 +107,140 @@ class WifiUtil:
     
 
     @staticmethod
+    def _copy_air_station_metadata_block(src: dict) -> dict:
+        """Shallow copy of station/device block with a fresh ``location`` dict when present."""
+        inner = dict(src)
+        if isinstance(src.get("location"), dict):
+            inner["location"] = dict(src["location"])
+        return inner
+
+    @staticmethod
+    def _sanitize_station_measurement_location(payload: dict) -> None:
+        """Station ``data/`` requires ``location``; lat/lon/height must be float or null, not ``\"\"``."""
+        block = payload.get("station")
+        if not isinstance(block, dict):
+            return
+        loc = block.get("location")
+        if not isinstance(loc, dict):
+            loc = {}
+        fixed = {}
+        for kk in ("lat", "lon", "height"):
+            v = loc.get(kk)
+            if v is None or (isinstance(v, str) and not str(v).strip()):
+                fixed[kk] = None
+            else:
+                try:
+                    fixed[kk] = float(str(v).strip())
+                except (TypeError, ValueError):
+                    fixed[kk] = None
+        block["location"] = fixed
+
+    @staticmethod
+    def _datahub_base_url():
+        """Configured Datahub root (``…/api/v1/devices``)."""
+        return (
+            Config.settings.get("DATAHUB_TEST_API_URL")
+            if Config.settings.get("TEST_MODE")
+            else Config.settings.get("DATAHUB_API_URL")
+        )
+
+    @staticmethod
+    def _normalize_datahub_data_payload(payload, api_url: str, router: str):
+        """
+        Datahub ``devices/data`` expects ``device.id`` (hardware id), optional top-level
+        ``location`` with ``lat``/``lon``/``height``, and ``sensors`` — not ``device.device``
+        nor ``device.location``. See datahub contract (workshop block is optional).
+        """
+        if router != "data/":
+            return payload
+        dh = WifiUtil._datahub_base_url()
+        if not dh or str(api_url).rstrip("/") != str(dh).rstrip("/"):
+            return payload
+        if not isinstance(payload, dict):
+            return payload
+
+        meta_key = None
+        inner_src = None
+        if "device" in payload and isinstance(payload.get("device"), dict):
+            meta_key = "device"
+            inner_src = payload["device"]
+        elif "station" in payload and isinstance(payload.get("station"), dict):
+            meta_key = "station"
+            inner_src = payload["station"]
+        else:
+            return payload
+
+        out = {k: v for k, v in payload.items() if k != meta_key}
+        dev = dict(inner_src)
+
+        if "device" in dev and "id" not in dev:
+            dev["id"] = dev.pop("device")
+
+        loc = dev.pop("location", None)
+        if isinstance(loc, dict):
+            top_loc = {}
+            for kk in ("lat", "lon", "height"):
+                if kk in loc:
+                    top_loc[kk] = loc[kk]
+            if top_loc:
+                out["location"] = top_loc
+
+        for remove in ("source", "test_mode", "calibration_mode"):
+            dev.pop(remove, None)
+        dev.pop("api", None)
+
+        out["device"] = dev
+        return out
+
+    @staticmethod
     def send_json_to_api(data, api_url: str = None, router: str = 'data/'):
         if not api_url:
             api_url = Config.runtime_settings['API_URL']
+        # Station `data/` API expects top-level ``station``; firmware uses ``device``
+        # (see ``API_JSON_DEVICE_KEY`` in ld_product_model). Datahub uses ``device`` on its own base URL.
+        payload = data
+        station_measurement = (
+            router == "data/"
+            and isinstance(data, dict)
+            and Config.settings.get("MODEL") == LdProduct.AIR_STATION
+            and not Config.is_air_station_wifiless()
+            and api_url == Config.runtime_settings.get("API_URL")
+        )
+        if station_measurement:
+            if "station" in data and isinstance(data.get("station"), dict):
+                payload = dict(data)
+                payload["station"] = WifiUtil._copy_air_station_metadata_block(data["station"])
+                if "device" in payload:
+                    del payload["device"]
+            elif "device" in data and isinstance(data.get("device"), dict):
+                payload = dict(data)
+                payload["station"] = WifiUtil._copy_air_station_metadata_block(data["device"])
+                del payload["device"]
+            else:
+                payload = data
+            if isinstance(payload, dict) and "station" in payload:
+                WifiUtil._sanitize_station_measurement_location(payload)
+        # Datahub routes (``status/``, ``data/``, …) expect top-level ``device``, not ``station``.
+        if isinstance(payload, dict) and "station" in payload and "device" not in payload:
+            dh = WifiUtil._datahub_base_url()
+            if dh and str(api_url).rstrip("/") == str(dh).rstrip("/"):
+                payload = dict(payload)
+                payload["device"] = payload.pop("station")
+        payload = WifiUtil._normalize_datahub_data_payload(payload, api_url, router)
         gc.collect()
         response = WifiUtil.api_session.request(
             method='POST',
             url=f"{api_url}/{router}",
-            json=data
+            json=payload,
         )
         # send to additional APIs
         # TODO: Handle response
         if Config.settings.get('API_URLS', None):
-            for api_url in Config.runtime_settings['API_URLS']:
+            for extra_url in Config.runtime_settings['API_URLS']:
                 WifiUtil.api_session.request(
                     method='POST',
-                    url=f"{api_url}/{router}",
-                    json=data
+                    url=f"{extra_url}/{router}",
+                    json=payload,
                 )
         return response
  

@@ -5,7 +5,7 @@ import time
 from wifi_client import WifiUtil
 from config import Config
 from led_controller import LedController
-from models.ld_product_model import LdProductModel
+from models.ld_product_model import API_JSON_DEVICE_KEY, LdProductModel
 from enums import LdProduct, BleCommands
 from logger import logger
 
@@ -44,7 +44,7 @@ class AirBadge(LdProductModel):
     
     def get_info(self):
         device_info = super().get_info()
-        device_info['station']['battery'] = {
+        device_info[API_JSON_DEVICE_KEY]['battery'] = {
             "voltage": self.battery_monitor.cell_voltage() if self.battery_monitor else None,
             "percentage": self.battery_monitor.cell_soc() if self.battery_monitor else None,
         }

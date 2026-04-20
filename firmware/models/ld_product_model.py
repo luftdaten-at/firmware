@@ -9,6 +9,10 @@ from wifi_client import WifiUtil
 from config import Config
 from sensors.sensor import Sensor
 
+# Top-level JSON key for device metadata in API/BLE payloads (historically "station").
+API_JSON_DEVICE_KEY = "device"
+
+
 class LdProductModel:
     def __init__(self, ble_service, sensors: list[Sensor], battery_monitor):
         self.model_id = None
@@ -33,10 +37,11 @@ class LdProductModel:
         self.api_send_interval = 30 # 30 seconds
 
         # try to connect to wifi if not connected
-        if not WifiUtil.radio.connected:
-            WifiUtil.connect()
+        if not Config.is_air_station_wifiless():
+            if not WifiUtil.radio.connected:
+                WifiUtil.connect()
         # try to send status to API
-        if WifiUtil.radio.connected:
+        if not Config.is_air_station_wifiless() and WifiUtil.radio.connected:
             # prepare station info
             data = self.get_initial_info()
             api_url = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
@@ -54,7 +59,7 @@ class LdProductModel:
         """
         device_info = self.get_info()
         # add list of all connected sensors
-        device_info['station']['sensor_list'] = [
+        device_info[API_JSON_DEVICE_KEY]['sensor_list'] = [
             {
                 "model_id": sensor.model_id,
                 "dimension_list": sensor.measures_values,
@@ -70,7 +75,7 @@ class LdProductModel:
         formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
 
         device_info = {
-            "station": {
+            API_JSON_DEVICE_KEY: {
                 "time": formatted_time,
                 "device": Config.settings['device_id'],
                 "firmware": f"{Config.settings['FIRMWARE_MAJOR']}.{Config.settings['FIRMWARE_MINOR']}.{Config.settings['FIRMWARE_PATCH']}",
@@ -132,6 +137,10 @@ class LdProductModel:
                         new_measurements[tag] = new_measurements.get(tag, []) + [data]
                 
         self.measurements = new_measurements
+
+        if not logger.log_list:
+            # Datahub ``status/`` rejects empty ``status_list`` (400 missing device/status_list).
+            return
 
         data = self.get_info()
         data["status_list"] = logger.log_list

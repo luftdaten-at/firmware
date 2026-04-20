@@ -51,20 +51,40 @@ Führe nun Circup aus, um die benötigten Bibliotheken zu installieren:
 circup install --auto
 ```
 
+Für **Air Station im Wifiless-Modus** (Messdaten auf SD-Karte) zusätzlich:
+
+```bash
+circup install adafruit_sdcard
+```
+
 Drücke den Reset-Knopf am ESP32, um die Installation abzuschließen.
 
 ## 4 - Gerät konfigurieren
 
-Öffne die `settings.toml`-Datei im `CIRCUITPY`-Laufwerk und passe die Konfiguration an. Momentan ist es nur möglich, den Gerätetypen zu ändern. Setze dafür die Variable `model` auf `1` für Air aRound, `2` für Cube, `3` für Station und `4` für Badge (vgl. Konstanten in `modules/enums.py`).
+Öffne die `settings.toml`-Datei im `CIRCUITPY`-Laufwerk und passe die Konfiguration an. Setze **`MODEL`** auf die gewünschte Geräte-ID (`1` … `5`, vgl. Tabelle und `enums.py`). **`MODEL = -1`** löst weiterhin beim Start eine **Sensor-basierte Auto-Erkennung** aus (wird nach dem Scan in `settings.toml` persistiert). Neu: dieselbe Erkennung kann einmalig über **`DETECT_MODEL_FROM_SENSORS`** in **`startup.toml`** ausgelöst werden (siehe unten).
 
 | ID | Modelname |
 | --- | --- |
-| -1 | Autoerkennung beim nächsten Start |
+| -1 | Autoerkennung beim nächsten Start (legacy; alternativ Flag in `startup.toml`) |
 | 1 | Air aRound |
 | 2 | Air Cube |
 | 3 | Air Station |
 | 4 | Air Badge |
 | 5 | Air Bike |
+
+### `startup.toml` (Einmal-Aktionen beim Start)
+
+Neben `settings.toml` gibt es **`startup.toml`** im Firmware-Root (wird mit auf `CIRCUITPY` kopiert). Darin stehen **Booleans für einmalige Aktionen**: Flag auf `true` setzen, Gerät neu starten; **nach erfolgreicher Ausführung setzt die Firmware das Flag wieder auf `false`**. Bei Fehler bleibt das Flag `true` für einen erneuten Versuch.
+
+- **`SYNC_RTC_FROM_NTP`**: Wenn `true` und in `settings.toml` **SSID** (und ggf. Passwort) gesetzt sind: einmalig **WLAN verbinden**, Zeit per **NTP** holen, **CircuitPython-RTC** und ggf. **DS3231** setzen (wie bei `WifiUtil.set_RTC()`), danach Flag löschen. Nützlich z. B. für **Wifiless**-Stationen, die sonst nie verbinden.
+
+- **`DETECT_MODEL_FROM_SENSORS`**: Wenn `true`: nach dem **I2C-Sensor-Scan** wird **`MODEL`** in `settings.toml` aus der Hardware abgeleitet, **`set_api_url()`** aufgerufen, danach wird das Flag wieder **`false`**. **Übergang:** **`MODEL == -1`** in `settings.toml` löst dieselbe Erkennung weiterhin aus (wie bisher). Zusätzlich kann man mit diesem Flag **einmalig neu erkennen**, auch wenn **`MODEL`** schon eine konkrete ID hat (überschreibt `MODEL`).
+
+- **`UPLOAD_SD_LOG_TO_DATAHUB`**: Nur **Air Station mit `WIFILESS_MODE`**: nach dem Sensor-Scan **WLAN** (SSID in `settings.toml`) verbinden, Datei **`SD_LOG_PATH`** (Standard `/sd/measurements.jsonl`) **Zeile für Zeile** als Mess-JSON an die **Datahub-`data/`-API** senden. **Voller Erfolg** (HTTP 200/422 pro Zeile): Logdatei **leeren**, Flag **`false`**. **Teilfehler** oder kein WLAN: Datei unverändert, Flag bleibt **`true`** (erneuter Versuch nach Fix). Leere/fehlende Datei: Flag wird gelöscht (nichts zu tun). Jede **HTTP-Antwort** (Status + gekürzter Body) wird zusätzlich in **`/datahub_upload.log`** auf dem CIRCUITPY-Root angehängt.
+
+- **`CLEAR_SD_CARD`**: Nur **Air Station mit `WIFILESS_MODE`**: nach dem Sensor-Scan und **nach** `UPLOAD_SD_LOG_TO_DATAHUB` (falls aktiv) werden **alle Dateien und Ordner unter `/sd`** gelöscht (kein WLAN nötig). Bei **Erfolg** wird das Flag **`false`**. Bei Fehler (z. B. SD nicht mountbar) bleibt **`true`**. **Vorsicht:** alles auf der SD-Karte im Wurzelverzeichnis geht verloren.
+
+Wi‑Fi-Zugangsdaten bleiben ausschließlich in **`settings.toml`**.
 
 
 ## 5 - Gerät initialisieren
