@@ -32,7 +32,7 @@ Most payloads are built from [`get_info()`](../firmware/models/ld_product_model.
 ```json
 {
   "device": {
-    "time": "2026-04-16T12:00:00.000Z",
+    "time": "2026-04-16T14:00:00.000+02:00",
     "device": "<device_id>",
     "firmware": "<major>.<minor>.<patch>",
     "model": <integer model id>,
@@ -45,7 +45,7 @@ Most payloads are built from [`get_info()`](../firmware/models/ld_product_model.
 }
 ```
 
-- **`time`**: ISO-like UTC string from `time.localtime()` (not necessarily true UTC without NTP/RTC).
+- **`time`**: ISO-8601 string from [`format_iso8601_tz()`](../firmware/tz_format.py): `…Z` when `TZ` is UTC (or `GMT` / `Etc/UTC`), otherwise local civil time for **`Europe/Vienna`** (default if `TZ` is unset) with suffix **`+01:00`** or **`+02:00`** (EU DST). Based on `time.time()`; RTC should be **UTC** after NTP (`tz_offset=0`). See [`docs/settings.md`](settings.md) (`TZ`).
 - **`model`**: [`LdProduct`](../firmware/enums.py) integer (e.g. Air Station = 3).
 - **`sensors`**: Empty object here; filled in [`get_json()`](../firmware/models/ld_product_model.py).
 
@@ -152,7 +152,7 @@ After draining measurement queues, [`send_to_api`](../firmware/models/ld_product
   "sensors": {},
   "status_list": [
     {
-      "time": "2026-04-16T12:00:00.000Z",
+      "time": "2026-04-16T14:00:00.000+02:00",
       "level": <0–4 int, LOG_LEVELS>,
       "message": "<string>"
     }

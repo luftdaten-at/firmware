@@ -62,6 +62,7 @@ Per-device and user-facing options: Wi‑Fi, model, keys, Air Station behaviour,
 | `WIFILESS_MODE` | boolean / string | **Air Station only:** if true, skip normal Wi‑Fi/API loop and log measurements to SD (see [`readme.md`](../firmware/readme.md)). String values `1` / `true` / `yes` (case-insensitive) are accepted. |
 | `SD_LOG_PATH` | string | **Air Station wifiless:** JSONL log path (default `/sd/measurements.jsonl`). |
 | `ROLLBACK` | boolean | Set by the upgrade path / `code.py` to force booting the previous firmware bundle after a failed update. |
+| `TZ` | string | Time zone for API and log timestamps. **Default:** `Europe/Vienna` if unset or empty. Recognised values: `UTC` / `GMT` / `Etc/UTC` / `Zulu` (case-insensitive) → timestamps end with `Z`; `Europe/Vienna` → EU DST rules, suffix `+01:00` or `+02:00`. Any other name falls back to Vienna. Requires `time.time()` / RTC to reflect **UTC** after NTP (`tz_offset=0`). |
 
 ### `MODEL` values (`LdProduct`)
 

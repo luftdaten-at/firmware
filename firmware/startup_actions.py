@@ -2,7 +2,6 @@
 import errno
 import json
 import os
-import time
 
 import gc
 import storage
@@ -11,6 +10,7 @@ from storage import remount
 
 from config import Config
 from logger import logger
+from tz_format import format_iso8601_tz
 from wifi_client import WifiUtil
 
 STARTUP_TOML = "/startup.toml"
@@ -69,11 +69,7 @@ def _append_datahub_upload_log(msg: str) -> None:
 
 
 def _datahub_upload_timestamp() -> str:
-    lt = time.localtime()
-    return (
-        f"{lt.tm_year:04d}-{lt.tm_mon:02d}-{lt.tm_mday:02d}T"
-        f"{lt.tm_hour:02d}:{lt.tm_min:02d}:{lt.tm_sec:02d}Z"
-    )
+    return format_iso8601_tz()
 
 
 def _datahub_response_body_snippet(resp, max_len: int = 480) -> str:
