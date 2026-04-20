@@ -4,6 +4,7 @@ TEST_MODE = false
 SSID = "luftdaten.at"
 PASSWORD = "clientpassword"
 SEND_TO_SENSOR_COMMUNITY = false
+LOG_LEVEL = "DEBUG"
 CALIBRATION_MODE = false
 
 # Air Station only: log measurements to SPI SD (no WiFi/API). DS3231 on the same I2C as SCL/SDA for time at boot.

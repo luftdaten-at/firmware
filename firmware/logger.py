@@ -12,14 +12,28 @@ LOG_LEVELS = {
     'CRITICAL': 4
 }
 
+
+def _configured_log_threshold():
+    """Minimum level from ``settings.toml`` ``LOG_LEVEL`` (default DEBUG). Unknown → DEBUG."""
+    try:
+        from config import Config
+
+        raw = Config.settings.get('LOG_LEVEL', 'DEBUG')
+    except Exception:
+        return 0
+    if raw is None:
+        return 0
+    name = str(raw).strip().upper()
+    return LOG_LEVELS.get(name, 0)
+
+
 class SimpleLogger:
-    def __init__(self, level='DEBUG'):
-        self.level = LOG_LEVELS.get(level, 0)  # Default to DEBUG level
+    def __init__(self):
         self.log_list = []
 
     def log(self, message, level='DEBUG'):
         level_num = LOG_LEVELS.get(level, 0)
-        if level_num >= self.level:
+        if level_num >= _configured_log_threshold():
             formatted_time = format_iso8601_tz()
             
             log_message = f"{formatted_time} [{level}] {message}"
@@ -61,5 +75,5 @@ class SimpleLogger:
         """Format the message from a list of arguments with spaces."""
         return ' '.join(str(arg) for arg in args)
 
-# Create a global logger instance
-logger = SimpleLogger(level='DEBUG')  # Set your desired default log level
+# Global logger; threshold from ``Config.settings['LOG_LEVEL']`` (see ``config.py``).
+logger = SimpleLogger()

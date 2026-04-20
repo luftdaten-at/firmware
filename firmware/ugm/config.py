@@ -64,6 +64,7 @@ class Config:
         'DATAHUB_API_URL': 'boot.toml',
         'DATAHUB_TEST_API_URL': 'boot.toml',
         'SEND_TO_SENSOR_COMMUNITY': 'settings.toml',
+        'LOG_LEVEL': 'settings.toml',
 
         # AirStationConfig must not be specified in settings.toml
         'longitude': 'settings.toml',
@@ -120,6 +121,7 @@ class Config:
         'DATAHUB_API_URL': None,
         'DATAHUB_TEST_API_URL': None,
         'SEND_TO_SENSOR_COMMUNITY': None,
+        'LOG_LEVEL': 'DEBUG',
 
         # AirStationConfig must not be specified in settings.toml
         'longitude': "",
