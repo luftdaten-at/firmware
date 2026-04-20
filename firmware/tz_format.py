@@ -106,6 +106,31 @@ def _utc_ymd_from_epoch(secs: int):
     return (y, m, d, h, mi, s)
 
 
+def _day_of_year_utc(y: int, mo: int, d: int) -> int:
+    """1-based day-of-year for a UTC calendar date."""
+    n = d
+    for mm in range(1, mo):
+        n += _days_in_month(y, mm)
+    return n
+
+
+def utc_epoch_to_struct_time(secs: int) -> time.struct_time:
+    """
+    UTC ``time.struct_time`` from Unix epoch seconds (non-negative).
+
+    Use this for ``rtc.RTC().datetime`` after NTP: ``adafruit_ntp.NTP.datetime``
+    uses ``time.localtime(...)``, which can shift wall fields when the port
+    applies a non-zero local offset. ``NTP.utc_ns`` is true UTC.
+    """
+    parts = _utc_ymd_from_epoch(int(secs))
+    if parts is None:
+        return time.localtime(0)
+    y, mo, d, h, mi, s = parts
+    wday = _weekday_from_utc_date(y, mo, d)
+    yday = _day_of_year_utc(y, mo, d)
+    return time.struct_time((y, mo, d, h, mi, s, wday, yday, -1))
+
+
 def _vienna_offset_seconds(utc_epoch: int) -> int:
     """CET +3600 s, CEST +7200 s (EU rules)."""
     if utc_epoch < 0:

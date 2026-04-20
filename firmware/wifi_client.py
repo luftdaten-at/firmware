@@ -1,4 +1,5 @@
 import gc
+import time
 from wifi import radio as wifi_radio
 from config import Config
 from enums import LdProduct
@@ -93,10 +94,23 @@ class WifiUtil:
         try:
             logger.debug('Trying to set RTC via NTP...')
             ntp = NTP(WifiUtil.pool, tz_offset=0, cache_seconds=3600)
-            rtc.RTC().datetime = ntp.datetime
+            # ``ntp.datetime`` uses ``time.localtime(utc_seconds)``, which is not UTC on
+            # some builds; ``utc_ns`` is true UTC (see Adafruit_CircuitPython_NTP).
+            utc_s = ntp.utc_ns // 1_000_000_000
+            if hasattr(time, "gmtime"):
+                rtc_st = time.gmtime(utc_s)
+            else:
+                from tz_format import utc_epoch_to_struct_time
+
+                rtc_st = utc_epoch_to_struct_time(utc_s)
+            rtc.RTC().datetime = rtc_st
             Config.runtime_settings['rtc_is_set'] = True  # Assuming rtc_is_set is a setting in your Config
 
-            logger.debug('RTC successfully configured')
+            logger.debug(
+                "RTC set from NTP (UTC): "
+                f"{rtc_st.tm_year:04d}-{rtc_st.tm_mon:02d}-{rtc_st.tm_mday:02d}T"
+                f"{rtc_st.tm_hour:02d}:{rtc_st.tm_min:02d}:{rtc_st.tm_sec:02d}Z epoch={utc_s}"
+            )
 
             # set rtc module
             if rtc_module := Config.runtime_settings.get('rtc_module', None):
@@ -222,19 +236,6 @@ class WifiUtil:
         )
 
     @staticmethod
-    def _debug_response_snippet(response, max_len: int = 160) -> str:
-        try:
-            t = response.text
-        except Exception:
-            return "(no body)"
-        if not t:
-            return "(empty)"
-        t = t.replace("\r\n", " ").replace("\n", " ").replace("\r", " ")
-        if len(t) > max_len:
-            return t[:max_len] + "…"
-        return t
-
-    @staticmethod
     def send_json_to_api(data, api_url: str = None, router: str = 'data/'):
         if not api_url:
             api_url = Config.runtime_settings['API_URL']
@@ -277,10 +278,8 @@ class WifiUtil:
             url=url_full,
             json=payload,
         )
-        logger.debug(
-            f"API POST done status={response.status_code} url={url_full} "
-            f"body={WifiUtil._debug_response_snippet(response)}"
-        )
+        # Do not read ``response.text`` / ``.content`` here: callers may use ``response.json()`` (adafruit_requests).
+        logger.debug(f"API POST done status={response.status_code} url={url_full}")
         # send to additional APIs
         # TODO: Handle response
         if Config.settings.get('API_URLS', None):
@@ -293,8 +292,7 @@ class WifiUtil:
                     json=payload,
                 )
                 logger.debug(
-                    f"API POST extra done status={extra_resp.status_code} url={extra_full} "
-                    f"body={WifiUtil._debug_response_snippet(extra_resp)}"
+                    f"API POST extra done status={extra_resp.status_code} url={extra_full}"
                 )
         return response
  
@@ -311,10 +309,7 @@ class WifiUtil:
             json=data,
             headers=header 
         )
-        logger.debug(
-            f"Sensor.Community done status={response.status_code} "
-            f"body={WifiUtil._debug_response_snippet(response)}"
-        )
+        logger.debug(f"Sensor.Community done status={response.status_code} url={url}")
         return response
 
 

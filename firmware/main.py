@@ -6,7 +6,6 @@ import busio  # type: ignore
 import gc
 import neopixel  # type: ignore
 import traceback
-import sys
 import supervisor
 
 import adafruit_ds3231
@@ -309,6 +308,10 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as e:
-        full_traceback = traceback.format_exception(*sys.exc_info())
+        try:
+            tb = traceback.format_exception(type(e), e, e.__traceback__)
+            full_traceback = "".join(tb)
+        except Exception:
+            full_traceback = str(e)
         logger.critical(f"{e}\n{full_traceback}")
         supervisor.reload()

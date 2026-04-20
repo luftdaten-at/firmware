@@ -63,7 +63,11 @@ Per-device and user-facing options: Wi‑Fi, model, keys, Air Station behaviour,
 | `WIFILESS_MODE` | boolean / string | **Air Station only:** if true, skip normal Wi‑Fi/API loop and log measurements to SD (see [`readme.md`](../firmware/readme.md)). String values `1` / `true` / `yes` (case-insensitive) are accepted. |
 | `SD_LOG_PATH` | string | **Air Station wifiless:** JSONL log path (default `/sd/measurements.jsonl`). |
 | `ROLLBACK` | boolean | Set by the upgrade path / `code.py` to force booting the previous firmware bundle after a failed update. |
-| `TZ` | string | Time zone for API and log timestamps. **Default:** `Europe/Vienna` if unset or empty. Recognised values: `UTC` / `GMT` / `Etc/UTC` / `Zulu` (case-insensitive) → timestamps end with `Z`; `Europe/Vienna` → EU DST rules, suffix `+01:00` or `+02:00`. Any other name falls back to Vienna. Requires `time.time()` / RTC to reflect **UTC** after NTP (`tz_offset=0`). |
+| `TZ` | string | Time zone for **API / log string** timestamps only (`format_iso8601_tz`). **Default:** `Europe/Vienna` if unset or empty. Recognised values: `UTC` / `GMT` / `Etc/UTC` / `Zulu` (case-insensitive) → suffix `Z`; `Europe/Vienna` → EU DST, suffix `+01:00` / `+02:00` (Datahub and related backends accept these numeric offsets, not only `Z`). The **RTC** after Wi‑Fi NTP is always set to **UTC** wall fields ([`WifiUtil.set_RTC()`](../firmware/wifi_client.py) uses `NTP.utc_ns`, not `NTP.datetime`, because the latter calls `time.localtime` and can shift fields on some ports). `time.time()` is therefore Unix UTC; `TZ` does not change the RTC. |
+
+### Air Station (Wi‑Fi) — when data is not transmitted
+
+In [`AirStation.tick()`](../firmware/models/air_station.py), measurements are only queued when **all** of the following hold: Wi‑Fi is connected, `runtime_settings['rtc_is_set']` is true (NTP after Wi‑Fi), and **`latitude`**, **`longitude`**, and **`height`** in `settings.toml` are each **non-empty** after stripping whitespace (so `"0"` is allowed for height). Otherwise the firmware logs **`DATA CANNOT BE TRANSMITTED, not all configurations have been made:`** followed by a semicolon-separated list of what is still missing (that warning is emitted again only when the set of blockers changes).
 
 ### `MODEL` values (`LdProduct`)
 
@@ -115,3 +119,4 @@ Not stored in `settings.toml` / `boot.toml`. Examples:
 
 - **One-shot boot flags** (RTC sync, model detect, SD upload, SD wipe): [`firmware/startup.toml`](../firmware/startup.toml) — separate from `settings.toml` / `boot.toml`; read by startup helpers, not `AutoSaveDict`.
 - **JSON shapes sent to APIs:** [`docs/api-json.md`](api-json.md).
+- **Bluetooth GATT (custom service, characteristics, Air Station TLV):** [`docs/ble-characteristics.md`](ble-characteristics.md). **`TZ`** is not configurable over BLE; use `settings.toml`.

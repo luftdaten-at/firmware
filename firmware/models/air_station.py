@@ -31,6 +31,9 @@ class AirStation(LdProductModel):
         self.device_id = Config.settings['device_id']
         self.api_key = Config.settings['api_key']
 
+        # Last blocker set we warned about (avoid spamming ``tick`` every 2s).
+        self._last_xmit_blockers_key = None
+
         # init status led
         self.status_led = LedController(
             status_led=neopixel.NeoPixel(
@@ -162,6 +165,29 @@ class AirStation(LdProductModel):
         pass
 
     @staticmethod
+    def _settings_toml_key_blank(key: str) -> bool:
+        """True if the value is missing or only whitespace (``height`` may be ``\"0\"``)."""
+        v = Config.settings.get(key)
+        if v is None:
+            return True
+        return not str(v).strip()
+
+    def _data_transmit_blockers(self) -> list[str]:
+        """Human-readable reasons Air Station Wi‑Fi mode will not enqueue measurements."""
+        reasons = []
+        if not WifiUtil.radio.connected:
+            reasons.append("WiFi not connected")
+        if not Config.runtime_settings.get("rtc_is_set"):
+            reasons.append("RTC not set (connect Wi‑Fi and wait for NTP)")
+        if self._settings_toml_key_blank("latitude"):
+            reasons.append("latitude unset or empty in settings.toml")
+        if self._settings_toml_key_blank("longitude"):
+            reasons.append("longitude unset or empty in settings.toml")
+        if self._settings_toml_key_blank("height"):
+            reasons.append("height unset or empty in settings.toml")
+        return reasons
+
+    @staticmethod
     def _api_location_dict():
         """Lat/lon/height as floats or ``None`` for the station API (never empty strings)."""
         def num(v):
@@ -282,8 +308,15 @@ class AirStation(LdProductModel):
         if not Config.runtime_settings['rtc_is_set'] and WifiUtil.radio.connected:
             WifiUtil.set_RTC()
 
-        if not WifiUtil.radio.connected or not Config.runtime_settings['rtc_is_set'] or not all([Config.settings['longitude'], Config.settings['latitude'], Config.settings['height']]):
-            logger.warning('DATA CANNOT BE TRANSMITTED, Not all configurations have been made')
+        blockers = self._data_transmit_blockers()
+        if blockers:
+            bkey = tuple(blockers)
+            if bkey != self._last_xmit_blockers_key:
+                self._last_xmit_blockers_key = bkey
+                logger.warning(
+                    "DATA CANNOT BE TRANSMITTED, not all configurations have been made: "
+                    + "; ".join(blockers)
+                )
             self.status_led.show_led({
                 'repeat_mode': RepeatMode.FOREVER,
                     'elements': [
@@ -292,6 +325,7 @@ class AirStation(LdProductModel):
                 ],
             })
         else:
+            self._last_xmit_blockers_key = None
             self.status_led.show_led({
                 'repeat_mode': RepeatMode.PERMANENT,
                 'color': Color.GREEN_LOW,

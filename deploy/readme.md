@@ -65,7 +65,7 @@ The notebook is organized as **three steps**: (1) **flash the board** (`flash_wi
 | `notebook_env.py` | Shared **`activate()`** so setup and serial cells find **`deploy/`** after a kernel restart |
 | `utils.py` | Esptool wrapper, mount wait, tree copy, full flash / update |
 | `settings.toml` | Copied to the device on **full flash** |
-| `settings_backups/slot_0/` … `slot_2/` | Each holds a `settings.toml` stash for **update only** (one logical device per slot) |
+| `settings_backups/<device_id>/` | Per-device stash of `settings.toml` / `startup.toml` (folder name from `device_id` in TOML; `unknown` if missing) |
 | `bin/*.bin` | Board CircuitPython image for esptool (auto-downloaded or manual; `*.bin` gitignored, folder kept with `.gitkeep`) |
 
 ## Deployment notes
@@ -96,6 +96,6 @@ This flow copies the whole [`../firmware/`](../firmware/) tree. For day-to-day l
 ## Pipelines
 
 - **Step 1 — Flash the board**: `flash_with_esptool` — esptool only; **`ensure_circuitpython_bin`** resolves a `.bin` (file at `circuitpython_bin`, newest in `deploy/bin/`, index, or **`circuitpython_download_fallback_url`**).
-- **Step 2 — Copy firmware to a new board**: `copy_firmware_to_circuitpy` — wait for `CIRCUITPY`, copy repo `firmware/` + `deploy/settings.toml`.
-- **Step 3 — Update firmware (existing board)**: `run_update_only` — backup device `settings.toml` (and `startup.toml` if present) to `settings_backups/slot_N/`, copy `firmware/`, merge any **new keys** from the repo `firmware/settings.toml` and `firmware/startup.toml` on `CIRCUITPY` into those backups when a backup file exists, then restore merged files to the board; **`settings_slot`** must be `0`, `1`, or `2`.
+- **Step 2 — Copy firmware to a new board**: `copy_firmware_to_circuitpy` — wait for `CIRCUITPY`, copy repo `firmware/`. If the device already has **`settings.toml`**, it is copied first to **`settings_backups/<device_id>/`**, then after the tree copy the same files are **restored** onto CIRCUITPY (the repo backup copy stays on disk). If there is **no** `settings.toml` yet, **`deploy/settings.toml`** is installed (new board).
+- **Step 3 — Update firmware (existing board)**: `run_update_only` — requires **`CIRCUITPY/settings.toml`**. Backs it up (and `startup.toml` if present) under **`settings_backups/<device_id>/`**, copies `firmware/`, merges any **new keys** from the repo templates on CIRCUITPY into those backup files, then restores merged files to the board.
 - **Shortcut**: `run_full_flash` = Step 1 + Step 2 (not Step 3).
