@@ -193,6 +193,48 @@ class WifiUtil:
         return out
 
     @staticmethod
+    def _summarize_api_payload(payload) -> str:
+        """Short description for logs (no secrets)."""
+        if not isinstance(payload, dict):
+            return type(payload).__name__
+        top = []
+        if "device" in payload:
+            top.append("device")
+        if "station" in payload:
+            top.append("station")
+        block = payload.get("device") if isinstance(payload.get("device"), dict) else None
+        if block is None and isinstance(payload.get("station"), dict):
+            block = payload["station"]
+        ident = ""
+        if isinstance(block, dict):
+            raw_id = block.get("id") if block.get("id") is not None else block.get("device")
+            if raw_id is not None:
+                ident = f"id={raw_id!r} "
+        sens = payload.get("sensors")
+        n_sens = len(sens) if isinstance(sens, dict) else 0
+        st = payload.get("status_list")
+        n_log = len(st) if isinstance(st, list) else 0
+        sl = payload.get("sensor_list")
+        n_sl = len(sl) if isinstance(sl, list) else 0
+        return (
+            f"toplevel={'+'.join(top) or '-'} {ident}"
+            f"sensors={n_sens} status_list={n_log} sensor_list={n_sl}"
+        )
+
+    @staticmethod
+    def _debug_response_snippet(response, max_len: int = 160) -> str:
+        try:
+            t = response.text
+        except Exception:
+            return "(no body)"
+        if not t:
+            return "(empty)"
+        t = t.replace("\r\n", " ").replace("\n", " ").replace("\r", " ")
+        if len(t) > max_len:
+            return t[:max_len] + "…"
+        return t
+
+    @staticmethod
     def send_json_to_api(data, api_url: str = None, router: str = 'data/'):
         if not api_url:
             api_url = Config.runtime_settings['API_URL']
@@ -227,20 +269,32 @@ class WifiUtil:
                 payload = dict(payload)
                 payload["device"] = payload.pop("station")
         payload = WifiUtil._normalize_datahub_data_payload(payload, api_url, router)
+        url_full = f"{api_url}/{router}"
+        logger.debug(f"API POST {url_full} {WifiUtil._summarize_api_payload(payload)}")
         gc.collect()
         response = WifiUtil.api_session.request(
             method='POST',
-            url=f"{api_url}/{router}",
+            url=url_full,
             json=payload,
+        )
+        logger.debug(
+            f"API POST done status={response.status_code} url={url_full} "
+            f"body={WifiUtil._debug_response_snippet(response)}"
         )
         # send to additional APIs
         # TODO: Handle response
         if Config.settings.get('API_URLS', None):
             for extra_url in Config.runtime_settings['API_URLS']:
-                WifiUtil.api_session.request(
+                extra_full = f"{extra_url}/{router}"
+                logger.debug(f"API POST extra {extra_full} {WifiUtil._summarize_api_payload(payload)}")
+                extra_resp = WifiUtil.api_session.request(
                     method='POST',
-                    url=f"{extra_url}/{router}",
+                    url=extra_full,
                     json=payload,
+                )
+                logger.debug(
+                    f"API POST extra done status={extra_resp.status_code} url={extra_full} "
+                    f"body={WifiUtil._debug_response_snippet(extra_resp)}"
                 )
         return response
  
@@ -248,11 +302,18 @@ class WifiUtil:
     @staticmethod
     def send_json_to_sensor_community(header, data):
         gc.collect()
+        url = Config.runtime_settings['SENSOR_COMMUNITY_API']
+        xs = header.get("X-Sensor") if isinstance(header, dict) else None
+        logger.debug(f"Sensor.Community POST url={url} X-Sensor={xs!r}")
         response = WifiUtil.sensor_community_session.request(
             method='POST',
-            url=Config.runtime_settings['SENSOR_COMMUNITY_API'],
+            url=url,
             json=data,
             headers=header 
+        )
+        logger.debug(
+            f"Sensor.Community done status={response.status_code} "
+            f"body={WifiUtil._debug_response_snippet(response)}"
         )
         return response
 
