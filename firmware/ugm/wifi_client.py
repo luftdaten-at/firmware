@@ -87,15 +87,23 @@ class WifiUtil:
     @staticmethod
     def set_RTC():
         import rtc
+        import time
         from adafruit_ntp import NTP
 
         try:
             logger.debug('Trying to set RTC via NTP...')
             ntp = NTP(WifiUtil.pool, tz_offset=0, cache_seconds=3600)
-            rtc.RTC().datetime = ntp.datetime
+            utc_s = ntp.utc_ns // 1_000_000_000
+            if hasattr(time, "gmtime"):
+                rtc_st = time.gmtime(utc_s)
+            else:
+                from tz_format import utc_epoch_to_struct_time
+
+                rtc_st = utc_epoch_to_struct_time(utc_s)
+            rtc.RTC().datetime = rtc_st
             Config.runtime_settings['rtc_is_set'] = True  # Assuming rtc_is_set is a setting in your Config
 
-            logger.debug('RTC successfully configured')
+            logger.debug('RTC successfully configured (UTC from NTP utc_ns)')
 
             # set rtc module
             if rtc_module := Config.runtime_settings.get('rtc_module', None):

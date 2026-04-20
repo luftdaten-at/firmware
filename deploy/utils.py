@@ -17,7 +17,9 @@ from typing import Iterable
 from urllib.parse import urljoin, urlparse
 
 DEPLOY_DIR = Path(__file__).resolve().parent
+# Per-device folders: ``settings_backups/<device_id>/`` (``device_id`` from TOML).
 SETTINGS_BACKUPS_DIR = DEPLOY_DIR / "settings_backups"
+UNKNOWN_DEVICE_BACKUP = "unknown"
 BIN_DIR = DEPLOY_DIR / "bin"
 
 # Used when directory index cannot be parsed (CDN errors, HTML changes).
@@ -185,7 +187,6 @@ class DeployConfig:
     circuitpython_board_id: str = "espressif_esp32s3_devkitc_1_n8r8"
     circuitpython_locale: str = "de_DE"
     circuitpython_download_fallback_url: str | None = DEFAULT_CIRCUITPYTHON_FALLBACK_URL
-    settings_slot: int = 0
     do_erase_flash: bool = True
     do_write_firmware: bool = True
     wait_for_circuitpy_mount: bool = True
@@ -193,10 +194,6 @@ class DeployConfig:
     poll_interval_s: float = 1.0
     do_copy_firmware_tree: bool = True
     full_flash_settings: Path = field(default_factory=lambda: DEPLOY_DIR / "settings.toml")
-
-    def __post_init__(self) -> None:
-        if self.settings_slot not in (0, 1, 2):
-            raise ValueError("settings_slot must be 0, 1, or 2")
 
 
 def run_esptool(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -337,26 +334,82 @@ def copy_file(src: Path, dst: Path) -> None:
     print(f"Copied {src} -> {dst}", flush=True)
 
 
-def settings_backup_dir(cfg: DeployConfig) -> Path:
-    return SETTINGS_BACKUPS_DIR / f"slot_{cfg.settings_slot}"
+def sanitize_settings_backup_folder_name(device_id: str) -> str:
+    """Safe single path segment for ``settings_backups/<here>/``."""
+    s = "".join(
+        c if (c.isalnum() or c in "-._") else "_"
+        for c in (device_id or "").strip()
+    ).strip("_")
+    if not s:
+        return UNKNOWN_DEVICE_BACKUP
+    return s[:128]
 
 
-def backup_settings_from_device(cfg: DeployConfig) -> None:
+def read_device_id_from_settings_toml(path: Path) -> str | None:
+    """Return ``device_id`` from a ``settings.toml`` file, or ``None`` if missing / unreadable."""
+    if not path.is_file():
+        return None
+    try:
+        import tomli
+
+        data = tomli.loads(path.read_text(encoding="utf-8"))
+        val = data.get("device_id")
+        if val is None:
+            return None
+        s = str(val).strip()
+        return s if s else None
+    except Exception:
+        pass
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    m = re.search(r'^\s*device_id\s*=\s*"([^"]*)"', text, re.MULTILINE)
+    if m:
+        s = m.group(1).strip()
+        return s if s else None
+    m = re.search(r"^\s*device_id\s*=\s*'([^']*)'", text, re.MULTILINE)
+    if m:
+        s = m.group(1).strip()
+        return s if s else None
+    return None
+
+
+def settings_backup_dir_for_device_id(device_id: str) -> Path:
+    return SETTINGS_BACKUPS_DIR / sanitize_settings_backup_folder_name(device_id)
+
+
+def backup_settings_from_device(cfg: DeployConfig) -> Path | None:
+    """
+    Copy ``settings.toml`` (and ``startup.toml`` if present) from CIRCUITPY into
+    ``settings_backups/<device_id>/``. Returns the backup directory, or ``None`` if
+    there is no ``settings.toml`` on the device.
+    """
     src = cfg.circuitpy_root / "settings.toml"
-    dest_dir = settings_backup_dir(cfg)
+    if not src.is_file():
+        return None
+    raw_id = read_device_id_from_settings_toml(src)
+    folder_key = raw_id if raw_id else UNKNOWN_DEVICE_BACKUP
+    if not raw_id:
+        print(
+            f"Warning: no device_id in {src}; using backup folder {UNKNOWN_DEVICE_BACKUP!r}.",
+            flush=True,
+        )
+    dest_dir = settings_backup_dir_for_device_id(folder_key)
     dest_dir.mkdir(parents=True, exist_ok=True)
     copy_file(src, dest_dir / "settings.toml")
     startup_src = cfg.circuitpy_root / "startup.toml"
     if startup_src.is_file():
         copy_file(startup_src, dest_dir / "startup.toml")
+    return dest_dir
 
 
-def restore_settings_backup(cfg: DeployConfig) -> None:
-    src = settings_backup_dir(cfg) / "settings.toml"
+def restore_settings_backup(cfg: DeployConfig, backup_dir: Path) -> None:
+    src = backup_dir / "settings.toml"
     if not src.is_file():
         raise FileNotFoundError(src)
     copy_file(src, cfg.circuitpy_root / "settings.toml")
-    startup_backup = settings_backup_dir(cfg) / "startup.toml"
+    startup_backup = backup_dir / "startup.toml"
     if startup_backup.is_file():
         copy_file(startup_backup, cfg.circuitpy_root / "startup.toml")
 
@@ -445,19 +498,19 @@ def _merge_toml_template_into_backup(
     )
 
 
-def merge_repo_settings_into_backup(cfg: DeployConfig) -> None:
-    """After ``copy_firmware_tree``, merge repo ``settings.toml`` on CIRCUITPY into the slot backup."""
+def merge_repo_settings_into_backup(cfg: DeployConfig, backup_dir: Path) -> None:
+    """After ``copy_firmware_tree``, merge repo ``settings.toml`` on CIRCUITPY into the device backup."""
     _merge_toml_template_into_backup(
-        settings_backup_dir(cfg) / "settings.toml",
+        backup_dir / "settings.toml",
         cfg.circuitpy_root / "settings.toml",
         "Settings",
     )
 
 
-def merge_repo_startup_into_backup(cfg: DeployConfig) -> None:
-    """Merge repo ``startup.toml`` on CIRCUITPY into slot backup (same rules as settings)."""
+def merge_repo_startup_into_backup(cfg: DeployConfig, backup_dir: Path) -> None:
+    """Merge repo ``startup.toml`` on CIRCUITPY into the device backup (same rules as settings)."""
     _merge_toml_template_into_backup(
-        settings_backup_dir(cfg) / "startup.toml",
+        backup_dir / "startup.toml",
         cfg.circuitpy_root / "startup.toml",
         "Startup",
     )
@@ -485,16 +538,34 @@ def flash_with_esptool(cfg: DeployConfig) -> None:
 
 
 def copy_firmware_to_circuitpy(cfg: DeployConfig) -> None:
-    """Wait for the USB drive, copy repo `firmware/` onto it, apply full-flash `settings.toml`."""
+    """Wait for the USB drive, copy repo ``firmware/`` onto it, then restore device settings.
+
+    If ``CIRCUITPY/settings.toml`` exists before the copy, it is copied first to
+    ``deploy/settings_backups/<device_id>/`` (subfolder from ``device_id`` in that file),
+    the firmware tree is copied, then the backed-up ``settings.toml`` / ``startup.toml``
+    are copied back onto CIRCUITPY (backup files remain under ``settings_backups/``).
+
+    If there is no ``settings.toml`` on the device yet, ``deploy/settings.toml`` is
+    installed (same as a blank new board).
+    """
     if cfg.wait_for_circuitpy_mount:
         wait_for_path(
             cfg.circuitpy_root,
             timeout_s=cfg.wait_timeout_s,
             interval_s=cfg.poll_interval_s,
         )
+    backup_dir = backup_settings_from_device(cfg)
+
     if cfg.do_copy_firmware_tree:
         copy_firmware_tree(firmware_src(), cfg.circuitpy_root)
-        deploy_full_flash_settings(cfg)
+        if backup_dir is not None:
+            restore_settings_backup(cfg, backup_dir)
+            print(
+                f"Restored device settings from {backup_dir} (copy also kept there).",
+                flush=True,
+            )
+        else:
+            deploy_full_flash_settings(cfg)
 
 
 def run_full_flash(cfg: DeployConfig) -> None:
@@ -508,11 +579,16 @@ def run_update_only(cfg: DeployConfig) -> None:
         raise FileNotFoundError(
             f"CIRCUITPY not mounted: {cfg.circuitpy_root} — adjust circuitpy_root or connect USB."
         )
-    backup_settings_from_device(cfg)
+    backup_dir = backup_settings_from_device(cfg)
+    if backup_dir is None:
+        raise FileNotFoundError(
+            f"No {cfg.circuitpy_root / 'settings.toml'} — use copy_firmware_to_circuitpy / "
+            "full flash for a new board, or create settings.toml on the device first."
+        )
     copy_firmware_tree(firmware_src(), cfg.circuitpy_root)
-    merge_repo_settings_into_backup(cfg)
-    merge_repo_startup_into_backup(cfg)
-    restore_settings_backup(cfg)
+    merge_repo_settings_into_backup(cfg, backup_dir)
+    merge_repo_startup_into_backup(cfg, backup_dir)
+    restore_settings_backup(cfg, backup_dir)
     print("Update finished.", flush=True)
 
 

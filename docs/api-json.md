@@ -45,7 +45,7 @@ Most payloads are built from [`get_info()`](../firmware/models/ld_product_model.
 }
 ```
 
-- **`time`**: ISO-8601 string from [`format_iso8601_tz()`](../firmware/tz_format.py): `…Z` when `TZ` is UTC (or `GMT` / `Etc/UTC`), otherwise local civil time for **`Europe/Vienna`** (default if `TZ` is unset) with suffix **`+01:00`** or **`+02:00`** (EU DST). Based on `time.time()`; RTC should be **UTC** after NTP (`tz_offset=0`). See [`docs/settings.md`](settings.md) (`TZ`).
+- **`time`**: ISO-8601 string from [`format_iso8601_tz()`](../firmware/tz_format.py): `…Z` when `TZ` is UTC (or `GMT` / `Etc/UTC`), otherwise local civil time for **`Europe/Vienna`** (default if `TZ` is unset) with suffix **`+01:00`** or **`+02:00`** (EU DST). Datahub accepts these offset forms (e.g. `+02:00`) as well as `Z`. Based on `time.time()`; RTC should be **UTC** after NTP. See [`docs/settings.md`](settings.md) (`TZ`).
 - **`model`**: [`LdProduct`](../firmware/enums.py) integer (e.g. Air Station = 3).
 - **`sensors`**: Empty object here; filled in [`get_json()`](../firmware/models/ld_product_model.py).
 
