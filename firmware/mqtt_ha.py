@@ -377,3 +377,11 @@ def loop_step():
     except Exception as e:
         logger.debug("MqttHa loop: {}".format(e))
         _disconnect_silent()
+
+
+class MqttHa:
+    """Public entry points for ``main`` and models (``from mqtt_ha import MqttHa``)."""
+
+    loop_step = staticmethod(loop_step)
+    notify_settings_changed_from_ble = staticmethod(notify_settings_changed_from_ble)
+    publish_measurement_if_enabled = staticmethod(publish_measurement_if_enabled)
