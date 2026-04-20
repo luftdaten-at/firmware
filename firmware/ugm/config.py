@@ -77,6 +77,8 @@ class Config:
         'SDA': 'settings.toml',
         'BUTTON_PIN': 'settings.toml',
 
+        'TZ': 'settings.toml',
+
         'CERTIFICATE_PATH': 'boot.toml',
 
         'ROLLBACK': 'settings.toml'
@@ -130,6 +132,8 @@ class Config:
         'SCL': None,
         'SDA': None,
         'BUTTON_PIN': None,
+
+        'TZ': 'Europe/Vienna',
 
         'CERTIFICATE_PATH': 'certs/isrgrootx1.pem',
 

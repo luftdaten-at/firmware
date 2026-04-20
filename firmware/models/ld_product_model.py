@@ -1,4 +1,3 @@
-import time
 import storage
 import json
 import os
@@ -7,6 +6,7 @@ import gc
 from logger import logger
 from wifi_client import WifiUtil
 from config import Config
+from tz_format import format_iso8601_tz
 from sensors.sensor import Sensor
 
 # Top-level JSON key for device metadata in API/BLE payloads (historically "station").
@@ -71,8 +71,7 @@ class LdProductModel:
     
     def get_info(self):
         """returns json with device info for api"""
-        current_time = time.localtime()
-        formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
+        formatted_time = format_iso8601_tz()
 
         device_info = {
             API_JSON_DEVICE_KEY: {
@@ -94,9 +93,8 @@ class LdProductModel:
         self.measurements[tag] = self.measurements.get(tag, []) + [data]
         '''
         storage.remount('/', False)
-        current_time = time.localtime()
-        formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
-        file_name = formatted_time.replace(':', '_').replace('.', '_')
+        formatted_time = format_iso8601_tz()
+        file_name = formatted_time.replace(':', '_').replace('.', '_').replace('+', '_')
         with open(f'{Config.runtime_settings["JSON_QUEUE"]}/{file_name}_{tag}.json', 'w') as f:
             json.dump(data, f)
         storage.remount('/', False)

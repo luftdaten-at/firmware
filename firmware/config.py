@@ -78,6 +78,9 @@ class Config:
         'WIFILESS_MODE': 'settings.toml',
         'SD_LOG_PATH': 'settings.toml',
 
+        # IANA-style name; only UTC and Europe/Vienna are interpreted (unknown → Vienna)
+        'TZ': 'settings.toml',
+
         # UGM rollback flag (written by upgrade manager; see code.py)
         'ROLLBACK': 'settings.toml',
 
@@ -132,6 +135,8 @@ class Config:
 
         'WIFILESS_MODE': False,
         'SD_LOG_PATH': '/sd/measurements.jsonl',
+
+        'TZ': 'Europe/Vienna',
 
         'ROLLBACK': False,
 

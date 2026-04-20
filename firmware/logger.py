@@ -1,6 +1,7 @@
-import time
 import json
 import storage
+
+from tz_format import format_iso8601_tz
 
 # Define the log levels
 LOG_LEVELS = {
@@ -19,9 +20,7 @@ class SimpleLogger:
     def log(self, message, level='DEBUG'):
         level_num = LOG_LEVELS.get(level, 0)
         if level_num >= self.level:
-            # Get current time in the desired format
-            current_time = time.localtime()
-            formatted_time = f"{current_time.tm_year:04}-{current_time.tm_mon:02}-{current_time.tm_mday:02}T{current_time.tm_hour:02}:{current_time.tm_min:02}:{current_time.tm_sec:02}.000Z"
+            formatted_time = format_iso8601_tz()
             
             log_message = f"{formatted_time} [{level}] {message}"
             print(log_message)  # Print to console or handle as needed
