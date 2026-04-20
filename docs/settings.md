@@ -64,6 +64,17 @@ Per-device and user-facing options: Wi‑Fi, model, keys, Air Station behaviour,
 | `SD_LOG_PATH` | string | **Air Station wifiless:** JSONL log path (default `/sd/measurements.jsonl`). |
 | `ROLLBACK` | boolean | Set by the upgrade path / `code.py` to force booting the previous firmware bundle after a failed update. |
 | `TZ` | string | Time zone for **API / log string** timestamps only (`format_iso8601_tz`). **Default:** `Europe/Vienna` if unset or empty. Recognised values: `UTC` / `GMT` / `Etc/UTC` / `Zulu` (case-insensitive) → suffix `Z`; `Europe/Vienna` → EU DST, suffix `+01:00` / `+02:00` (Datahub and related backends accept these numeric offsets, not only `Z`). The **RTC** after Wi‑Fi NTP is always set to **UTC** wall fields ([`WifiUtil.set_RTC()`](../firmware/wifi_client.py) uses `NTP.utc_ns`, not `NTP.datetime`, because the latter calls `time.localtime` and can shift fields on some ports). `time.time()` is therefore Unix UTC; `TZ` does not change the RTC. |
+| `MQTT_ENABLED` | boolean | When true, **Air Cube** and **Air Station (Wi‑Fi)** publish [Home Assistant MQTT discovery](https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery) and measurement state to the configured broker (see [`docs/mqtt-home-assistant.md`](mqtt-home-assistant.md)). |
+| `MQTT_BROKER` | string | Broker hostname or IP (required when MQTT is enabled). |
+| `MQTT_PORT` | integer | Broker TCP port (e.g. `1883` without TLS, `8883` with TLS). |
+| `MQTT_USE_TLS` | boolean | Use TLS for the MQTT socket; must match broker configuration. |
+| `MQTT_USERNAME` | string | Optional broker username (empty for anonymous if the broker allows it). |
+| `MQTT_PASSWORD` | string | Optional broker password. |
+| `MQTT_DISCOVERY_PREFIX` | string | HA discovery topic prefix (default `homeassistant`). |
+| `MQTT_DEVICE_NAME` | string | Friendly device name in HA discovery payloads (optional; firmware picks a default from the product model if empty). |
+| `MQTT_CERTIFICATE_PATH` | string | Optional path to a PEM CA bundle for MQTT TLS verification; if empty, the firmware uses `CERTIFICATE_PATH` from `boot.toml` (same as HTTPS). |
+
+The same MQTT keys can be written from the **mobile app over BLE** on supported firmware; see [`docs/ble-characteristics.md`](ble-characteristics.md) and [`docs/companion-app-mqtt-ble.md`](companion-app-mqtt-ble.md).
 
 ### Air Station (Wi‑Fi) — when data is not transmitted
 
@@ -119,4 +130,5 @@ Not stored in `settings.toml` / `boot.toml`. Examples:
 
 - **One-shot boot flags** (RTC sync, model detect, SD upload, SD wipe): [`firmware/startup.toml`](../firmware/startup.toml) — separate from `settings.toml` / `boot.toml`; read by startup helpers, not `AutoSaveDict`.
 - **JSON shapes sent to APIs:** [`docs/api-json.md`](api-json.md).
-- **Bluetooth GATT (custom service, characteristics, Air Station TLV):** [`docs/ble-characteristics.md`](ble-characteristics.md). **`TZ`** is not configurable over BLE; use `settings.toml`.
+- **Bluetooth GATT (custom service, characteristics, Air Station TLV):** [`docs/ble-characteristics.md`](ble-characteristics.md). **`TZ`** is not configurable over BLE; use `settings.toml`. **MQTT / Home Assistant** keys are configurable over BLE (flags `9…17`; Air Station `0x06`, Air Cube `0x07`).
+- **Home Assistant MQTT:** [`docs/mqtt-home-assistant.md`](mqtt-home-assistant.md).

@@ -106,6 +106,7 @@ class AirStation(LdProductModel):
 
     def decode_configuration(self, data):
         wifi_config_changed = False
+        mqtt_changed = False
         idx = 0
         while idx < len(data):
             flag = data[idx]                
@@ -138,13 +139,45 @@ class AirStation(LdProductModel):
             if flag == AirstationConfigFlags.PASSWORD:
                 Config.settings['PASSWORD'] = data[idx:idx + length].decode('utf-8')  # Decode as string
                 wifi_config_changed = True
+
+            if flag >= AirstationConfigFlags.MQTT_ENABLED:
+                from mqtt_ble_tlv import apply_mqtt_tlv_record
+                chunk = bytes(data[idx:idx + length])
+                if apply_mqtt_tlv_record(flag, chunk):
+                    mqtt_changed = True
             
             idx += length
+
+        if mqtt_changed:
+            from mqtt_ha import MqttHa
+            MqttHa.notify_settings_changed_from_ble()
 
         return wifi_config_changed
 
     def encode_configurations(self):
         data = bytearray()
+
+        def _as_bool(v):
+            if isinstance(v, bool):
+                return v
+            if isinstance(v, (int, float)):
+                return bool(int(v))
+            s = str(v).strip().lower() if v is not None else ""
+            return s in ("1", "true", "yes", "on")
+
+        mqtt_rows = [
+            (AirstationConfigFlags.MQTT_ENABLED, 1 if _as_bool(Config.settings.get("MQTT_ENABLED")) else 0),
+            (AirstationConfigFlags.MQTT_BROKER, Config.settings.get("MQTT_BROKER") or ""),
+            (AirstationConfigFlags.MQTT_PORT, int(Config.settings.get("MQTT_PORT") or 1883)),
+            (AirstationConfigFlags.MQTT_USE_TLS, 1 if _as_bool(Config.settings.get("MQTT_USE_TLS")) else 0),
+            (AirstationConfigFlags.MQTT_USERNAME, Config.settings.get("MQTT_USERNAME") or ""),
+            (AirstationConfigFlags.MQTT_DISCOVERY_PREFIX, Config.settings.get("MQTT_DISCOVERY_PREFIX") or "homeassistant"),
+            (AirstationConfigFlags.MQTT_DEVICE_NAME, Config.settings.get("MQTT_DEVICE_NAME") or ""),
+        ]
+        cert = Config.settings.get("MQTT_CERTIFICATE_PATH")
+        if cert and str(cert).strip():
+            mqtt_rows.append((AirstationConfigFlags.MQTT_CERTIFICATE_PATH, str(cert).strip()))
+
         for flag, value in [
             (AirstationConfigFlags.AUTO_UPDATE_MODE, Config.settings['auto_update_mode']),
             (AirstationConfigFlags.BATTERY_SAVE_MODE, Config.settings['battery_save_mode']),
@@ -152,8 +185,8 @@ class AirStation(LdProductModel):
             (AirstationConfigFlags.LONGITUDE, Config.settings['longitude']),
             (AirstationConfigFlags.LATITUDE, Config.settings['latitude']),
             (AirstationConfigFlags.HEIGHT, Config.settings['height']),
-            (AirstationConfigFlags.DEVICE_ID, self.device_id)
-        ]:
+            (AirstationConfigFlags.DEVICE_ID, self.device_id),
+        ] + mqtt_rows:
             value_bytes = value.encode('utf-8') if isinstance(value, str) else struct.pack('>i', value)
             data.append(flag)
             data.append(len(value_bytes) if isinstance(value, str) else struct.calcsize('>i'))
@@ -336,6 +369,9 @@ class AirStation(LdProductModel):
                 data = self.get_json()
 
                 self.save_data(data)
+
+                from mqtt_ha import MqttHa
+                MqttHa.publish_measurement_if_enabled(data)
 
                 if Config.settings['SEND_TO_SENSOR_COMMUNITY']:
                     sensor_community_data = self.get_json_list_sensor_community()

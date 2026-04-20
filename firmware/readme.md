@@ -57,6 +57,8 @@ Für **Air Station im Wifiless-Modus** (Messdaten auf SD-Karte) zusätzlich:
 circup install adafruit_sdcard
 ```
 
+**Home Assistant / MQTT (optional):** Die Firmware enthält **Adafruit MiniMQTT 7.2.0** unter `lib/adafruit_minimqtt/`. Zum Aktualisieren alternativ `circup install adafruit_minimqtt` (beachte ggf. neuere Abhängigkeiten wie `adafruit_connection_manager`). Siehe [`docs/mqtt-home-assistant.md`](../docs/mqtt-home-assistant.md).
+
 Drücke den Reset-Knopf am ESP32, um die Installation abzuschließen.
 
 ## 4 - Gerät konfigurieren

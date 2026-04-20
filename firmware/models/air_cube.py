@@ -80,6 +80,20 @@ class AirCube(LdProductModel):
         if cmd == BleCommands.READ_SENSOR_DATA_AND_BATTERY_STATUS:
             self.update_ble_battery_status()
             logger.debug("Battery status updated")
+
+        if cmd == BleCommands.SET_CUBE_MQTT_CONFIGURATION:
+            from mqtt_ble_tlv import decode_mqtt_settings_tlv
+            tail = bytes(command[1:]) if len(command) > 1 else b""
+            if decode_mqtt_settings_tlv(tail):
+                from mqtt_ha import MqttHa
+                MqttHa.notify_settings_changed_from_ble()
+            self.status_led.show_led({
+                'repeat_mode': RepeatMode.TIMES,
+                'repeat_times': 1,
+                'elements': [
+                    {'color': Color.BLUE, 'duration': 0.15},
+                ],
+            })
     
     def receive_button_press(self):
         self.ble_on = not self.ble_on
@@ -139,6 +153,8 @@ class AirCube(LdProductModel):
             self.save_data(data=data)
             if WifiUtil.radio.connected:
                 self.send_to_api()
+                from mqtt_ha import MqttHa
+                MqttHa.publish_measurement_if_enabled(data)
 
             # This reads sensors & updates BLE - we don't mind updating BLE even if it is off
             self.update_ble_sensor_data()
