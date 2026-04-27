@@ -8,7 +8,7 @@ SEND_TO_SENSOR_COMMUNITY = false
 # Timestamps for API/logs: default Europe/Vienna if omitted. See docs/settings.md (TZ).
 # TZ = "UTC"
 
-# Air Station: SD log instead of API (SPI SCK=IO12 MISO=IO11 MOSI=IO10 CS=IO13). DS3231 uses I2C from SCL/SDA in settings.
+# Air Station: SD log instead of API
 WIFILESS_MODE = false
 # SD_LOG_PATH = "/sd/measurements.jsonl"
 

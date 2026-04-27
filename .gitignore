@@ -46,9 +46,11 @@ dist/
 # firmware
 firmware/test.py
 # CircuitPython board images (keep deploy/bin/.gitkeep tracked)
-deploy/bin/*.bin
+tools/bin/*.bin
 
 # backup files
-deploy/settings_backups/slot_0/*
-deploy/settings_backups/slot_1/*
-deploy/settings_backups/slot_2/*
+tools/settings_backups/slot_0/*
+tools/settings_backups/slot_1/*
+tools/settings_backups/slot_2/*
+
+tools/sd_from_device/*

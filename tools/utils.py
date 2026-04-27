@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import ast
 import copy
+import errno
 import os
 import re
 import shutil
@@ -13,7 +15,7 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 from urllib.parse import urljoin, urlparse
 
 DEPLOY_DIR = Path(__file__).resolve().parent
@@ -642,3 +644,392 @@ def pick_serial_port_interactive(cfg: DeployConfig) -> None:
         return
     cfg.serial_port = ports[n - 1].device
     print("Using serial_port:", cfg.serial_port, flush=True)
+
+
+# Multiline code: use raw REPL (like mpremote/ampy), not “paste” (Ctrl-E) — on some
+# boards paste collapses to one line, producing ``import osD``-style errors.
+_REPL_BREAK = b"\x03\x03"
+_RAW_REPL_START = b"\x01"  # Ctrl-A
+_RAW_REPL_EXIT = b"\x02"  # Ctrl-B: leave raw, back to normal REPL
+_REPL_EXEC = b"\x04"  # Ctrl-D: run script in raw REPL
+
+# On-device and host use the same bytes. Markers are built in scripts as '__'+'CPS'+'0__' etc.
+# so a Traceback/echo does not contain the same contiguous literal as in ``print('__…')``.
+_CP_SEND_START_HEX = b"__" + b"CPS" + b"0__"
+_CP_SEND_END = b"__" + b"CPE" + b"0__"
+_CP_FILE_ERR = b"__" + b"CPF" + b"1__"
+_CP_LIST_START = b"__" + b"CPL" + b"0__"
+
+
+def _macos_serial_sibling_path(port: str) -> str | None:
+    """``/dev/cu.usb...`` <-> ``/dev/tty.usb...`` (same device, different callout/locking rules)."""
+    if sys.platform != "darwin" or not port.startswith("/dev/"):
+        return None
+    name = Path(port).name
+    if name.startswith("cu."):
+        sib = "/dev/tty." + name[3:]
+    elif name.startswith("tty."):
+        sib = "/dev/cu." + name[4:]
+    else:
+        return None
+    return sib if Path(sib).exists() else None
+
+
+def _serial_open_errno(exc: BaseException) -> int | None:
+    if isinstance(exc, OSError) and exc.errno is not None:
+        return exc.errno
+    if exc.args and isinstance(exc.args[0], int):
+        return exc.args[0]
+    e = getattr(exc, "errno", None)
+    return int(e) if e is not None else None
+
+
+def _is_serial_port_busy_error(exc: BaseException) -> bool:
+    if _serial_open_errno(exc) == errno.EBUSY:
+        return True
+    s = str(exc).lower()
+    return "resource busy" in s or "device or resource busy" in s
+
+
+def _lsof_for_port(path: str) -> str:
+    try:
+        r = subprocess.run(
+            ["lsof", path],
+            capture_output=True,
+            text=True,
+            timeout=2.0,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    if r.returncode != 0 or not r.stdout.strip():
+        return ""
+    return f"\nWho has this open (lsof {path!r}):\n{r.stdout.rstrip()}\n"
+
+
+def _open_serial_for_repl(
+    port: str,
+    *,
+    baudrate: int,
+    timeout: float,
+) -> Any:
+    """Open a serial port, retry a few times on EBUSY, and try the macOS cu/tty sibling path."""
+    import serial as serial_mod
+
+    candidates: list[str] = [port]
+    sib = _macos_serial_sibling_path(port)
+    if sib and sib not in candidates:
+        candidates.append(sib)
+    n_retries, delay_s = 4, 0.4
+    last: BaseException | None = None
+    for attempt in range(n_retries):
+        for p in candidates:
+            try:
+                return serial_mod.Serial(
+                    p,
+                    baudrate=baudrate,
+                    timeout=timeout,
+                )
+            except (serial_mod.SerialException, OSError) as e:  # type: ignore[misc]
+                last = e
+                if not _is_serial_port_busy_error(e):
+                    raise
+        if attempt + 1 < n_retries:
+            time.sleep(delay_s)
+    if last is None:  # pragma: no cover
+        raise OSError("Could not open serial port (no exception recorded)")
+    tried = " and ".join(repr(p) for p in candidates) if len(candidates) > 1 else repr(port)
+    details = _lsof_for_port(port) + (_lsof_for_port(sib) if sib and sib != port else "")
+    msg = (
+        f"Serial port is busy (errno 16) — {tried} — another program has it open.\n"
+        "Close: serial monitor/terminal, Thonny, minicom, screen, esptool, or another\n"
+        "Jupyter/IDE session using this port, then run again. On macOS, ejecting CIRCUITPY\n"
+        "or unplugging the board briefly can help if a driver left the port stuck.\n"
+    )
+    raise OSError(msg + details) from last
+
+
+def _cp_repl_script_to_bytes(script: str) -> bytes:
+    """UTF-8 with Unix newlines, trailing newline. Raw REPL uses \\n, not ``\\r\\n``."""
+    s = "\n".join(script.splitlines())
+    if not s.endswith("\n"):
+        s += "\n"
+    return s.encode("utf-8")
+
+
+def _drain_raw_repl_banner(ser: Any) -> bytearray:
+    """After Ctrl-A, read until raw-REPL prompt (or a short cap)."""
+    out = bytearray()
+    t_end = time.monotonic() + 0.4
+    while time.monotonic() < t_end:
+        n = ser.in_waiting
+        if n:
+            out.extend(ser.read(n))
+            if b"raw REPL" in out or (out.endswith(b">") and b">" in out):
+                time.sleep(0.02)
+                out.extend(ser.read(ser.in_waiting or 0))
+                return out
+        time.sleep(0.02)
+    return out
+
+
+def _circuitpy_repl_run_script(
+    port: str,
+    script: str,
+    read_timeout_s: float,
+    start_marker: bytes,
+    end_marker: bytes,
+    *,
+    baudrate: int = 115200,
+) -> bytearray:
+    """Run a one-shot script in raw REPL; return all serial bytes up to the end marker."""
+    ser = _open_serial_for_repl(
+        port,
+        baudrate=baudrate,
+        timeout=0.1,
+    )
+    try:
+        ser.reset_input_buffer()
+        ser.write(_REPL_BREAK)
+        time.sleep(0.2)
+        ser.read(ser.in_waiting or 0)  # discard any interrupt text
+        ser.write(_RAW_REPL_START)
+        time.sleep(0.05)
+        _drain_raw_repl_banner(ser)
+        ser.write(_cp_repl_script_to_bytes(script))
+        ser.write(_REPL_EXEC)
+        out = bytearray()
+        t_end = time.monotonic() + read_timeout_s
+        while time.monotonic() < t_end:
+            n = ser.in_waiting
+            if n:
+                out.extend(ser.read(n))
+            if end_marker in out and start_marker in out:
+                break
+            time.sleep(0.02)
+        if end_marker not in out or start_marker not in out:
+            raise OSError(
+                f"REPL read timed out after {read_timeout_s}s; last bytes: {out[-500:]!r}"
+            )
+        return out
+    finally:
+        try:
+            ser.write(_RAW_REPL_EXIT)
+            time.sleep(0.05)
+        except OSError:
+            pass
+        ser.close()
+
+
+def _extract_file_err_line(out: bytes) -> str | None:
+    """If the device signalled a file OSError, return the repr of the error."""
+    i = out.find(_CP_FILE_ERR)
+    if i < 0:
+        return None
+    line = out[i:].split(b"\r\n", 1)[0]
+    line = line.split(b"\n", 1)[0]
+    if not line.startswith(_CP_FILE_ERR):
+        return None
+    return line[len(_CP_FILE_ERR) :].decode("utf-8", errors="replace")
+
+
+def list_circuitpy_sd_repl(
+    port: str,
+    *,
+    root: str = "/sd",
+    baudrate: int = 115200,
+    read_timeout_s: float = 60.0,
+) -> list[str]:
+    """List entry names in ``root`` (``os.listdir`` only — no isfile, for VFS compatibility)."""
+    root_n = root if root == "/" else root.rstrip("/")
+    d_repr = repr(root_n)
+    # Build with explicit newlines: paste mode (when used) can collapse f-strings; raw
+    # REPL (see _circuitpy_repl_run_script) expects real \\n line breaks.
+    script = "\n".join(
+        [
+            "import os",
+            f"D = {d_repr}",
+            "S0='__'+'CPL'+'0__'",
+            "E0='__'+'CPE'+'0__'",
+            "F1='__'+'CPF'+'1__'",
+            "print(S0)",
+            "try:",
+            "    r = sorted(os.listdir(D))",
+            "    print(repr(r))",
+            "except Exception as e:",
+            "    print(F1+repr(e))",
+            "print(E0)",
+        ]
+    )
+    out = _circuitpy_repl_run_script(
+        port,
+        script,
+        read_timeout_s,
+        _CP_LIST_START,
+        _CP_SEND_END,
+        baudrate=baudrate,
+    )
+    err = _extract_file_err_line(out)
+    if err is not None:
+        raise OSError(f"Could not list {root!r}: {err}")
+    i0 = out.find(_CP_LIST_START) + len(_CP_LIST_START)
+    epos = out.find(_CP_SEND_END, i0)
+    if epos < 0:
+        raise OSError(f"REPL list output missing end marker: {out[-400:]!r}")
+    block = out[i0:epos]
+    for line in block.splitlines():
+        s = line.strip()
+        if not s or s.startswith(b"__"):
+            continue
+        st = s.decode("utf-8", errors="replace").strip()
+        if st.startswith("["):
+            v = ast.literal_eval(st)
+            if isinstance(v, list) and all(isinstance(x, str) for x in v):
+                return v
+    raise OSError(f"REPL list output had no list repr: {block!r}")
+
+
+def download_circuitpy_sd_with_fallback(
+    port: str,
+    out_dir: Path,
+    *,
+    primary: str = "measurements.jsonl",
+    root: str = "/sd",
+    baudrate: int = 115200,
+    read_timeout_s: float = 300.0,
+) -> list[Path]:
+    """List ``root`` on the device, try to save ``primary``, then the rest if that fails.
+
+    If ``primary`` is downloaded successfully, returns a list with that path only. If
+    the primary is missing on the device or the download fails, every other regular
+    file in ``root`` is downloaded into ``out_dir`` (by basename).
+    """
+    out_dir = out_dir.expanduser().resolve()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    names = list_circuitpy_sd_repl(
+        port, root=root, baudrate=baudrate, read_timeout_s=60.0
+    )
+    print(f"Files in {root!r} (from listdir): {names!r}", flush=True)
+    primary_path = f"{root.rstrip('/')}/{primary}"
+    dest_primary = out_dir / primary
+    if primary in names:
+        try:
+            download_circuitpy_repl_file(
+                port,
+                primary_path,
+                dest_primary,
+                baudrate=baudrate,
+                read_timeout_s=read_timeout_s,
+            )
+            return [dest_primary]
+        except OSError as e:
+            print(f"Could not download {primary!r} ({primary_path!r}): {e}", flush=True)
+    else:
+        print(
+            f"{primary!r} is not in the device listing, downloading other files instead.",
+            flush=True,
+        )
+    out_paths: list[Path] = []
+    for n in names:
+        if n == primary:
+            continue
+        p = f"{root.rstrip('/')}/{n}"
+        local = out_dir / n
+        try:
+            download_circuitpy_repl_file(
+                port,
+                p,
+                local,
+                baudrate=baudrate,
+                read_timeout_s=read_timeout_s,
+            )
+            out_paths.append(local)
+        except OSError as e:
+            print(f"Skipped {n!r}: {e}", flush=True)
+    return out_paths
+
+
+def download_circuitpy_repl_file(
+    port: str,
+    device_path: str,
+    dest: Path,
+    *,
+    baudrate: int = 115200,
+    read_timeout_s: float = 300.0,
+    chunk_bytes: int = 256,
+) -> Path:
+    """Read a file on the device over the CircuitPython serial REPL and save it locally.
+
+    Uses paste mode: runs a small on-device script that prints the file as hex lines
+    (safe for the REPL and large files) between sentinel markers. Interrupts a running
+    ``code.py`` with Ctrl-C first.
+
+    **Device path** must be a string the board understands (e.g. ``/sd/measurements.jsonl``).
+    On macOS, use either ``/dev/cu...`` or ``/dev/tty...``; both work with ``pyserial``.
+    """
+    if chunk_bytes < 32:
+        raise ValueError("chunk_bytes should be at least 32")
+    p_repr = repr(device_path)
+    h = int(chunk_bytes)
+    script = "\n".join(
+        [
+            "import binascii",
+            f"P = {p_repr}",
+            f"H = {h}",
+            "S0='__'+'CPS'+'0__'",
+            "E0='__'+'CPE'+'0__'",
+            "F1='__'+'CPF'+'1__'",
+            "print(S0)",
+            "try:",
+            "    with open(P, 'rb') as f:",
+            "        while True:",
+            "            c = f.read(H)",
+            "            if not c:",
+            "                break",
+            "            print(binascii.hexlify(c).decode('ascii'))",
+            "except Exception as e:",
+            "    print(F1+repr(e))",
+            "print(E0)",
+        ]
+    )
+
+    dest = dest.expanduser().resolve()
+    dest.parent.mkdir(parents=True, exist_ok=True)
+
+    out = _circuitpy_repl_run_script(
+        port,
+        script,
+        read_timeout_s,
+        _CP_SEND_START_HEX,
+        _CP_SEND_END,
+        baudrate=baudrate,
+    )
+    err = _extract_file_err_line(out)
+    if err is not None:
+        raise OSError(
+            f"On-device file error (path {device_path!r}): {err}"
+        )
+    h_start = out.find(_CP_SEND_START_HEX)
+    h_end = out.rfind(_CP_SEND_END)
+    if h_start < 0 or h_end < 0 or h_end <= h_start:
+        raise OSError(
+            f"Could not find REPL send markers: tail {out[-500:]!r}"
+        )
+    block = out[h_start + len(_CP_SEND_START_HEX) : h_end]
+    raw = b""
+    for line in block.splitlines():
+        s = line.strip()
+        if not s or s.startswith(b"__"):
+            continue
+        s = s.replace(b" ", b"")
+        if not s or len(s) % 2 == 1:
+            continue
+        try:
+            raw += bytes.fromhex(s.decode("ascii"))
+        except ValueError:
+            continue
+    tmp = dest.with_suffix(dest.suffix + ".partial")
+    tmp.write_bytes(raw)
+    tmp.replace(dest)
+    n = dest.stat().st_size
+    print(f"Saved {n} bytes -> {dest}", flush=True)
+    return dest
