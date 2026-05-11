@@ -8,6 +8,9 @@ SYNC_RTC_FROM_NTP = false
 # Transitional: MODEL = -1 in settings.toml still triggers the same detect until you migrate to this flag only.
 DETECT_MODEL_FROM_SENSORS = false
 
+# When true: run a full I2C + PS1 sensor discover, rewrite /sensors.toml with detected SensorModel ids, then clear this flag.
+REFRESH_SENSORS_TOML = false
+
 # Air Station wifiless only: after sensor scan, connect Wi-Fi and POST each line of SD_LOG_PATH (JSONL) to
 # the datahub data/ API; on full success truncate the log file and clear this flag. SSID required in settings.toml.
 UPLOAD_SD_LOG_TO_DATAHUB = false

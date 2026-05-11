@@ -195,6 +195,23 @@ Aktuell unterstützte Messdimensionen:
 | 15 | VOC (absolut) |
 | 16 | NO2 |
 
+### PS1-NO2-50-MOD UART
+
+The SGX Sensortech `PS1-NO2-50-MOD` is connected over 3.3 V UART using fixed
+ESP32-S3 pins:
+
+| Firmware pin | Sensor wire / signal |
+|---|---|
+| `IO17` (`TX`) | sensor `RX` / yellow |
+| `IO18` (`RX`) | sensor `TX` / green |
+| `GND` | sensor `GND` / black |
+| `3.3V` or `5V` | sensor `VCC` / red |
+
+The firmware uses the datasheet default passive Q&A mode at `9600 8N1` and
+queries NO2 with command `FF 86 00 00 00 00 00 00 79`. The sensor is reported as
+`Dimension.NO2` in `ppb`. Values remain unset during the first 120 seconds after
+startup so the electrochemical module can stabilize.
+
 Aktuell unterstützte Sensor-IDs:
 
 | ID | Sensor | Messdimensionen |
@@ -209,6 +226,7 @@ Aktuell unterstützte Sensor-IDs:
 | 7 | SHT31 | Temp, Hum |
 | 8 | AGS02MA | VOCs (absolut), Gaswiderstand |
 | 9 | SHT4X | Temp, Hum |
+| 26 | PS1-NO2-50-MOD | NO2 |
 
 
 ### Luftdaten-Gerät-Details auslesen (geändert in v2)

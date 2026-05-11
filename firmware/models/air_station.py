@@ -285,9 +285,15 @@ class AirStation(LdProductModel):
         ]
 
         for sensor in self.sensors:
+            sensor_community_pin = SensorModel.get_pin(sensor.model_id)
+            if sensor_community_pin is None:
+                logger.warning(
+                    f"Skipping Sensor.Community upload for unsupported sensor {sensor.model_id}"
+                )
+                continue
             header={
                 'Content-Type': 'application/json',
-                'X-Pin': str(SensorModel.get_pin(sensor.model_id)),
+                'X-Pin': str(sensor_community_pin),
                 'X-Sensor': Config.settings['device_id']
             }
             sensordatavalues = []

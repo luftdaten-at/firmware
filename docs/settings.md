@@ -76,6 +76,13 @@ Per-device and user-facing options: Wi‑Fi, model, keys, Air Station behaviour,
 
 The same MQTT keys can be written from the **mobile app over BLE** on supported firmware; see [`docs/ble-characteristics.md`](ble-characteristics.md) and [`docs/companion-app-mqtt-ble.md`](companion-app-mqtt-ble.md).
 
+### PS1-NO2-50-MOD UART pins
+
+The PS1-NO2-50-MOD NO2 sensor currently uses fixed firmware pins, not TOML
+settings: host `TX = IO17` drives the sensor's `RX`, and host `RX = IO18` receives
+the sensor's `TX`. The UART protocol is `9600 8N1` in the datasheet default passive
+Q&A mode. Keep those pins free when this sensor is installed.
+
 ### Air Station (Wi‑Fi) — when data is not transmitted
 
 In [`AirStation.tick()`](../firmware/models/air_station.py), measurements are only queued when **all** of the following hold: Wi‑Fi is connected, `runtime_settings['rtc_is_set']` is true (NTP after Wi‑Fi), and **`latitude`**, **`longitude`**, and **`height`** in `settings.toml` are each **non-empty** after stripping whitespace (so `"0"` is allowed for height). Otherwise the firmware logs **`DATA CANNOT BE TRANSMITTED, not all configurations have been made:`** followed by a semicolon-separated list of what is still missing (that warning is emitted again only when the set of blockers changes).
@@ -126,9 +133,26 @@ Not stored in `settings.toml` / `boot.toml`. Examples:
 
 ---
 
+## `sensors.toml`
+
+Optional file on the CIRCUITPY root (next to `settings.toml`). Not part of `Config` / `AutoSaveDict`; read and written by [`sensors_config.py`](../firmware/sensors_config.py).
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `SENSOR_MODEL_IDS` | string | Comma-separated [`SensorModel`](../firmware/enums.py) integer ids to **probe** on each boot (e.g. `"1,3,26"` for SEN5x, BME280, PS1-NO2). Only listed drivers are instantiated; unknown ids are skipped with a warning. |
+
+**Behaviour:**
+
+- If **`sensors.toml` is missing**, or `SENSOR_MODEL_IDS` is empty/invalid, the firmware runs a **full discover**: every supported I²C driver is probed, then the PS1 UART sensor if applicable. The file is **created or replaced** with the **detected** model ids (sorted, unique), so the next boot only probes those types (faster).
+- Set **`REFRESH_SENSORS_TOML = true`** in [`startup.toml`](../firmware/startup.toml) to re-run that full discover on the next boot and refresh `sensors.toml`; the flag is cleared after a successful write (same pattern as other one-shot `startup.toml` flags).
+- To add a sensor type later, either edit `SENSOR_MODEL_IDS` manually or run a refresh.
+
+---
+
 ## Related files
 
-- **One-shot boot flags** (RTC sync, model detect, SD upload, SD wipe): [`firmware/startup.toml`](../firmware/startup.toml) — separate from `settings.toml` / `boot.toml`; read by startup helpers, not `AutoSaveDict`.
+- **One-shot boot flags** (RTC sync, model detect, SD upload, SD wipe, sensor list refresh): [`firmware/startup.toml`](../firmware/startup.toml) — separate from `settings.toml` / `boot.toml`; read by startup helpers, not `AutoSaveDict`.
+- **Sensor list file:** [`sensors.toml`](#sensorstoml) (optional; auto-generated on first full discover).
 - **JSON shapes sent to APIs:** [`docs/api-json.md`](api-json.md).
 - **Bluetooth GATT (custom service, characteristics, Air Station TLV):** [`docs/ble-characteristics.md`](ble-characteristics.md). **`TZ`** is not configurable over BLE; use `settings.toml`. **MQTT / Home Assistant** keys are configurable over BLE (flags `9…17`; Air Station `0x06`, Air Cube `0x07`).
 - **Home Assistant MQTT:** [`docs/mqtt-home-assistant.md`](mqtt-home-assistant.md).

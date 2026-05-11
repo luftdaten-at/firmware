@@ -140,6 +140,7 @@ def _format_value(dim, val):
         Dimension.PM10_0,
         Dimension.CO2,
         Dimension.TVOC,
+        Dimension.NO2,
     ):
         return "{:.2f}".format(v)
     return "{:.4g}".format(v)

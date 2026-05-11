@@ -1,0 +1,19 @@
+device_id = "DCDA0C781989AAA"
+api_key = "7e4hftlz3ue9oohgvyhff3a75wdnd6i8"
+mac = "DCDA0C781989"
+MODEL = 3
+TEST_MODE = false 
+SSID = "luftdaten.at"
+PASSWORD = "clientpassword"
+SEND_TO_SENSOR_COMMUNITY = false
+LOG_LEVEL = "DEBUG"
+# Timestamps for API/logs: default Europe/Vienna if omitted. See docs/settings.md (TZ).
+# TZ = "UTC"
+# Air Station: SD log instead of API (SPI SCK=IO12 MISO=IO11 MOSI=IO10 CS=IO13). DS3231 uses I2C from SCL/SDA in settings.
+WIFILESS_MODE = true
+# SD_LOG_PATH = "/sd/measurements.jsonl"
+# Home Assistant MQTT (optional; Air Cube / Air Station Wi‑Fi). See docs/mqtt-home-assistant.md
+# MQTT_ENABLED = true
+# MQTT_BROKER = ""
+# MQTT_PORT = 1883
+# MQTT_USE_TLS = false

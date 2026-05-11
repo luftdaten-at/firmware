@@ -21,7 +21,8 @@ from wifi_client import WifiUtil
 from ugm2.upgrade_mananger import Ugm
 from logger import logger
 from models.ld_product_model import API_JSON_DEVICE_KEY
-from util import get_battery_monitor, get_connected_sensors
+from util import get_battery_monitor
+from sensors_config import resolve_connected_sensors
 from startup_actions import run_startup_actions, run_startup_actions_after_sensors
 
 def main():
@@ -62,8 +63,9 @@ def main():
     button = digitalio.DigitalInOut(button_pin)
     button.direction = digitalio.Direction.INPUT
 
-    # get connected sensors
-    connected_sensors = get_connected_sensors(i2c)
+    # sensors.toml + optional full discover (see resolve_connected_sensors)
+    connected_sensors = resolve_connected_sensors(i2c)
+
     battery_monitor = get_battery_monitor(i2c)
 
     # Model from sensors: startup.toml DETECT_MODEL_FROM_SENSORS and/or legacy MODEL == -1

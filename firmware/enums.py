@@ -42,6 +42,7 @@ class SensorModel():
     SEN66 = 23
     MLX90640 = 24
     TSL2591 = 25
+    PS1_NO2_50_MOD = 26
 
     _names = {
         SEN5X: "SEN5X",
@@ -69,6 +70,7 @@ class SensorModel():
         SEN66: "SEN66",
         MLX90640: "MLX90640",
         TSL2591: "TSL_2591",
+        PS1_NO2_50_MOD: "PS1-NO2-50-MOD",
     }
 
     _manufacturer = {
@@ -93,6 +95,7 @@ class SensorModel():
         SEN66: "Sensirion",
         MLX90640: "Mouser Electronics", 
         TSL2591: "Berry Base",
+        PS1_NO2_50_MOD: "SGX Sensortech",
     }
 
     _pins = {
@@ -113,7 +116,7 @@ class SensorModel():
 
     @classmethod
     def get_pin(cls, model_id: str):
-        return cls._pins[model_id]
+        return cls._pins.get(model_id)
 
     @classmethod
     def get_sensor_name(cls, sensor_model):
