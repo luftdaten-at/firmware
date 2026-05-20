@@ -140,7 +140,20 @@ class AirStation(LdProductModel):
                 Config.settings['PASSWORD'] = data[idx:idx + length].decode('utf-8')  # Decode as string
                 wifi_config_changed = True
 
-            if flag >= AirstationConfigFlags.MQTT_ENABLED:
+            if flag == AirstationConfigFlags.TZ:
+                Config.settings['TZ'] = data[idx:idx + length].decode('utf-8')
+
+            if flag == AirstationConfigFlags.LOG_LEVEL:
+                Config.settings['LOG_LEVEL'] = data[idx:idx + length].decode('utf-8')
+
+            if flag == AirstationConfigFlags.API_KEY:
+                Config.settings['api_key'] = data[idx:idx + length].decode('utf-8')
+
+            if (
+                AirstationConfigFlags.MQTT_ENABLED
+                <= flag
+                <= AirstationConfigFlags.MQTT_CERTIFICATE_PATH
+            ):
                 from mqtt_ble_tlv import apply_mqtt_tlv_record
                 chunk = bytes(data[idx:idx + length])
                 if apply_mqtt_tlv_record(flag, chunk):
@@ -185,6 +198,12 @@ class AirStation(LdProductModel):
             (AirstationConfigFlags.LONGITUDE, Config.settings['longitude']),
             (AirstationConfigFlags.LATITUDE, Config.settings['latitude']),
             (AirstationConfigFlags.HEIGHT, Config.settings['height']),
+            (AirstationConfigFlags.TZ, str(Config.settings.get('TZ') or 'Europe/Vienna')),
+            (
+                AirstationConfigFlags.LOG_LEVEL,
+                str(Config.settings.get('LOG_LEVEL') or 'DEBUG'),
+            ),
+            (AirstationConfigFlags.API_KEY, str(Config.settings.get('api_key') or '')),
             (AirstationConfigFlags.DEVICE_ID, self.device_id),
         ] + mqtt_rows:
             value_bytes = value.encode('utf-8') if isinstance(value, str) else struct.pack('>i', value)

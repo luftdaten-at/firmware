@@ -326,6 +326,10 @@ class AirstationConfigFlags:
     MQTT_DISCOVERY_PREFIX = 15
     MQTT_DEVICE_NAME = 16
     MQTT_CERTIFICATE_PATH = 17
+    # IANA timezone name (e.g. ``Europe/Vienna``); Air Station ``0x06`` TLV only — not used with Cube ``0x07``
+    TZ = 18
+    LOG_LEVEL = 19
+    API_KEY = 20
 
 class AirStationMeasurementInterval:
     sec30 = 30
