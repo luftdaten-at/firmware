@@ -2,7 +2,7 @@
 
 This document describes the **single custom BLE service** and its characteristics as implemented in [`firmware/ld_service.py`](../firmware/ld_service.py), how [`firmware/main.py`](../firmware/main.py) fills read characteristics, and how writes on the command characteristic are interpreted.
 
-**Timezone:** There is **no** GATT characteristic and **no** Air Station configuration flag for **`TZ`** / IANA timezone. Timezone for API/log strings is configured in **`settings.toml`** only (see [`docs/settings.md`](settings.md)). To expose `TZ` over BLE in the future you would need a new `AirstationConfigFlags` value and matching app support.
+**Station-only TLV flags** (Air Station command **`0x06`**, read on **`air_station_configuration`**): **`18`** `TZ` (IANA timezone), **`19`** `LOG_LEVEL` (e.g. `DEBUG` / `INFO`), **`20`** `api_key` (UTF-8 Datahub/API token — **sensitive**; mask in UIs). These update `settings.toml` like other TLV string fields. **`0x07`** (Cube) stays **MQTT-only** (`9…17`).
 
 ---
 
@@ -52,7 +52,7 @@ Both receive the **same** byte buffer.
 | `0x04` | `TURN_OFF_STATUS_LIGHT` | LED controller. |
 | `0x05` | `TURN_ON_STATUS_LIGHT` | LED controller. |
 | `0x06` | `SET_AIR_STATION_CONFIGURATION` | [`AirStation.receive_command`](../firmware/models/air_station.py): payload after `0x06` is TLV data (next section). |
-| `0x07` | `SET_CUBE_MQTT_CONFIGURATION` | [`AirCube.receive_command`](../firmware/models/air_cube.py): payload after `0x07` is **MQTT-only** TLV records (same encoding and flag numbers as flags `9…17` below). |
+| `0x07` | `SET_CUBE_MQTT_CONFIGURATION` | [`AirCube.receive_command`](../firmware/models/air_cube.py): payload after `0x07` is **MQTT-only** TLV records (flags `9…17` only; Station-only flags **`18…20`** / **`TZ`**, **`LOG_LEVEL`**, **`api_key`** use `0x06`). |
 
 Air Station does not implement `READ_SENSOR_DATA` in `receive_command`; only `SET_AIR_STATION_CONFIGURATION` is handled there.
 
@@ -89,8 +89,11 @@ After the leading `0x06`, the payload is a sequence of records:
 | `15` | `MQTT_DISCOVERY_PREFIX` | `MQTT_DISCOVERY_PREFIX` | UTF-8 string (default `homeassistant`) |
 | `16` | `MQTT_DEVICE_NAME` | `MQTT_DEVICE_NAME` | UTF-8 string (HA device display name) |
 | `17` | `MQTT_CERTIFICATE_PATH` | `MQTT_CERTIFICATE_PATH` | UTF-8 string (optional PEM path for MQTT TLS; omitted from read-back if empty) |
+| `18` | `TZ` | `TZ` | UTF-8 string (IANA timezone name, e.g. `Europe/Vienna`; see [`docs/settings.md`](settings.md)) |
+| `19` | `LOG_LEVEL` | `LOG_LEVEL` | UTF-8 string (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`; unknown names behave like `DEBUG`; see [`docs/settings.md`](settings.md)) |
+| `20` | `API_KEY` | `api_key` | UTF-8 string (Datahub/API workshop token; **sensitive** — included in read-back TLV for apps) |
 
-**Read-back:** [`AirStation.send_configuration`](../firmware/models/air_station.py) assigns `air_station_configuration` from `encode_configurations()`, which includes flags `0…5`, `8` (`DEVICE_ID`), and **non-secret** MQTT fields `9…13`, `15`, `16`, and `17` when set — **not** SSID, Wi‑Fi password, or **`MQTT_PASSWORD`** (secrets are not mirrored on the read characteristic).
+**Read-back:** [`AirStation.send_configuration`](../firmware/models/air_station.py) assigns `air_station_configuration` from `encode_configurations()`, which includes flags `0…5`, **`18…20`**, `8` (`DEVICE_ID`), and **non-secret** MQTT fields `9…13`, `15`, `16`, and `17` when set — **not** SSID, Wi‑Fi password, or **`MQTT_PASSWORD`** (secrets are not mirrored on the read characteristic). **`api_key` (flag `20`)** is mirrored so companion apps can read it; treat like a credential on the wire.
 
 **Air Cube MQTT TLV:** the same flag bytes and value encodings as in the table (`9…17`) are used after command byte **`0x07`**. There is **no** `air_station_configuration` read characteristic on the Cube; the app may keep local UI state after write. See [`docs/companion-app-mqtt-ble.md`](companion-app-mqtt-ble.md).
 
@@ -128,7 +131,7 @@ Multiple sensors are concatenated without an extra header (count is implied by a
 - UTF-8 encoding of `json.dumps(device_info_json)`.
 - `device_info_json` = `device.get_info()` plus `sensor_list` (model id, dimension list, serial per sensor).
 
-The `device` object in JSON comes from [`LdProductModel.get_info()`](../firmware/models/ld_product_model.py): `time`, `device`, `firmware`, `model`, `apikey`, `source`, `test_mode`, `calibration_mode` — **not** `TZ`, `LOG_LEVEL`, or Wi‑Fi SSID.
+The `device` object in JSON comes from [`LdProductModel.get_info()`](../firmware/models/ld_product_model.py): `time`, `device`, `firmware`, `model`, `apikey`, `source`, `test_mode`, `calibration_mode` — **not** `TZ`, `LOG_LEVEL`, or Wi‑Fi SSID in this JSON block. **`TZ`**, **`LOG_LEVEL`**, and **`api_key`** (same as JSON `apikey`) are also available on **Air Station** via TLV on **`air_station_configuration`** (flags **`18`**, **`19`**, **`20`**).
 
 **B) Binary path** — when `api_key` is missing (and on exception fallback):
 
@@ -162,20 +165,20 @@ Four bytes (extended by error code in [`update_ble_error_status`](../firmware/mo
 
 ### `air_station_configuration` (read)
 
-TLV format **same flag bytes as write**, but payload built only from **non-secret** fields in [`encode_configurations()`](../firmware/models/air_station.py): flags `0…5`, `8`, and MQTT flags **`9…13`, `15`, `16`, `17`** when applicable (see table above).
+TLV format **same flag bytes as write**, but payload built only from **non-secret** fields in [`encode_configurations()`](../firmware/models/air_station.py): flags `0…5`, **`18…20`** (`TZ`, `LOG_LEVEL`, `api_key`), `8`, and MQTT flags **`9…13`, `15`, `16`, `17`** when applicable (see table above). **`MQTT_PASSWORD`**, SSID, and Wi‑Fi password stay off the read characteristic.
 
 ---
 
 ## Not exposed over BLE (non-exhaustive)
 
-These `settings.toml` / runtime items are **not** in the JSON `device` blob today, and either **not** in the Air Station TLV or only partially covered, including:
+Settings that are **not** in the Air Station TLV table above or in the JSON `device` block include:
 
-- **`TZ`** (timezone for [`format_iso8601_tz()`](../firmware/tz_format.py))
-- **`LOG_LEVEL`**
-- **`TEST_MODE`**, **`CALIBRATION_MODE`** (API/flags may change them; not BLE TLV)
+- **`TEST_MODE`**, **`CALIBRATION_MODE`** (API/runtime; not BLE TLV today)
 - **`WIFILESS_MODE`**, **`SD_LOG_PATH`**, **`ROLLBACK`**, etc.
 
-Configure them via **USB** (`settings.toml`) or extend the firmware protocol and mobile apps together.
+**Note:** **`TZ`**, **`LOG_LEVEL`**, and **`api_key`** use TLV flags **`18`**, **`19`**, **`20`** on **`air_station_configuration`**. When `device_info` uses the JSON path, **`apikey`** appears there too (same value as **`api_key`**).
+
+Configure omitted items via **USB** (`settings.toml`) or extend the firmware and apps together.
 
 ---
 

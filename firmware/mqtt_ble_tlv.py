@@ -90,6 +90,10 @@ def decode_mqtt_settings_tlv(data) -> bool:
             break
         chunk = data[idx : idx + length]
         idx += length
-        if flag >= AirstationConfigFlags.MQTT_ENABLED:
+        if (
+            AirstationConfigFlags.MQTT_ENABLED
+            <= flag
+            <= AirstationConfigFlags.MQTT_CERTIFICATE_PATH
+        ):
             changed |= apply_mqtt_tlv_record(flag, chunk)
     return changed
