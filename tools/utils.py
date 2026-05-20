@@ -19,6 +19,8 @@ from typing import Any, Iterable
 from urllib.parse import urljoin, urlparse
 
 DEPLOY_DIR = Path(__file__).resolve().parent
+# Default device settings installed by ``copy_firmware_full`` (after copying ``firmware/`` onto CIRCUITPY).
+TOOLS_SETTINGS_TOML = DEPLOY_DIR / "settings.toml"
 # Per-device folders: ``settings_backups/<device_id>/`` (``device_id`` from TOML).
 SETTINGS_BACKUPS_DIR = DEPLOY_DIR / "settings_backups"
 UNKNOWN_DEVICE_BACKUP = "unknown"
@@ -195,7 +197,6 @@ class DeployConfig:
     wait_timeout_s: float = 120.0
     poll_interval_s: float = 1.0
     do_copy_firmware_tree: bool = True
-    full_flash_settings: Path = field(default_factory=lambda: DEPLOY_DIR / "settings.toml")
 
 
 def run_esptool(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -427,6 +428,18 @@ def _merge_toml_add_missing_keys(old: dict, new: dict) -> dict:
     return merged
 
 
+def _deep_overlay_toml_dict(template: dict, overlay: dict) -> dict:
+    """Start from ``template``; for every key in ``overlay``, attach its value (recursive for dict pairs)."""
+
+    merged = copy.deepcopy(template)
+    for key, oval in overlay.items():
+        if isinstance(merged.get(key), dict) and isinstance(oval, dict):
+            merged[key] = _deep_overlay_toml_dict(merged[key], oval)
+        else:
+            merged[key] = copy.deepcopy(oval)
+    return merged
+
+
 def _list_toml_keys_added_by_merge(old: dict, new: dict, prefix: str = "") -> list[str]:
     """Human-readable paths for keys present in ``new`` but not in ``old`` (recursive)."""
     added: list[str] = []
@@ -519,9 +532,64 @@ def merge_repo_startup_into_backup(cfg: DeployConfig, backup_dir: Path) -> None:
 
 
 def deploy_full_flash_settings(cfg: DeployConfig) -> None:
-    if not cfg.full_flash_settings.is_file():
-        raise FileNotFoundError(cfg.full_flash_settings)
-    copy_file(cfg.full_flash_settings, cfg.circuitpy_root / "settings.toml")
+    if not TOOLS_SETTINGS_TOML.is_file():
+        raise FileNotFoundError(TOOLS_SETTINGS_TOML)
+    copy_file(TOOLS_SETTINGS_TOML, cfg.circuitpy_root / "settings.toml")
+
+
+def _read_settings_toml_dict(path: Path) -> dict[str, Any] | None:
+    """Parse ``settings.toml`` or return ``None`` on missing file / unreadable / parse failure."""
+    if not path.is_file():
+        return None
+    try:
+        import tomli
+
+        text = path.read_text(encoding="utf-8")
+        data = tomli.loads(text)
+    except ImportError:
+        print("tomli missing (run ``uv sync``); cannot read previous settings.toml.", flush=True)
+        return None
+    except OSError as ex:
+        print(f"Could not read {path}: {ex}; skipping preserved settings overlay.", flush=True)
+        return None
+    except Exception as ex:
+        print(f"Could not parse {path}: {ex}; skipping preserved settings overlay.", flush=True)
+        return None
+
+    return data if isinstance(data, dict) else None
+
+
+def _write_merged_settings_toml(dest: Path, template: Path, preserved: dict[str, Any]) -> None:
+    try:
+        import tomli
+        import tomli_w
+    except ImportError:
+        print(
+            "tomli/tomli-w missing (run ``uv sync``); keeping tools/settings.toml without overlay.",
+            flush=True,
+        )
+        return
+    try:
+        base_text = template.read_text(encoding="utf-8")
+        base = tomli.loads(base_text)
+    except Exception as ex:
+        print(f"Could not read template {template}: {ex}; skipping overlay.", flush=True)
+        return
+    merged = _deep_overlay_toml_dict(base, preserved)
+    if merged == base:
+        return
+    tmp = dest.with_suffix(".toml.merged.tmp")
+    try:
+        tmp.write_text(tomli_w.dumps(merged), encoding="utf-8")
+        tmp.replace(dest)
+    except Exception:
+        if tmp.is_file():
+            tmp.unlink(missing_ok=True)
+        raise
+    print(
+        "Merged saved values from the previous ``settings.toml`` onto ``tools/settings.toml``.",
+        flush=True,
+    )
 
 
 def flash_with_esptool(cfg: DeployConfig) -> None:
@@ -539,16 +607,14 @@ def flash_with_esptool(cfg: DeployConfig) -> None:
     )
 
 
-def copy_firmware_to_circuitpy(cfg: DeployConfig) -> None:
-    """Wait for the USB drive, copy repo ``firmware/`` onto it, then restore device settings.
+def copy_firmware_full(cfg: DeployConfig) -> None:
+    """Wait for the USB drive, copy repo ``firmware/`` onto it, install ``tools/settings.toml``, then
+    overlay values from any **previous** device ``settings.toml`` (Wi‑Fi and other keys), without
+    keeping the old file verbatim.
 
-    If ``CIRCUITPY/settings.toml`` exists before the copy, it is copied first to
-    ``deploy/settings_backups/<device_id>/`` (subfolder from ``device_id`` in that file),
-    the firmware tree is copied, then the backed-up ``settings.toml`` / ``startup.toml``
-    are copied back onto CIRCUITPY (backup files remain under ``settings_backups/``).
-
-    If there is no ``settings.toml`` on the device yet, ``deploy/settings.toml`` is
-    installed (same as a blank new board).
+    ``startup.toml`` is not preserved here (repo copy wins). Using TOML parse + write may drop
+    comments in ``settings.toml`` when merging. Use :func:`copy_firmware_update` when ``boot.toml``
+    exists to retain both files with backup-folder behaviour and different merge rules for new keys.
     """
     if cfg.wait_for_circuitpy_mount:
         wait_for_path(
@@ -556,27 +622,25 @@ def copy_firmware_to_circuitpy(cfg: DeployConfig) -> None:
             timeout_s=cfg.wait_timeout_s,
             interval_s=cfg.poll_interval_s,
         )
-    backup_dir = backup_settings_from_device(cfg)
+
+    device_settings = cfg.circuitpy_root / "settings.toml"
+    preserved_before_copy = _read_settings_toml_dict(device_settings)
 
     if cfg.do_copy_firmware_tree:
         copy_firmware_tree(firmware_src(), cfg.circuitpy_root)
-        if backup_dir is not None:
-            restore_settings_backup(cfg, backup_dir)
-            print(
-                f"Restored device settings from {backup_dir} (copy also kept there).",
-                flush=True,
-            )
-        else:
-            deploy_full_flash_settings(cfg)
+        deploy_full_flash_settings(cfg)
+        if preserved_before_copy:
+            dest = cfg.circuitpy_root / "settings.toml"
+            _write_merged_settings_toml(dest, TOOLS_SETTINGS_TOML, preserved_before_copy)
 
 
 def run_full_flash(cfg: DeployConfig) -> None:
     flash_with_esptool(cfg)
-    copy_firmware_to_circuitpy(cfg)
+    copy_firmware_full(cfg)
     print("Full flash finished.", flush=True)
 
 
-def run_update_only(cfg: DeployConfig) -> None:
+def copy_firmware_update(cfg: DeployConfig) -> None:
     if not cfg.circuitpy_root.is_dir():
         raise FileNotFoundError(
             f"CIRCUITPY not mounted: {cfg.circuitpy_root} — adjust circuitpy_root or connect USB."
@@ -584,7 +648,7 @@ def run_update_only(cfg: DeployConfig) -> None:
     backup_dir = backup_settings_from_device(cfg)
     if backup_dir is None:
         raise FileNotFoundError(
-            f"No {cfg.circuitpy_root / 'settings.toml'} — use copy_firmware_to_circuitpy / "
+            f"No {cfg.circuitpy_root / 'settings.toml'} — use copy_firmware_full / "
             "full flash for a new board, or create settings.toml on the device first."
         )
     copy_firmware_tree(firmware_src(), cfg.circuitpy_root)
