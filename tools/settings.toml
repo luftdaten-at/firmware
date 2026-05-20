@@ -1,5 +1,5 @@
 ROLLBACK = false
-MODEL = 1
+MODEL = 3
 TEST_MODE = false
 SSID = "luftdaten.at"
 PASSWORD = "clientpassword"

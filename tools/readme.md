@@ -44,7 +44,7 @@ jupyter notebook deploy/deploy.ipynb
 
 ### Workflow
 
-The notebook is organized as **three steps**: (1) **flash the board** (`flash_with_esptool`), (2) **copy firmware to a new board** (`copy_firmware_to_circuitpy` after `CIRCUITPY` mounts), (3) **update firmware on an existing board** (`run_update_only`). For a brand-new install you typically run 1 then 2; for an already-configured device run 3 only. **`run_full_flash`** is a shortcut for 1+2.
+The notebook is organized as **three steps**: (1) **flash the board** (`flash_with_esptool`), (2) **copy firmware to a new board** (`copy_firmware_full` after `CIRCUITPY` mounts), (3) **update firmware on an existing board** (`copy_firmware_update`). For a brand-new install you typically run 1 then 2; for an already-configured device run 3 only. **`run_full_flash`** is a shortcut for 1+2.
 
 1. Edit **`CFG`** in [`deploy.ipynb`](deploy.ipynb) if needed, then run the **Step 1–3** cells that match your task (they are ready to run; avoid **Run all** unless you intend the full sequence).
 
@@ -96,5 +96,5 @@ This flow copies the whole [`../firmware/`](../firmware/) tree. For day-to-day l
 ## Pipelines
 
 - **Step 1 — Flash the board**: `flash_with_esptool` — esptool only; **`ensure_circuitpython_bin`** resolves a `.bin` (file at `circuitpython_bin`, newest in `deploy/bin/`, index, or **`circuitpython_download_fallback_url`**).
-- **Step 2 — Copy or update firmware** (single notebook cell): if **`boot.toml`** exists on **`CIRCUITPY`**, runs **`run_update_only`** (existing board — backup `settings.toml` / `startup.toml`, copy `firmware/`, merge new keys from repo templates into the slot backup, restore). If **`boot.toml`** is missing, runs **`copy_firmware_to_circuitpy`** (new board — copy `firmware/` plus **`deploy/settings.toml`**; see `utils.py` for restore behaviour when `settings.toml` already exists).
-- **Shortcut**: `run_full_flash` = Step 1 + **`copy_firmware_to_circuitpy`** (same as the “no `boot.toml`” path after a fresh flash).
+- **Step 2 — Copy or update firmware** (single notebook cell): if **`boot.toml`** exists on **`CIRCUITPY`**, runs **`copy_firmware_update`** (existing board — backup `settings.toml` / `startup.toml`, copy `firmware/`, merge new keys from repo templates into the slot backup, restore). If **`boot.toml`** is missing, runs **`copy_firmware_full`** (new board — copy `firmware/`, install **`tools/settings.toml`**, then merge parsed **values** from any existing device `settings.toml` on top; no `settings_backups/` snapshot; `startup.toml` is still only handled on the update path).
+- **Shortcut**: `run_full_flash` = Step 1 + **`copy_firmware_full`** (same as the “no `boot.toml`” path after a fresh flash).
