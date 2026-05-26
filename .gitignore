@@ -49,8 +49,5 @@ firmware/test.py
 tools/bin/*.bin
 
 # backup files
-tools/settings_backups/slot_0/*
-tools/settings_backups/slot_1/*
-tools/settings_backups/slot_2/*
-
+tools/settings_backups/*
 tools/sd_from_device/*

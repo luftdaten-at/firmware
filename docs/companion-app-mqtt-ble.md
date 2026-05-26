@@ -27,7 +27,7 @@ After the **first command byte**, the payload is a sequence of records:
 
 | Model | First byte | Notes |
 |-------|------------|--------|
-| **Air Station** | `0x06` (`SET_AIR_STATION_CONFIGURATION`) | Wi‑Fi / geo (`0…8`), MQTT (`9…17`), **`TZ` (`18`)**, **`LOG_LEVEL` (`19`)**, **`api_key` (`20`)** — UTF-8 TLVs; **`0x07` not** used for these. |
+| **Air Station** | `0x06` (`SET_AIR_STATION_CONFIGURATION`) | Wi‑Fi / geo (`0…8`), MQTT (`9…17`), **`TZ` (`18`)**, **`LOG_LEVEL` (`19`)**, **`api_key` (`20`)**, **`startup.toml` one-shots (`21…25`)** — not MQTT; **`0x07` not** used for these. |
 | **Air Cube** | `0x07` (`SET_CUBE_MQTT_CONFIGURATION`) | **MQTT flags only** (`9…17`); same record layout as Station. |
 
 ## MQTT flags (`AirstationConfigFlags`)

@@ -339,6 +339,12 @@ class AirstationConfigFlags:
     TZ = 18
     LOG_LEVEL = 19
     API_KEY = 20
+    # startup.toml one-shots — Air Station 0x06 TLV only (int32 0 / non-zero → false / true).
+    SYNC_RTC_FROM_NTP = 21
+    DETECT_MODEL_FROM_SENSORS = 22
+    UPLOAD_SD_LOG_TO_DATAHUB = 23
+    CLEAR_SD_CARD = 24
+    REFRESH_SENSORS = 25
 
 class AirStationMeasurementInterval:
     sec30 = 30
