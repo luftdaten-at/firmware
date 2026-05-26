@@ -10,6 +10,25 @@ Sample / template files in the repo:
 
 - [`firmware/settings.toml`](../firmware/settings.toml)
 - [`firmware/boot.toml`](../firmware/boot.toml)
+- [`firmware/sensors.toml`](../firmware/sensors.toml) — runtime snapshot only (see below)
+
+---
+
+## `sensors.toml`
+
+**Firmware-maintained** (not read by [`Config`](../firmware/config.py)). Stored on the CIRCUITPY root as `/sensors.toml`. Written **once per boot** after the I²C sensor probe (`_persist_sensors_toml` in [`startup_actions.py`](../firmware/startup_actions.py)), via the same **`run_startup_actions_after_sensors`** path as model-detect / SD one-shots.
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `LAST_SENSOR_SCAN_AT` | string | ISO-8601 timestamp from [`format_iso8601_tz()`](../firmware/tz_format.py) when the file was last written. Depends on RTC quality. |
+| `BATTERY_MONITOR` | boolean | `true` if [`get_battery_monitor()`](../firmware/util.py) found a MAX17048 (or probe succeeded). |
+| `CONNECTED_SENSOR_IDS` | string | Comma-separated sorted numeric [`SensorModel`](../firmware/enums.py) ids from the scan (empty string if none). |
+
+**Boot validation:** Before that persist step, firmware reads the **previous** snapshot (if [`read_sensors_toml_expected_snapshot()`](../firmware/startup_actions.py) succeeds). If the probed sensor set or battery flag **differs**, it logs a warning and **re-runs** `get_connected_sensors` + `get_battery_monitor` **once**. It does **not** run `run_startup_actions_after_sensors` twice (SD upload flags are not idempotent).
+
+If `/sensors.toml` is missing, incomplete, or unparsable, validation is skipped until a good file exists after the first successful write.
+
+**Optional one-shot (`startup.toml`):** set **`REFRESH_SENSORS = true`**, reboot: firmware runs **`get_connected_sensors`** + **`get_battery_monitor`** again (after the normal probe path), persists **`sensors.toml`**, then clears the flag. If persistence fails the flag stays `true` for a later boot.
 
 ---
 
@@ -128,7 +147,8 @@ Not stored in `settings.toml` / `boot.toml`. Examples:
 
 ## Related files
 
-- **One-shot boot flags** (RTC sync, model detect, SD upload, SD wipe): [`firmware/startup.toml`](../firmware/startup.toml) — separate from `settings.toml` / `boot.toml`; read by startup helpers, not `AutoSaveDict`.
+- **Sensor scan snapshot** (written each boot): [`firmware/sensors.toml`](../firmware/sensors.toml) — firmware-managed; documented in **`sensors.toml`** above.
+- **One-shot boot flags** (RTC sync, model detect, SD upload, SD wipe, **``REFRESH_SENSORS``**): [`firmware/startup.toml`](../firmware/startup.toml) — separate from `settings.toml` / `boot.toml`; read by startup helpers, not `AutoSaveDict`.
 - **JSON shapes sent to APIs:** [`docs/api-json.md`](api-json.md).
 - **Bluetooth GATT (custom service, characteristics, Air Station TLV):** [`docs/ble-characteristics.md`](ble-characteristics.md). **`TZ`** is not configurable over BLE; use `settings.toml`. **MQTT / Home Assistant** keys are configurable over BLE (flags `9…17`; Air Station `0x06`, Air Cube `0x07`).
 - **Home Assistant MQTT:** [`docs/mqtt-home-assistant.md`](mqtt-home-assistant.md).

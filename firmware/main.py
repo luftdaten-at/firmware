@@ -21,8 +21,14 @@ from wifi_client import WifiUtil
 from ugm2.upgrade_mananger import Ugm
 from logger import logger
 from models.ld_product_model import API_JSON_DEVICE_KEY
-from util import get_battery_monitor, get_connected_sensors
-from startup_actions import run_startup_actions, run_startup_actions_after_sensors
+from util import get_battery_monitor, get_connected_sensors, log_sensors_startup_summary
+from startup_actions import (
+    is_startup_flag_true,
+    probe_matches_saved_sensors_toml,
+    read_sensors_toml_expected_snapshot,
+    run_startup_actions,
+    run_startup_actions_after_sensors,
+)
 
 def main():
     logger.debug('loaded main.py')
@@ -52,6 +58,11 @@ def main():
         Config.runtime_settings['rtc_is_set'] = True
         Config.runtime_settings['rtc_module'] = rtc_with_battery
         logger.info('DS3231 found: system RTC set from module time')
+        t = time.localtime()
+        logger.info(
+            'DS3231 RTC time: %04d-%02d-%02d %02d:%02d:%02d'
+            % (t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec)
+        )
     except Exception as e:
         logger.warning(f'DS3231 not available or I2C error ({type(e).__name__}: {e}); using existing RTC if any')
 
@@ -62,9 +73,25 @@ def main():
     button = digitalio.DigitalInOut(button_pin)
     button.direction = digitalio.Direction.INPUT
 
-    # get connected sensors
+    # get connected sensors (compare once to prior /sensors.toml; one retry if mismatch)
+    sensors_toml_snapshot = read_sensors_toml_expected_snapshot()
     connected_sensors = get_connected_sensors(i2c)
     battery_monitor = get_battery_monitor(i2c)
+    if not probe_matches_saved_sensors_toml(
+        connected_sensors, battery_monitor, sensors_toml_snapshot
+    ):
+        logger.warning(
+            "sensors.toml snapshot mismatch vs probe; repeating I2C sensor scan once"
+        )
+        connected_sensors = get_connected_sensors(i2c)
+        battery_monitor = get_battery_monitor(i2c)
+
+    if is_startup_flag_true("REFRESH_SENSORS"):
+        logger.info(
+            "startup.toml: REFRESH_SENSORS — forcing I2C sensor probe and sensors.toml refresh"
+        )
+        connected_sensors = get_connected_sensors(i2c)
+        battery_monitor = get_battery_monitor(i2c)
 
     # Model from sensors: startup.toml DETECT_MODEL_FROM_SENSORS and/or legacy MODEL == -1
     run_startup_actions_after_sensors(connected_sensors, battery_monitor)
@@ -233,6 +260,8 @@ def main():
                     time.sleep(0.5)
         time.sleep(2)
 
+    log_sensors_startup_summary(sensors, battery_monitor)
+
     button_state = False
     ble_connected = False
 
@@ -242,9 +271,8 @@ def main():
         # Clean memory
         gc.collect()
 
-        if not Config.is_air_station_wifiless():
-            if not WifiUtil.radio.connected:
-                WifiUtil.connect()
+        if not WifiUtil.radio.connected:
+            WifiUtil.connect()
 
         '''
         # Check for updates

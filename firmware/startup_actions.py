@@ -5,7 +5,7 @@ import os
 
 import gc
 import storage
-from lib.cptoml import fetch, put
+from lib.cptoml import fetch, keys as cptoml_keys, put
 from storage import remount
 
 from config import Config
@@ -14,6 +14,7 @@ from tz_format import format_iso8601_tz
 from wifi_client import WifiUtil
 
 STARTUP_TOML = "/startup.toml"
+SENSORS_TOML = "/sensors.toml"
 DATAHUB_UPLOAD_LOG_PATH = "/datahub_upload.log"
 
 
@@ -29,6 +30,108 @@ def fetch_startup_flag(key: str):
         return fetch(key, toml=STARTUP_TOML)
     except OSError:
         return None
+
+
+def is_startup_flag_true(key: str) -> bool:
+    """Truth test for startup.toml booleans/strings (matches other one-shot helpers)."""
+    return _truthy(fetch_startup_flag(key))
+
+
+def _parse_connected_sensor_ids_toml(raw_ids):
+    """Return sorted list of int model IDs, or ``[]`` for empty. ``None`` = invalid."""
+    if raw_ids is None:
+        return []
+    if not isinstance(raw_ids, str):
+        return None
+    s = raw_ids.strip()
+    if not s:
+        return []
+    out = []
+    for part in s.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            out.append(int(part))
+        except ValueError:
+            return None
+    return sorted(out)
+
+
+def read_sensors_toml_expected_snapshot():
+    """Return ``(sorted_sensor_ids, battery_present)`` from last persist, or ``None`` to skip.
+
+    ``None`` if the file or required keys are missing, or values are unreadable.
+    Empty ``CONNECTED_SENSOR_IDS`` in file (fetch returns ``None``) is treated as ``[]`` when the key exists.
+    """
+    try:
+        present_keys = cptoml_keys(toml=SENSORS_TOML)
+    except OSError:
+        return None
+    if "CONNECTED_SENSOR_IDS" not in present_keys or "BATTERY_MONITOR" not in present_keys:
+        return None
+    try:
+        raw_ids = fetch("CONNECTED_SENSOR_IDS", toml=SENSORS_TOML)
+        raw_bat = fetch("BATTERY_MONITOR", toml=SENSORS_TOML)
+    except OSError:
+        return None
+    if not isinstance(raw_bat, bool):
+        return None
+    ids_sorted = _parse_connected_sensor_ids_toml(raw_ids)
+    if ids_sorted is None:
+        return None
+    return (ids_sorted, raw_bat)
+
+
+def probe_matches_saved_sensors_toml(connected_sensors, battery_monitor, snapshot):
+    """If ``snapshot`` is ``None``, always True. Else compare ID set and battery flag."""
+    if snapshot is None:
+        return True
+    exp_ids, exp_bat = snapshot
+    actual_ids = sorted(connected_sensors.keys())
+    bat_ok = (battery_monitor is not None) == exp_bat
+    return actual_ids == exp_ids and bat_ok
+
+
+def _persist_sensors_toml(connected_sensors, battery_monitor) -> None:
+    """Overwrite ``/sensors.toml`` with current probe snapshot (remount RW)."""
+    ids_str = ",".join(str(mid) for mid in sorted(connected_sensors.keys()))
+    ts = format_iso8601_tz()
+    bat_on = battery_monitor is not None
+    esc_ts = ts.replace("\\", "\\\\").replace('"', '\\"')
+    content = (
+        "# Snapshot from last boot I2C sensor probe.\n"
+        f'LAST_SENSOR_SCAN_AT = "{esc_ts}"\n'
+        f"BATTERY_MONITOR = {str(bat_on).lower()}\n"
+        f'CONNECTED_SENSOR_IDS = "{ids_str}"\n'
+    )
+    rw = False
+    write_ok = False
+    try:
+        try:
+            storage.remount("/", False, disable_concurrent_write_protection=True)
+        except TypeError:
+            remount("/", False)
+        rw = True
+        with open(SENSORS_TOML, "w") as wf:
+            wf.write(content)
+            wf.flush()
+        if hasattr(os, "sync"):
+            os.sync()
+        write_ok = True
+    except OSError as e:
+        logger.error("Could not write %s: %s" % (SENSORS_TOML, e))
+    finally:
+        if rw:
+            try:
+                storage.remount("/", True)
+            except TypeError:
+                remount("/", True)
+            except Exception:
+                pass
+    if write_ok and _truthy(fetch_startup_flag("REFRESH_SENSORS")):
+        logger.info("startup.toml: clearing REFRESH_SENSORS after sensors.toml write")
+        clear_startup_flag("REFRESH_SENSORS")
 
 
 def clear_startup_flag(key: str) -> None:
@@ -251,6 +354,10 @@ def _run_clear_sd_card() -> None:
 
 def run_startup_actions_after_sensors(connected_sensors, battery_monitor) -> None:
     """Run after I2C sensor scan; model detection needs ``connected_sensors`` / battery monitor."""
+    try:
+        _persist_sensors_toml(connected_sensors, battery_monitor)
+    except Exception as e:
+        logger.error(f"startup_actions_after_sensors: persist {SENSORS_TOML}: {e}")
     try:
         _run_detect_model_from_sensors(connected_sensors, battery_monitor)
     except Exception as e:

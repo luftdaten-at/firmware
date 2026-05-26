@@ -1,0 +1,5 @@
+# Snapshot from last boot I2C sensor probe — firmware updates this each boot after scanning.
+# Do not rely on manually editing CONNECTED_* for routing; MODEL lives in settings.toml.
+LAST_SENSOR_SCAN_AT = ""
+BATTERY_MONITOR = false
+CONNECTED_SENSOR_IDS = ""
