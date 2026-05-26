@@ -42,6 +42,8 @@ class SensorModel():
     SEN66 = 23
     MLX90640 = 24
     TSL2591 = 25
+    SEN63C = 26
+    SEN62 = 27
 
     _names = {
         SEN5X: "SEN5X",
@@ -69,6 +71,8 @@ class SensorModel():
         SEN66: "SEN66",
         MLX90640: "MLX90640",
         TSL2591: "TSL_2591",
+        SEN63C: "SEN63C",
+        SEN62: "SEN62",
     }
 
     _manufacturer = {
@@ -92,7 +96,9 @@ class SensorModel():
         VIRTUAL_SENSOR: "Luftdaten.at",
         SEN66: "Sensirion",
         MLX90640: "Mouser Electronics", 
-        TSL2591: "Berry Base",
+        TSL2591: "ams OSRAM",
+        SEN63C: "Sensirion",
+        SEN62: "Sensirion",
     }
 
     _pins = {
@@ -108,7 +114,10 @@ class SensorModel():
         SHT31: 7,
         SHT35: 7,
         SHT4X: 7,
-        SEN5X: 16
+        SEN5X: 16,
+        SEN66: 16,
+        SEN63C: 17,
+        SEN62: 18,
     }
 
     @classmethod

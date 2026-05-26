@@ -36,13 +36,11 @@ class LdProductModel:
         self.last_api_send = None
         self.api_send_interval = 30 # 30 seconds
 
-        # try to connect to wifi if not connected
-        if not Config.is_air_station_wifiless():
-            if not WifiUtil.radio.connected:
-                WifiUtil.connect()
-        # try to send status to API
-        if not Config.is_air_station_wifiless() and WifiUtil.radio.connected:
-            # prepare station info
+        # try to connect to wifi if not connected (wifiless still uses Wi‑Fi when SSID is set, e.g. datahub status)
+        if not WifiUtil.radio.connected:
+            WifiUtil.connect()
+        # Initial device info to datahub whenever Wi‑Fi is up (including Air Station wifiless + SD log).
+        if WifiUtil.radio.connected:
             data = self.get_initial_info()
             api_url = Config.settings['DATAHUB_TEST_API_URL'] if Config.settings['TEST_MODE'] else Config.settings['DATAHUB_API_URL']
             logger.debug('Try to send initial info to datahub')

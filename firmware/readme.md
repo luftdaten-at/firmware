@@ -78,6 +78,10 @@ Drücke den Reset-Knopf am ESP32, um die Installation abzuschließen.
 
 Neben `settings.toml` gibt es **`startup.toml`** im Firmware-Root (wird mit auf `CIRCUITPY` kopiert). Darin stehen **Booleans für einmalige Aktionen**: Flag auf `true` setzen, Gerät neu starten; **nach erfolgreicher Ausführung setzt die Firmware das Flag wieder auf `false`**. Bei Fehler bleibt das Flag `true` für einen erneuten Versuch.
 
+### `sensors.toml` (Sensor-Scan-Snapshot)
+
+Die Firmware legt beim Start **`sensors.toml`** auf dem CIRCUITPY-Root an bzw. überschreibt sie (**Zeitpunkt**, **Battery-Monitor ja/nein**, **Liste der gefundenen Sensor-Modell-IDs** als Zahlen). Die Datei gehört nicht zu `settings.toml`/`Config`. Weicht der aktuelle I²C-Scan vom zuletzt gespeicherten Snapshot ab, wird der Scan **einmal** wiederholt. Details: [`docs/settings.md`](../docs/settings.md).
+
 - **`SYNC_RTC_FROM_NTP`**: Wenn `true` und in `settings.toml` **SSID** (und ggf. Passwort) gesetzt sind: einmalig **WLAN verbinden**, Zeit per **NTP** holen, **CircuitPython-RTC** und ggf. **DS3231** setzen (wie bei `WifiUtil.set_RTC()`), danach Flag löschen. Nützlich z. B. für **Wifiless**-Stationen, die sonst nie verbinden.
 
 - **`DETECT_MODEL_FROM_SENSORS`**: Wenn `true`: nach dem **I2C-Sensor-Scan** wird **`MODEL`** in `settings.toml` aus der Hardware abgeleitet, **`set_api_url()`** aufgerufen, danach wird das Flag wieder **`false`**. **Übergang:** **`MODEL == -1`** in `settings.toml` löst dieselbe Erkennung weiterhin aus (wie bisher). Zusätzlich kann man mit diesem Flag **einmalig neu erkennen**, auch wenn **`MODEL`** schon eine konkrete ID hat (überschreibt `MODEL`).
@@ -85,6 +89,8 @@ Neben `settings.toml` gibt es **`startup.toml`** im Firmware-Root (wird mit auf 
 - **`UPLOAD_SD_LOG_TO_DATAHUB`**: Nur **Air Station mit `WIFILESS_MODE`**: nach dem Sensor-Scan **WLAN** (SSID in `settings.toml`) verbinden, Datei **`SD_LOG_PATH`** (Standard `/sd/measurements.jsonl`) **Zeile für Zeile** als Mess-JSON an die **Datahub-`data/`-API** senden. **Voller Erfolg** (HTTP 200/422 pro Zeile): Logdatei **leeren**, Flag **`false`**. **Teilfehler** oder kein WLAN: Datei unverändert, Flag bleibt **`true`** (erneuter Versuch nach Fix). Leere/fehlende Datei: Flag wird gelöscht (nichts zu tun). Jede **HTTP-Antwort** (Status + gekürzter Body) wird zusätzlich in **`/datahub_upload.log`** auf dem CIRCUITPY-Root angehängt.
 
 - **`CLEAR_SD_CARD`**: Nur **Air Station mit `WIFILESS_MODE`**: nach dem Sensor-Scan und **nach** `UPLOAD_SD_LOG_TO_DATAHUB` (falls aktiv) werden **alle Dateien und Ordner unter `/sd`** gelöscht (kein WLAN nötig). Bei **Erfolg** wird das Flag **`false`**. Bei Fehler (z. B. SD nicht mountbar) bleibt **`true`**. **Vorsicht:** alles auf der SD-Karte im Wurzelverzeichnis geht verloren.
+
+- **`REFRESH_SENSORS`**: Wenn **`true`**: nach dem üblichen I²C‑Sensor‑Probe (inkl. ggf. Wiederholung bei Abweichung von `sensors.toml`) läuft **noch einmal** `get_connected_sensors` + `get_battery_monitor`; danach wird **`sensors.toml`** geschrieben (wie bei jedem Boot) und das Flag nach **erfolgreichem Schreiben** gelöscht. Bei Schreibfehler bleibt **`true`** für einen späteren Versuch.
 
 Wi‑Fi-Zugangsdaten bleiben ausschließlich in **`settings.toml`**.
 

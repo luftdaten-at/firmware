@@ -19,7 +19,9 @@ def get_connected_sensors(i2c):
         from sensors.sensor_bmp390 import Bmp390Sensor
         from sensors.sensor_ltr390 import Ltr390Sensor
         from sensors.sensor_lsm6ds import Lsm6dsSensor
-        #from sensors.sensor_sen66 import Sen66Sensor
+        from sensors.sensor_sen62 import Sen62Sensor
+        from sensors.sensor_sen63c import Sen63cSensor
+        from sensors.sensor_sen66 import Sen66Sensor
         from sensors.sensor_mlx90640 import Mlx90640Sensor
         from sensors.sensor_tsl2591 import Tsl2591Sensor
 
@@ -40,7 +42,9 @@ def get_connected_sensors(i2c):
             Bmp390Sensor(),
             Ltr390Sensor(),
             Lsm6dsSensor(),
-            #Sen66Sensor(),
+            Sen62Sensor(),
+            Sen63cSensor(),
+            Sen66Sensor(),
             Mlx90640Sensor(),
             Tsl2591Sensor(),
         ]
@@ -52,7 +56,48 @@ def get_connected_sensors(i2c):
                 logger.info(f'Found sensor: {sensor.model_id}')
                 connected_sensors[sensor.model_id] = sensor
 
+        if connected_sensors:
+            nums = sorted(connected_sensors.keys())
+            logger.info(
+                "Sensor scan: %d connected — %s"
+                % (len(nums), ", ".join(str(mid) for mid in nums))
+            )
+        else:
+            logger.info("Sensor scan: no sensors connected")
+
         return connected_sensors
+
+
+def log_sensors_startup_summary(sensors, battery_monitor):
+    """Log a single startup block: battery monitor + each sensor by model number and serial."""
+    parts = []
+    if battery_monitor is not None:
+        try:
+            pct = round(battery_monitor.cell_soc())
+            volts = battery_monitor.cell_voltage()
+            parts.append("Battery: OK (%d%%, %.2fV)" % (pct, volts))
+        except Exception as e:
+            parts.append("Battery: present (%s)" % e)
+    else:
+        parts.append("Battery: none")
+
+    if not sensors:
+        parts.append("sensors: none")
+    else:
+        detail = []
+        for s in sorted(sensors, key=lambda x: x.model_id):
+            try:
+                sn = s.get_serial_number()
+            except Exception as e:
+                sn = "(%s)" % e
+            if sn is None:
+                sn = "n/a"
+            detail.append("%s serial=%s" % (s.model_id, sn))
+        parts.append(
+            "sensors (%d): %s" % (len(sensors), "; ".join(detail))
+        )
+
+    logger.info("Sensor scan: " + " | ".join(parts))
 
 
 def get_battery_monitor(i2c):
@@ -79,9 +124,13 @@ def get_model_id_from_sensors(connected_sensors: dict, battery_monitor) -> int:
             device_model = LdProduct.AIR_CUBE
         elif battery_monitor is None:
             device_model = LdProduct.AIR_STATION
-        elif not connected_sensors.get(SensorModel.SEN5X, None):
+        elif not connected_sensors.get(SensorModel.SEN5X, None) and not connected_sensors.get(
+            SensorModel.SEN62, None
+        ) and not connected_sensors.get(SensorModel.SEN63C, None) and not connected_sensors.get(
+            SensorModel.SEN66, None
+        ):
             device_model = LdProduct.AIR_BADGE
         else:
             device_model = LdProduct.AIR_AROUND
-        
+
         return device_model

@@ -52,6 +52,21 @@ class Sen66Sensor(Sensor):
             logger.debug("SEN66 sensor not detected")
             return False
 
+        try:
+            pname = self.sen66_device.get_product_name()
+            if isinstance(pname, (bytes, bytearray)):
+                pname = "".join(
+                    chr(b) if b < 128 else "?" for b in pname
+                ).split("\x00")[0].strip()
+            else:
+                pname = str(pname).strip()
+            if "SEN66" not in pname.upper():
+                logger.debug(f"SEN66 probe: product mismatch ({pname!r}); skipping")
+                return False
+        except Exception as e:
+            logger.debug(f"SEN66 product name read failed: {type(e).__name__}: {e}")
+            return False
+
         logger.debug("SEN66 initialised, resetting, waiting 1 second before read")
         self.sen66_device.device_reset()
         time.sleep(1.0)
@@ -65,7 +80,9 @@ class Sen66Sensor(Sensor):
             version[0],  # firmware major
             version[1],  # firmware minor
         ])
-        self.sensor_details.extend(serial.encode('ascii'))
+        sn = str(serial)
+        safe = "".join(c if ord(c) < 128 else "?" for c in sn)
+        self.sensor_details.extend(safe.encode("ascii"))
 
         self.sen66_device.start_continuous_measurement()
         return True

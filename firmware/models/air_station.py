@@ -355,6 +355,14 @@ class AirStation(LdProductModel):
     def tick(self):
         if Config.is_air_station_wifiless():
             self._tick_wifiless()
+            # When Wi‑Fi is available (e.g. NTP / upload bootstrap), still push logs via datahub ``status/``.
+            if WifiUtil.radio.connected:
+                if (
+                    not self.last_api_send
+                    or time.monotonic() - self.last_api_send > self.api_send_interval
+                ):
+                    self.last_api_send = time.monotonic()
+                    self.send_to_api()
             return
 
         if not Config.runtime_settings['rtc_is_set'] and WifiUtil.radio.connected:
