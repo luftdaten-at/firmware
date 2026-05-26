@@ -12,6 +12,15 @@ from enums import LdProduct, Color, BleCommands, AirstationConfigFlags, Dimensio
 from logger import logger
 from led_controller import RepeatMode
 from sd_logger import append_measurement_jsonl
+from startup_actions import is_startup_flag_true, set_startup_flag
+
+_AIR_STATION_BLE_STARTUP_TOML = (
+    (AirstationConfigFlags.SYNC_RTC_FROM_NTP, "SYNC_RTC_FROM_NTP"),
+    (AirstationConfigFlags.DETECT_MODEL_FROM_SENSORS, "DETECT_MODEL_FROM_SENSORS"),
+    (AirstationConfigFlags.UPLOAD_SD_LOG_TO_DATAHUB, "UPLOAD_SD_LOG_TO_DATAHUB"),
+    (AirstationConfigFlags.CLEAR_SD_CARD, "CLEAR_SD_CARD"),
+    (AirstationConfigFlags.REFRESH_SENSORS, "REFRESH_SENSORS"),
+)
 
 class AirStation(LdProductModel):
     NEOPIXEL_PIN = board.IO8
@@ -149,6 +158,12 @@ class AirStation(LdProductModel):
             if flag == AirstationConfigFlags.API_KEY:
                 Config.settings['api_key'] = data[idx:idx + length].decode('utf-8')
 
+            for startup_flag, startup_key in _AIR_STATION_BLE_STARTUP_TOML:
+                if flag == startup_flag:
+                    if length == 4:
+                        v_raw = struct.unpack('>i', data[idx : idx + length])[0]
+                        set_startup_flag(startup_key, bool(v_raw))
+
             if (
                 AirstationConfigFlags.MQTT_ENABLED
                 <= flag
@@ -191,6 +206,11 @@ class AirStation(LdProductModel):
         if cert and str(cert).strip():
             mqtt_rows.append((AirstationConfigFlags.MQTT_CERTIFICATE_PATH, str(cert).strip()))
 
+        startup_rows = [
+            (flt, 1 if is_startup_flag_true(key) else 0)
+            for flt, key in _AIR_STATION_BLE_STARTUP_TOML
+        ]
+
         for flag, value in [
             (AirstationConfigFlags.AUTO_UPDATE_MODE, Config.settings['auto_update_mode']),
             (AirstationConfigFlags.BATTERY_SAVE_MODE, Config.settings['battery_save_mode']),
@@ -205,7 +225,7 @@ class AirStation(LdProductModel):
             ),
             (AirstationConfigFlags.API_KEY, str(Config.settings.get('api_key') or '')),
             (AirstationConfigFlags.DEVICE_ID, self.device_id),
-        ] + mqtt_rows:
+        ] + mqtt_rows + startup_rows:
             value_bytes = value.encode('utf-8') if isinstance(value, str) else struct.pack('>i', value)
             data.append(flag)
             data.append(len(value_bytes) if isinstance(value, str) else struct.calcsize('>i'))

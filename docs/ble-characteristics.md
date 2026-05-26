@@ -2,7 +2,7 @@
 
 This document describes the **single custom BLE service** and its characteristics as implemented in [`firmware/ld_service.py`](../firmware/ld_service.py), how [`firmware/main.py`](../firmware/main.py) fills read characteristics, and how writes on the command characteristic are interpreted.
 
-**Station-only TLV flags** (Air Station command **`0x06`**, read on **`air_station_configuration`**): **`18`** `TZ` (IANA timezone), **`19`** `LOG_LEVEL` (e.g. `DEBUG` / `INFO`), **`20`** `api_key` (UTF-8 Datahub/API token — **sensitive**; mask in UIs). These update `settings.toml` like other TLV string fields. **`0x07`** (Cube) stays **MQTT-only** (`9…17`).
+**Station-only TLV flags** (Air Station command **`0x06`**, read on **`air_station_configuration`**): **`18`** `TZ` (IANA timezone), **`19`** `LOG_LEVEL` (e.g. `DEBUG` / `INFO`), **`20`** `api_key` (UTF-8 Datahub/API token — **sensitive**; mask in UIs). These update `settings.toml` like other TLV string fields. **`21…25`** map to one-shot booleans in [`startup.toml`](../firmware/startup.toml) (not `Config` / `settings.toml`). **`0x07`** (Cube) stays **MQTT-only** (`9…17`).
 
 ---
 
@@ -92,8 +92,15 @@ After the leading `0x06`, the payload is a sequence of records:
 | `18` | `TZ` | `TZ` | UTF-8 string (IANA timezone name, e.g. `Europe/Vienna`; see [`docs/settings.md`](settings.md)) |
 | `19` | `LOG_LEVEL` | `LOG_LEVEL` | UTF-8 string (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`; unknown names behave like `DEBUG`; see [`docs/settings.md`](settings.md)) |
 | `20` | `API_KEY` | `api_key` | UTF-8 string (Datahub/API workshop token; **sensitive** — included in read-back TLV for apps) |
+| `21` | `SYNC_RTC_FROM_NTP` | `startup.toml` key **`SYNC_RTC_FROM_NTP`** | int32 (`0` → `false`, non-zero → `true`) |
+| `22` | `DETECT_MODEL_FROM_SENSORS` | **`DETECT_MODEL_FROM_SENSORS`** | int32 (same) |
+| `23` | `UPLOAD_SD_LOG_TO_DATAHUB` | **`UPLOAD_SD_LOG_TO_DATAHUB`** | int32 (same); **sensitive** (datahub upload from SD) |
+| `24` | `CLEAR_SD_CARD` | **`CLEAR_SD_CARD`** | int32 (same); **destructive** |
+| `25` | `REFRESH_SENSORS` | **`REFRESH_SENSORS`** | int32 (same) |
 
-**Read-back:** [`AirStation.send_configuration`](../firmware/models/air_station.py) assigns `air_station_configuration` from `encode_configurations()`, which includes flags `0…5`, **`18…20`**, `8` (`DEVICE_ID`), and **non-secret** MQTT fields `9…13`, `15`, `16`, and `17` when set — **not** SSID, Wi‑Fi password, or **`MQTT_PASSWORD`** (secrets are not mirrored on the read characteristic). **`api_key` (flag `20`)** is mirrored so companion apps can read it; treat like a credential on the wire.
+**`startup.toml` flags (`21…25`):** Writes update `/startup.toml` on CIRCUITPY (same semantics as editing the file over USB). **Boot timing:** [`main()`](../firmware/main.py) and [`run_startup_actions()`](../firmware/startup_actions.py) read these flags near the **start** of boot. A BLE write **during a running session** persists the flag for the **next reboot** — it does **not** re-run the corresponding startup helpers mid-loop. **Recommendation:** change the TLV, disconnect, then **reboot** (or cycle power). Read-back exposes the **current persisted** booleans (`0`/`1` int32) so apps can show pending one-shots. BLE is **unauthenticated** in this protocol; **`23`** and **`24`** are particularly sensitive.
+
+**Read-back:** [`AirStation.send_configuration`](../firmware/models/air_station.py) assigns `air_station_configuration` from `encode_configurations()`, which includes flags `0…5`, **`18…25`**, `8` (`DEVICE_ID`), and **non-secret** MQTT fields `9…13`, `15`, `16`, and `17` when set — **not** SSID, Wi‑Fi password, or **`MQTT_PASSWORD`** (secrets are not mirrored on the read characteristic). **`api_key` (flag `20`)** is mirrored so companion apps can read it; treat like a credential on the wire.
 
 **Air Cube MQTT TLV:** the same flag bytes and value encodings as in the table (`9…17`) are used after command byte **`0x07`**. There is **no** `air_station_configuration` read characteristic on the Cube; the app may keep local UI state after write. See [`docs/companion-app-mqtt-ble.md`](companion-app-mqtt-ble.md).
 

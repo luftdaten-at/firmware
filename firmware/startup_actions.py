@@ -143,6 +143,16 @@ def clear_startup_flag(key: str) -> None:
         logger.error(f"Could not clear {STARTUP_TOML} flag {key!r}: {e}")
 
 
+def set_startup_flag(key: str, value: bool) -> None:
+    """Write a boolean startup.toml key (requires USB FS remount on CircuitPython)."""
+    try:
+        remount("/", False)
+        put(key, value, toml=STARTUP_TOML)
+        remount("/", True)
+    except OSError as e:
+        logger.error(f"Could not set {STARTUP_TOML} flag {key!r}={value!r}: {e}")
+
+
 def _append_datahub_upload_log(msg: str) -> None:
     """Append one line to ``DATAHUB_UPLOAD_LOG_PATH`` on CIRCUITPY root; never raises."""
     rw = False
