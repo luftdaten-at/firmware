@@ -115,6 +115,14 @@ def main():
     # Initialize BLE, define custom service
     ble = BLERadio()
     service = LdService()
+    export_read_value_fn = None
+    try:
+        from sd_ble_export import export_read_value
+
+        export_read_value_fn = export_read_value
+        service.sd_log_export_characteristic = export_read_value()
+    except Exception as e:
+        logger.warning(f"SD BLE export characteristic init skipped ({type(e).__name__}: {e})")
 
     # init ble name
     ble.name = "Luftdaten.at-" + Config.settings['mac']
@@ -321,6 +329,9 @@ def main():
             logger.debug("Disconnected from BLE device")
         
         device.connection_update(ble_connected)
+
+        if ble_connected and Config.is_air_station_wifiless() and export_read_value_fn is not None:
+            service.sd_log_export_characteristic = export_read_value_fn()
 
         if button.value and not button_state:
             button_state = True

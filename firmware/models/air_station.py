@@ -104,6 +104,14 @@ class AirStation(LdProductModel):
         cmd, *data = command
 
         data = bytearray(data)
+        if cmd == BleCommands.SD_LOG_EXPORT:
+            from sd_ble_export import export_read_value, handle_export_command
+
+            act = data[0] if len(data) >= 1 else 255
+            handle_export_command(act, Config.is_air_station_wifiless())
+            self.ble_service.sd_log_export_characteristic = export_read_value()
+            return
+
         if cmd == BleCommands.SET_AIR_STATION_CONFIGURATION:
             wifi_config_changed = self.decode_configuration(data) 
 

@@ -59,6 +59,14 @@ class LdService(Service):
         max_length=512,
     )
 
+    # Wifiless Air Station SD JSONL log export chunks (READ after command 0x08)
+    sd_log_export_characteristic = Characteristic(
+        uuid=VendorUUID("51d2f8a4-91c6-53b2-a6e5-71829304a505"),
+        properties=Characteristic.READ,
+        initial_value=bytes([0, 0, 0, 0]),
+        max_length=512,
+    )
+
     '''
     # For requesting that the device take a new sensor reading
     trigger_reading_characteristic_2 = StreamIn(

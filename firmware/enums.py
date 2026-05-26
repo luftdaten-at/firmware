@@ -314,6 +314,7 @@ class BleCommands:
     TURN_ON_STATUS_LIGHT = 0x05
     SET_AIR_STATION_CONFIGURATION = 0x06
     SET_CUBE_MQTT_CONFIGURATION = 0x07
+    SD_LOG_EXPORT = 0x08
 
 class AirstationConfigFlags:
     AUTO_UPDATE_MODE = 0  # Bit 0
