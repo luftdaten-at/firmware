@@ -1,4 +1,4 @@
-"""BLE chunk export for Air Station wifiless JSONL log (see docs/ble-characteristics.md)."""
+"""BLE chunk export for wifiless JSONL log on Air Station / Air Cube (see docs/ble-characteristics.md)."""
 
 import os
 import struct
@@ -41,7 +41,7 @@ def _stat_size(path):
 
 def _sd_log_file_nonempty():
     """True if mounted SD has the JSONL path with size > 0."""
-    if not Config.is_air_station_wifiless():
+    if not Config.is_wifiless():
         return False
     from sd_logger import ensure_sd_mounted
 

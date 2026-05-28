@@ -79,8 +79,8 @@ Per-device and user-facing options: Wi‑Fi, model, keys, Air Station behaviour,
 | `SCL` | integer / null | Optional I²C SCL pin override (board default used if `null`). |
 | `SDA` | integer / null | Optional I²C SDA pin override. |
 | `BUTTON_PIN` | integer / null | Optional user button GPIO override. |
-| `WIFILESS_MODE` | boolean / string | **Air Station only:** if true, skip normal Wi‑Fi/API loop and log measurements to SD (see [`readme.md`](../firmware/readme.md)). String values `1` / `true` / `yes` (case-insensitive) are accepted. |
-| `SD_LOG_PATH` | string | **Air Station wifiless:** JSONL log path (default `/sd/measurements.jsonl`). |
+| `WIFILESS_MODE` | boolean / string | **Air Station or Air Cube:** if true, skip normal Wi‑Fi/API measurement loop and log measurements to SD (see [`readme.md`](../firmware/readme.md)). String values `1` / `true` / `yes` (case-insensitive) are accepted. |
+| `SD_LOG_PATH` | string | **Wifiless (Station/Cube):** JSONL log path (default `/sd/measurements.jsonl`). |
 | `ROLLBACK` | boolean | Set by the upgrade path / `code.py` to force booting the previous firmware bundle after a failed update. |
 | `TZ` | string | Time zone for **API / log string** timestamps only (`format_iso8601_tz`). **Default:** `Europe/Vienna` if unset or empty. Recognised values: `UTC` / `GMT` / `Etc/UTC` / `Zulu` (case-insensitive) → suffix `Z`; `Europe/Vienna` → EU DST, suffix `+01:00` / `+02:00` (Datahub and related backends accept these numeric offsets, not only `Z`). The **RTC** after Wi‑Fi NTP is always set to **UTC** wall fields ([`WifiUtil.set_RTC()`](../firmware/wifi_client.py) uses `NTP.utc_ns`, not `NTP.datetime`, because the latter calls `time.localtime` and can shift fields on some ports). `time.time()` is therefore Unix UTC; `TZ` does not change the RTC. |
 | `MQTT_ENABLED` | boolean | When true, **Air Cube** and **Air Station (Wi‑Fi)** publish [Home Assistant MQTT discovery](https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery) and measurement state to the configured broker (see [`docs/mqtt-home-assistant.md`](mqtt-home-assistant.md)). |
@@ -95,9 +95,11 @@ Per-device and user-facing options: Wi‑Fi, model, keys, Air Station behaviour,
 
 The same MQTT keys can be written from the **mobile app over BLE** on supported firmware; see [`docs/ble-characteristics.md`](ble-characteristics.md) and [`docs/companion-app-mqtt-ble.md`](companion-app-mqtt-ble.md).
 
-### Air Station (Wi‑Fi) — when data is not transmitted
+### Air Station (Wi‑Fi) — transmission and offline buffering
 
-In [`AirStation.tick()`](../firmware/models/air_station.py), measurements are only queued when **all** of the following hold: Wi‑Fi is connected, `runtime_settings['rtc_is_set']` is true (NTP after Wi‑Fi), and **`latitude`**, **`longitude`**, and **`height`** in `settings.toml` are each **non-empty** after stripping whitespace (so `"0"` is allowed for height). Otherwise the firmware logs **`DATA CANNOT BE TRANSMITTED, not all configurations have been made:`** followed by a semicolon-separated list of what is still missing (that warning is emitted again only when the set of blockers changes).
+When **Wi‑Fi is disconnected**, the station still measures on `measurement_interval` and appends each payload to **`SD_LOG_PATH`** (default `/sd/measurements.jsonl`). On reconnect, [`replay_pending_jsonl_to_api()`](../firmware/sd_logger.py) POSTs buffered lines to the station **`data/`** API (HTTP **200** or **422** removes each line).
+
+When **Wi‑Fi is connected**, live measurements are only queued when **`runtime_settings['rtc_is_set']`** is true (NTP after Wi‑Fi), and **`latitude`**, **`longitude`**, and **`height`** in `settings.toml` are each **non-empty** after stripping whitespace (so `"0"` is allowed for height). Otherwise the firmware logs **`DATA CANNOT BE TRANSMITTED, not all configurations have been made:`** followed by a semicolon-separated list of what is still missing (that warning is emitted again only when the set of blockers changes). SD backlog upload still runs whenever Wi‑Fi is up.
 
 ### `MODEL` values (`LdProduct`)
 

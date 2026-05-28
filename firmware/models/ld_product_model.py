@@ -2,6 +2,7 @@ import storage
 import json
 import os
 import gc
+import time
 
 from logger import logger
 from wifi_client import WifiUtil
@@ -178,6 +179,51 @@ class LdProductModel:
         """Process a command received on the BLE command characteristic."""
         pass
     
+    def _handle_wifiless_button_upload(self):
+        """Wifiless Air Station/Cube: connect Wi-Fi and upload SD JSONL backlog."""
+        from sd_logger import wifiless_button_upload_sd_backlog
+        from enums import Color
+        from led_controller import RepeatMode
+
+        self.status_led.show_led({
+            'repeat_mode': RepeatMode.TIMES,
+            'repeat_times': 1,
+            'elements': [
+                {'color': Color.BLUE, 'duration': 0.2},
+            ],
+        })
+        result = wifiless_button_upload_sd_backlog()
+        if result == 'ok':
+            self.send_to_api()
+            self.last_api_send = time.monotonic()
+            self.status_led.show_led({
+                'repeat_mode': RepeatMode.TIMES,
+                'repeat_times': 1,
+                'elements': [
+                    {'color': Color.GREEN, 'duration': 0.5},
+                ],
+            })
+            logger.info('Wifiless button upload: SD backlog sent')
+        elif result == 'partial':
+            self.status_led.show_led({
+                'repeat_mode': RepeatMode.TIMES,
+                'repeat_times': 2,
+                'elements': [
+                    {'color': Color.YELLOW, 'duration': 0.3},
+                    {'color': Color.OFF, 'duration': 0.2},
+                ],
+            })
+            logger.warning('Wifiless button upload: incomplete (some SD lines remain)')
+        else:
+            self.status_led.show_led({
+                'repeat_mode': RepeatMode.TIMES,
+                'repeat_times': 1,
+                'elements': [
+                    {'color': Color.RED, 'duration': 0.5},
+                ],
+            })
+            logger.warning(f'Wifiless button upload failed ({result})')
+
     def receive_button_press(self):
         """Process a button press event."""
         pass

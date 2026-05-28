@@ -189,7 +189,7 @@ class Config:
     @staticmethod
     def set_api_url():
         if Config.settings['MODEL'] == LdProduct.AIR_STATION:
-            if Config.is_air_station_wifiless():
+            if Config.is_wifiless():
                 # Wifiless: measurements (and SD replay) go to the datahub base URL like portable models.
                 Config.runtime_settings['API_URL'] = (
                     Config.settings['DATAHUB_TEST_API_URL']
@@ -236,11 +236,19 @@ class Config:
             Config.settings['device_id'] = f'{Config.settings['mac']}{Config.settings["MANUFACTURE_ID"]}'
 
     @staticmethod
+    def is_wifiless():
+        """Air Station or Air Cube with SD logging (``WIFILESS_MODE`` in settings.toml)."""
+        if Config.settings.get("MODEL") not in (LdProduct.AIR_STATION, LdProduct.AIR_CUBE):
+            return False
+        v = Config.settings.get("WIFILESS_MODE", False)
+        if isinstance(v, str):
+            return v.strip().lower() in ("1", "true", "yes")
+        return bool(v)
+
+    @staticmethod
     def is_air_station_wifiless():
         """Air Station with SD logging instead of WiFi/API (see WIFILESS_MODE in settings.toml)."""
-        if Config.settings.get('MODEL') != LdProduct.AIR_STATION:
-            return False
-        v = Config.settings.get('WIFILESS_MODE', False)
-        if isinstance(v, str):
-            return v.strip().lower() in ('1', 'true', 'yes')
-        return bool(v)
+        return (
+            Config.settings.get("MODEL") == LdProduct.AIR_STATION
+            and Config.is_wifiless()
+        )

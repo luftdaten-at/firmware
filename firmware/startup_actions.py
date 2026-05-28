@@ -251,9 +251,9 @@ def _run_upload_sd_log_to_datahub() -> None:
     """POST wifiless SD JSONL log to station data/ API; see startup.toml UPLOAD_SD_LOG_TO_DATAHUB."""
     if not _truthy(fetch_startup_flag("UPLOAD_SD_LOG_TO_DATAHUB")):
         return
-    if not Config.is_air_station_wifiless():
+    if not Config.is_wifiless():
         logger.warning(
-            "startup.toml: UPLOAD_SD_LOG_TO_DATAHUB is set but device is not Air Station wifiless; skipping"
+            "startup.toml: UPLOAD_SD_LOG_TO_DATAHUB is set but device is not wifiless (Air Station/Cube); skipping"
         )
         return
     if not Config.settings.get("SSID"):
@@ -346,9 +346,9 @@ def _run_clear_sd_card() -> None:
     """Remove all content under ``/sd``; see startup.toml CLEAR_SD_CARD."""
     if not _truthy(fetch_startup_flag("CLEAR_SD_CARD")):
         return
-    if not Config.is_air_station_wifiless():
+    if not Config.is_wifiless():
         logger.warning(
-            "startup.toml: CLEAR_SD_CARD is set but device is not Air Station wifiless; skipping"
+            "startup.toml: CLEAR_SD_CARD is set but device is not wifiless (Air Station/Cube); skipping"
         )
         return
     from sd_logger import clear_sd_volume

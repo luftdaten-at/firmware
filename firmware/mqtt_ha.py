@@ -32,9 +32,9 @@ def _coerce_bool(val, default=False):
 
 def _model_supported():
     m = Config.settings.get("MODEL")
-    if m == LdProduct.AIR_CUBE:
-        return True
-    if m == LdProduct.AIR_STATION and not Config.is_air_station_wifiless():
+    if Config.is_wifiless():
+        return False
+    if m in (LdProduct.AIR_CUBE, LdProduct.AIR_STATION):
         return True
     return False
 

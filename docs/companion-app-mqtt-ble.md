@@ -9,7 +9,7 @@ This document is for the **mobile app** (separate repository). It specifies how 
 | Service | `0931b4b5-2917-4a8d-9e72-23103c09ac29` |
 | Command (write) | `030ff8b1-1e45-4ae6-bf36-3bca4c38cdba` (`trigger_reading_characteristic_2`) |
 | Air Station config (read) | `b47b0cdf-0ced-49a9-86a5-d78a03ea7674` (`air_station_configuration`) |
-| SD log export (read, wifiless Station only; command `0x08`) | `51d2f8a4-91c6-53b2-a6e5-71829304a505` (`sd_log_export_characteristic`) |
+| SD log export (read, wifiless Station/Cube; command `0x08`) | `51d2f8a4-91c6-53b2-a6e5-71829304a505` (`sd_log_export_characteristic`) |
 
 Full GATT documentation: [`docs/ble-characteristics.md`](ble-characteristics.md).
 
@@ -29,7 +29,7 @@ After the **first command byte**, the payload is a sequence of records:
 | Model | First byte | Notes |
 |-------|------------|--------|
 | **Air Station** | `0x06` (`SET_AIR_STATION_CONFIGURATION`) | Wi‑Fi / geo (`0…8`), MQTT (`9…17`), **`TZ` (`18`)**, **`LOG_LEVEL` (`19`)**, **`api_key` (`20`)**, **`startup.toml` one-shots (`21…25`)** — not MQTT; **`0x07` not** used for these. Also **`0x08`** (**`SD_LOG_EXPORT`**) to stream **wifiless** SD JSONL (see BLE doc UUID `51d2f8a4-…`). |
-| **Air Cube** | `0x07` (`SET_CUBE_MQTT_CONFIGURATION`) | **MQTT flags only** (`9…17`); same record layout as Station. |
+| **Air Cube** | `0x07` (`SET_CUBE_MQTT_CONFIGURATION`) | **MQTT flags only** (`9…17`); same record layout as Station. **`0x08`** (**`SD_LOG_EXPORT`**) when **wifiless** to stream SD JSONL. |
 
 ## MQTT flags (`AirstationConfigFlags`)
 
