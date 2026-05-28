@@ -101,9 +101,10 @@ def _persist_sensors_toml(connected_sensors, battery_monitor) -> None:
     esc_ts = ts.replace("\\", "\\\\").replace('"', '\\"')
     content = (
         "# Snapshot from last boot I2C sensor probe.\n"
-        f'LAST_SENSOR_SCAN_AT = "{esc_ts}"\n'
-        f"BATTERY_MONITOR = {str(bat_on).lower()}\n"
-        f'CONNECTED_SENSOR_IDS = "{ids_str}"\n'
+        'LAST_SENSOR_SCAN_AT = "%s"\n'
+        "BATTERY_MONITOR = %s\n"
+        'CONNECTED_SENSOR_IDS = "%s"\n'
+        % (esc_ts, str(bat_on).lower(), ids_str)
     )
     rw = False
     write_ok = False
@@ -318,13 +319,23 @@ def _run_upload_sd_log_to_datahub() -> None:
                 except Exception as e:
                     logger.error(f"SD log line {line_no}: request failed ({e}); aborting upload")
                     _append_datahub_upload_log(
-                        f"{_datahub_upload_timestamp()} line={line_no} http=error "
-                        f"{type(e).__name__}: {e}"
+                        "%s line=%s http=error %s: %s"
+                        % (
+                            _datahub_upload_timestamp(),
+                            line_no,
+                            type(e).__name__,
+                            e,
+                        )
                     )
                     return
                 _append_datahub_upload_log(
-                    f"{_datahub_upload_timestamp()} line={line_no} http={resp.status_code} "
-                    f"body={_datahub_response_body_snippet(resp)}"
+                    "%s line=%s http=%s body=%s"
+                    % (
+                        _datahub_upload_timestamp(),
+                        line_no,
+                        resp.status_code,
+                        _datahub_response_body_snippet(resp),
+                    )
                 )
                 if resp.status_code not in (200, 422):
                     logger.error(

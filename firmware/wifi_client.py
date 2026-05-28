@@ -107,9 +107,16 @@ class WifiUtil:
             Config.runtime_settings['rtc_is_set'] = True  # Assuming rtc_is_set is a setting in your Config
 
             logger.debug(
-                "RTC set from NTP (UTC): "
-                f"{rtc_st.tm_year:04d}-{rtc_st.tm_mon:02d}-{rtc_st.tm_mday:02d}T"
-                f"{rtc_st.tm_hour:02d}:{rtc_st.tm_min:02d}:{rtc_st.tm_sec:02d}Z epoch={utc_s}"
+                "RTC set from NTP (UTC): %04d-%02d-%02dT%02d:%02d:%02dZ epoch=%s"
+                % (
+                    rtc_st.tm_year,
+                    rtc_st.tm_mon,
+                    rtc_st.tm_mday,
+                    rtc_st.tm_hour,
+                    rtc_st.tm_min,
+                    rtc_st.tm_sec,
+                    utc_s,
+                )
             )
 
             # set rtc module
@@ -231,8 +238,8 @@ class WifiUtil:
         sl = payload.get("sensor_list")
         n_sl = len(sl) if isinstance(sl, list) else 0
         return (
-            f"toplevel={'+'.join(top) or '-'} {ident}"
-            f"sensors={n_sens} status_list={n_log} sensor_list={n_sl}"
+            "toplevel=%s %ssensors=%s status_list=%s sensor_list=%s"
+            % ("+".join(top) or "-", ident, n_sens, n_log, n_sl)
         )
 
     @staticmethod
