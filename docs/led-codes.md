@@ -86,7 +86,7 @@ When WiFi is up, `rtc_is_set`, and latitude, longitude, and height are all set:
 | SD write OK, RTC **not** set from DS3231 | **Solid yellow** (timestamps may be wrong). |
 | SD mount or write fails | **Red / yellow** 0.5 s alternating. |
 
-**Button:** connect Wi-Fi (requires **`SSID`** in `settings.toml`) and upload buffered SD JSONL. **Blue** flash while starting; **green** pulse on success; **yellow** blink if some lines remain; **red** pulse if Wi-Fi is unavailable or connect fails.
+**Button:** connect Wi-Fi (configured SSID or workshop fallback **`luftdaten.at`**) and upload buffered SD JSONL. **Blue** flash while starting; **green** pulse on success; **yellow** blink if some lines remain; **red** pulse if Wi-Fi connect fails.
 
 ---
 

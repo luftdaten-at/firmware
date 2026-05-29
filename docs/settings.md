@@ -64,7 +64,7 @@ Per-device and user-facing options: Wi‑Fi, model, keys, Air Station behaviour,
 | `mac` | string / null | Wi‑Fi interface MAC (hex, uppercase). If `null` on first boot, firmware fills it from the radio and persists it. |
 | `api_key` | string / null | Device API key for backends. If `null`, firmware generates a random key and saves it. |
 | `device_id` | string / null | Public device identifier. If `null`, set to `{mac}{MANUFACTURE_ID}` during `Config.init()`. |
-| `SSID` | string | Wi‑Fi network name (empty if unused). |
+| `SSID` | string | Wi‑Fi network name (empty if unused). If **unset** or **not visible in a scan**, [`WifiUtil.connect()`](../firmware/wifi_client.py) falls back to **`luftdaten.at`** / **`clientpassword`**. |
 | `PASSWORD` | string | Wi‑Fi pre-shared key. If empty, firmware may use **enterprise** credentials below when all three are set. |
 | `TEST_MODE` | boolean | If true: staging station URL, staging datahub, staging update server, and related test endpoints. |
 | `CALIBRATION_MODE` | boolean / null | Calibration flag from settings or API. If `null`, runtime calibration is inferred when `SSID == "luftdaten.at"`. |

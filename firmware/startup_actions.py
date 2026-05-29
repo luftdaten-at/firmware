@@ -203,12 +203,6 @@ def _run_sync_rtc_from_ntp() -> None:
     val = fetch_startup_flag("SYNC_RTC_FROM_NTP")
     if val is None or not _truthy(val):
         return
-    if not Config.settings.get("SSID"):
-        logger.warning(
-            "startup.toml: SYNC_RTC_FROM_NTP is true but SSID is empty; "
-            "set Wi-Fi in settings.toml and reboot."
-        )
-        return
     logger.info("startup.toml: SYNC_RTC_FROM_NTP — connecting for NTP time sync")
     if WifiUtil.connect():
         logger.info("startup.toml: WiFi/NTP sync succeeded; clearing SYNC_RTC_FROM_NTP")
@@ -255,11 +249,6 @@ def _run_upload_sd_log_to_datahub() -> None:
     if not Config.is_wifiless():
         logger.warning(
             "startup.toml: UPLOAD_SD_LOG_TO_DATAHUB is set but device is not wifiless (Air Station/Cube); skipping"
-        )
-        return
-    if not Config.settings.get("SSID"):
-        logger.warning(
-            "startup.toml: UPLOAD_SD_LOG_TO_DATAHUB requires SSID in settings.toml; skipping"
         )
         return
 

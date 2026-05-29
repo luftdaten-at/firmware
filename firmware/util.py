@@ -111,7 +111,6 @@ def get_battery_monitor(i2c):
                 break
             except:
                 pass
-            logger.info("Waiting 0.5 seconds before retrying battery monitor initialization")
             time.sleep(0.5)
         
         return battery_monitor

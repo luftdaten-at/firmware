@@ -200,15 +200,11 @@ def replay_pending_jsonl_to_api() -> bool:
 
 
 def wifiless_button_upload_sd_backlog() -> str:
-    """Connect Wi-Fi (if ``SSID`` set) and POST buffered SD JSONL measurements.
+    """Connect Wi-Fi and POST buffered SD JSONL measurements.
 
-    Returns ``ok``, ``no_ssid``, ``connect_failed``, or ``partial`` (some lines remain).
+    Returns ``ok``, ``connect_failed``, or ``partial`` (some lines remain).
     """
     from wifi_client import WifiUtil
-
-    if not Config.settings.get("SSID"):
-        logger.info("Wifiless button upload: no SSID configured")
-        return "no_ssid"
 
     logger.info("Wifiless button upload: connecting Wi-Fi")
     if not WifiUtil.connect():
