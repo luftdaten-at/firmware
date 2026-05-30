@@ -95,11 +95,11 @@ Per-device and user-facing options: Wi‑Fi, model, keys, Air Station behaviour,
 
 The same MQTT keys can be written from the **mobile app over BLE** on supported firmware; see [`docs/ble-characteristics.md`](ble-characteristics.md) and [`docs/companion-app-mqtt-ble.md`](companion-app-mqtt-ble.md).
 
-### Air Station (Wi‑Fi) — transmission and offline buffering
+### Air Station / Air Cube (Wi‑Fi, not wifiless) — offline buffering
 
-When **Wi‑Fi is disconnected**, the station still measures on `measurement_interval` and appends each payload to **`SD_LOG_PATH`** (default `/sd/measurements.jsonl`). On reconnect, [`replay_pending_jsonl_to_api()`](../firmware/sd_logger.py) POSTs buffered lines to the station **`data/`** API (HTTP **200** or **422** removes each line).
+When **Wi‑Fi is disconnected** and **`WIFILESS_MODE`** is false, measurements are appended as compact JSONL to **`/json_queue/measurements.ndjson`** (512 KiB cap; oldest lines dropped). On reconnect, [`replay_pending_to_api()`](../firmware/measurement_temp_queue.py) POSTs buffered payloads (HTTP **200** or **422** removes each line). Wifiless mode continues to use SD (`SD_LOG_PATH`) instead.
 
-When **Wi‑Fi is connected**, live measurements are only queued when **`runtime_settings['rtc_is_set']`** is true (NTP after Wi‑Fi), and **`latitude`**, **`longitude`**, and **`height`** in `settings.toml` are each **non-empty** after stripping whitespace (so `"0"` is allowed for height). Otherwise the firmware logs **`DATA CANNOT BE TRANSMITTED, not all configurations have been made:`** followed by a semicolon-separated list of what is still missing (that warning is emitted again only when the set of blockers changes). SD backlog upload still runs whenever Wi‑Fi is up.
+When **Wi‑Fi is connected**, Air Station live measurements are only queued when **`runtime_settings['rtc_is_set']`** is true (NTP after Wi‑Fi), and **`latitude`**, **`longitude`**, and **`height`** in `settings.toml` are each **non-empty** after stripping whitespace (so `"0"` is allowed for height). Otherwise the firmware logs **`DATA CANNOT BE TRANSMITTED, not all configurations have been made:`** followed by a semicolon-separated list of what is still missing (that warning is emitted again only when the set of blockers changes). The **`/json_queue`** backlog upload still runs whenever Wi‑Fi is up.
 
 ### `MODEL` values (`LdProduct`)
 

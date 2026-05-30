@@ -11,7 +11,8 @@ from ld_service import LdService
 from enums import LdProduct, Color, BleCommands, AirstationConfigFlags, Dimension, SensorModel
 from logger import logger
 from led_controller import RepeatMode
-from sd_logger import append_measurement_jsonl, replay_pending_jsonl_to_api
+from sd_logger import append_measurement_jsonl
+from measurement_temp_queue import append_offline_measurement, replay_pending_to_api
 from startup_actions import is_startup_flag_true, set_startup_flag
 
 _AIR_STATION_BLE_STARTUP_TOML = (
@@ -273,7 +274,7 @@ class AirStation(LdProductModel):
             reasons.append("WiFi not connected")
         return reasons
 
-    def _show_sd_log_status_led(self, ok: bool) -> None:
+    def _show_offline_buffer_led(self, ok: bool) -> None:
         if ok and Config.runtime_settings.get("rtc_is_set"):
             self.status_led.show_led({
                 'repeat_mode': RepeatMode.PERMANENT,
@@ -295,7 +296,7 @@ class AirStation(LdProductModel):
             })
 
     def _tick_wifi_offline(self) -> None:
-        """Wi‑Fi down in normal mode: keep measuring and buffer JSONL on SD."""
+        """Wi-Fi down in normal mode: keep measuring and buffer in ``/json_queue``."""
         cur_time = time.monotonic()
         if (
             not self.last_measurement
@@ -303,8 +304,8 @@ class AirStation(LdProductModel):
         ):
             self.last_measurement = cur_time
             data = self.get_json()
-            ok = append_measurement_jsonl(data)
-            self._show_sd_log_status_led(ok)
+            ok = append_offline_measurement(data)
+            self._show_offline_buffer_led(ok)
 
     @staticmethod
     def _api_location_dict():
@@ -399,7 +400,7 @@ class AirStation(LdProductModel):
             self.last_measurement = cur_time
             data = self.get_json()
             ok = append_measurement_jsonl(data)
-            self._show_sd_log_status_led(ok)
+            self._show_offline_buffer_led(ok)
 
     def tick(self):
         if Config.is_wifiless():
@@ -418,7 +419,7 @@ class AirStation(LdProductModel):
             WifiUtil.set_RTC()
 
         if WifiUtil.radio.connected:
-            replay_pending_jsonl_to_api()
+            replay_pending_to_api()
 
         if not WifiUtil.radio.connected:
             self._tick_wifi_offline()

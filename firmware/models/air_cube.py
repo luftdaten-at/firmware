@@ -14,6 +14,7 @@ from config import Config
 from enums import Color, LdProduct, Dimension, Quality, BleCommands
 from sensors.virtual_sensor import VirtualSensor
 from sd_logger import append_measurement_jsonl
+from measurement_temp_queue import append_offline_measurement
 
 
 class AirCube(LdProductModel): 
@@ -27,7 +28,7 @@ class AirCube(LdProductModel):
         super().__init__(ble_service, sensors, battery_monitor)
         self.polling_interval = 0.01
         self.model_id = LdProduct.AIR_CUBE
-        self.ble_on = False
+        self.ble_on = True
         self.number_of_leds = 5
         self.last_measurement = None
 
@@ -108,15 +109,6 @@ class AirCube(LdProductModel):
     def receive_button_press(self):
         if Config.is_wifiless():
             self._handle_wifiless_button_upload()
-            return
-        self.ble_on = not self.ble_on
-        if self.ble_on:
-            self.status_led.show_led({
-                'repeat_mode': RepeatMode.PERMANENT,
-                'color': Color.BLUE,
-            })
-        else:
-            self.status_led.turn_off_led()
             
     def _updateLed(self, led_id, value, color_cutoffs, colors):
         color = colors[0]
@@ -129,32 +121,7 @@ class AirCube(LdProductModel):
         }, led_id)
 
     def connection_update(self, connected):
-        if Config.is_wifiless():
-            if connected:
-                self.status_led.show_led({
-                    'repeat_mode': RepeatMode.FOREVER,
-                    'elements': [
-                        {'color': Color.GREEN, 'duration': 0.5},
-                        {'color': Color.OFF, 'duration': 0.5},
-                    ],
-                })
-            return
-        if connected:
-            self.status_led.show_led({
-                'repeat_mode': RepeatMode.TIMES,
-                'repeat_times': 1,
-                'elements': [
-                    {'color': Color.GREEN, 'duration': 1},
-                ],
-            })
-        else:
-            self.status_led.show_led({
-                'repeat_mode': RepeatMode.FOREVER,
-                'elements': [
-                    {'color': Color.CYAN, 'duration': 0.5},
-                    {'color': Color.OFF, 'duration': 0.5},
-                ],
-            })
+        pass
 
     def get_info(self):
         device_info = super().get_info()
@@ -168,6 +135,7 @@ class AirCube(LdProductModel):
     def _send_status_if_due(self):
         if not WifiUtil.radio.connected:
             return
+        self._flush_offline_temp_queue()
         if (
             not self.last_api_send
             or time.monotonic() - self.last_api_send > self.api_send_interval
@@ -274,14 +242,16 @@ class AirCube(LdProductModel):
 
             # send to API
             data = self.get_json()
-            self.save_data(data=data)
             if WifiUtil.radio.connected:
+                self.save_data(data=data)
                 self.send_to_api()
                 self.last_api_send = time.monotonic()
                 from mqtt_ha import MqttHa
                 MqttHa.publish_measurement_if_enabled(data)
+            else:
+                append_offline_measurement(data)
 
-            # This reads sensors & updates BLE - we don't mind updating BLE even if it is off
+            # This reads sensors & updates BLE
             self.update_ble_sensor_data()
             self._update_sensor_value_leds()
 

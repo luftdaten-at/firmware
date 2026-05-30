@@ -114,19 +114,16 @@ Source: [`firmware/models/air_badge.py`](../firmware/models/air_badge.py).
 
 Source: [`firmware/models/air_cube.py`](../firmware/models/air_cube.py). Five NeoPixels; `LedController` is constructed with `n=5`.
 
-### BLE (`connection_update`)
+### BLE
 
-| BLE | Pattern |
-| --- | --- |
-| **Connected** | One **green** pulse, **1 s** (`TIMES`, single repeat). |
-| **Disconnected** | **Cyan / off** 0.5 s forever. |
+BLE is **always on** (`ble_on = True`). `connection_update` is a no-op — **connect / disconnect does not change the status LEDs** (sensor strip on indices **1–4** is unchanged).
 
 ### Button
 
 | Mode | Effect |
 | --- | --- |
-| **Wifiless** | Connect Wi-Fi and upload SD JSONL backlog (see wifiless section above). Does **not** toggle BLE. |
-| **Normal** | Toggles `ble_on` — **solid blue** when on, `turn_off_led()` when off. |
+| **Wifiless** | Connect Wi-Fi and upload SD JSONL backlog (see wifiless section above). |
+| **Normal** | No effect. |
 
 ### BLE read (sensor / battery)
 

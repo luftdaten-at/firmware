@@ -4,6 +4,7 @@ import os
 import gc
 import time
 
+from enums import LdProduct
 from logger import logger
 from wifi_client import WifiUtil
 from config import Config
@@ -113,7 +114,20 @@ class LdProductModel:
 
         return data
     
+    def _flush_offline_temp_queue(self):
+        """Upload compact JSONL backlog from ``/json_queue`` when Wi-Fi is up."""
+        if Config.is_wifiless():
+            return
+        if Config.settings.get("MODEL") not in (LdProduct.AIR_STATION, LdProduct.AIR_CUBE):
+            return
+        if not WifiUtil.radio.connected:
+            return
+        from measurement_temp_queue import replay_pending_to_api
+
+        replay_pending_to_api()
+
     def send_to_api(self):
+        self._flush_offline_temp_queue()
         # contains all measurements that failed to transmitt
         new_measurements = {}
         for tag, data_list in self.measurements.items():
