@@ -101,9 +101,10 @@ def _persist_sensors_toml(connected_sensors, battery_monitor) -> None:
     esc_ts = ts.replace("\\", "\\\\").replace('"', '\\"')
     content = (
         "# Snapshot from last boot I2C sensor probe.\n"
-        f'LAST_SENSOR_SCAN_AT = "{esc_ts}"\n'
-        f"BATTERY_MONITOR = {str(bat_on).lower()}\n"
-        f'CONNECTED_SENSOR_IDS = "{ids_str}"\n'
+        'LAST_SENSOR_SCAN_AT = "%s"\n'
+        "BATTERY_MONITOR = %s\n"
+        'CONNECTED_SENSOR_IDS = "%s"\n'
+        % (esc_ts, str(bat_on).lower(), ids_str)
     )
     rw = False
     write_ok = False
@@ -202,12 +203,6 @@ def _run_sync_rtc_from_ntp() -> None:
     val = fetch_startup_flag("SYNC_RTC_FROM_NTP")
     if val is None or not _truthy(val):
         return
-    if not Config.settings.get("SSID"):
-        logger.warning(
-            "startup.toml: SYNC_RTC_FROM_NTP is true but SSID is empty; "
-            "set Wi-Fi in settings.toml and reboot."
-        )
-        return
     logger.info("startup.toml: SYNC_RTC_FROM_NTP — connecting for NTP time sync")
     if WifiUtil.connect():
         logger.info("startup.toml: WiFi/NTP sync succeeded; clearing SYNC_RTC_FROM_NTP")
@@ -251,14 +246,9 @@ def _run_upload_sd_log_to_datahub() -> None:
     """POST wifiless SD JSONL log to station data/ API; see startup.toml UPLOAD_SD_LOG_TO_DATAHUB."""
     if not _truthy(fetch_startup_flag("UPLOAD_SD_LOG_TO_DATAHUB")):
         return
-    if not Config.is_air_station_wifiless():
+    if not Config.is_wifiless():
         logger.warning(
-            "startup.toml: UPLOAD_SD_LOG_TO_DATAHUB is set but device is not Air Station wifiless; skipping"
-        )
-        return
-    if not Config.settings.get("SSID"):
-        logger.warning(
-            "startup.toml: UPLOAD_SD_LOG_TO_DATAHUB requires SSID in settings.toml; skipping"
+            "startup.toml: UPLOAD_SD_LOG_TO_DATAHUB is set but device is not wifiless (Air Station/Cube); skipping"
         )
         return
 
@@ -318,13 +308,23 @@ def _run_upload_sd_log_to_datahub() -> None:
                 except Exception as e:
                     logger.error(f"SD log line {line_no}: request failed ({e}); aborting upload")
                     _append_datahub_upload_log(
-                        f"{_datahub_upload_timestamp()} line={line_no} http=error "
-                        f"{type(e).__name__}: {e}"
+                        "%s line=%s http=error %s: %s"
+                        % (
+                            _datahub_upload_timestamp(),
+                            line_no,
+                            type(e).__name__,
+                            e,
+                        )
                     )
                     return
                 _append_datahub_upload_log(
-                    f"{_datahub_upload_timestamp()} line={line_no} http={resp.status_code} "
-                    f"body={_datahub_response_body_snippet(resp)}"
+                    "%s line=%s http=%s body=%s"
+                    % (
+                        _datahub_upload_timestamp(),
+                        line_no,
+                        resp.status_code,
+                        _datahub_response_body_snippet(resp),
+                    )
                 )
                 if resp.status_code not in (200, 422):
                     logger.error(
@@ -346,9 +346,9 @@ def _run_clear_sd_card() -> None:
     """Remove all content under ``/sd``; see startup.toml CLEAR_SD_CARD."""
     if not _truthy(fetch_startup_flag("CLEAR_SD_CARD")):
         return
-    if not Config.is_air_station_wifiless():
+    if not Config.is_wifiless():
         logger.warning(
-            "startup.toml: CLEAR_SD_CARD is set but device is not Air Station wifiless; skipping"
+            "startup.toml: CLEAR_SD_CARD is set but device is not wifiless (Air Station/Cube); skipping"
         )
         return
     from sd_logger import clear_sd_volume

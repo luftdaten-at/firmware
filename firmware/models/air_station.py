@@ -12,6 +12,7 @@ from enums import LdProduct, Color, BleCommands, AirstationConfigFlags, Dimensio
 from logger import logger
 from led_controller import RepeatMode
 from sd_logger import append_measurement_jsonl
+from measurement_temp_queue import append_offline_measurement, replay_pending_to_api
 from startup_actions import is_startup_flag_true, set_startup_flag
 
 _AIR_STATION_BLE_STARTUP_TOML = (
@@ -67,7 +68,7 @@ class AirStation(LdProductModel):
         # Wifiless: SD/RTC status in ``_tick_wifiless`` owns the LED. Do not apply the
         # non-wifiless "BLE disconnected" cyan blink here — ``main`` calls this every loop
         # *before* ``tick()``, which would override green/yellow/red SD feedback.
-        if Config.is_air_station_wifiless():
+        if Config.is_wifiless():
             if connected:
                 self.status_led.show_led({
                     'repeat_mode': RepeatMode.FOREVER,
@@ -108,7 +109,7 @@ class AirStation(LdProductModel):
             from sd_ble_export import export_read_value, handle_export_command
 
             act = data[0] if len(data) >= 1 else 255
-            handle_export_command(act, Config.is_air_station_wifiless())
+            handle_export_command(act, Config.is_wifiless())
             self.ble_service.sd_log_export_characteristic = export_read_value()
             return
 
@@ -242,7 +243,8 @@ class AirStation(LdProductModel):
         return data
 
     def receive_button_press(self):
-        pass
+        if Config.is_wifiless():
+            self._handle_wifiless_button_upload()
 
     @staticmethod
     def _settings_toml_key_blank(key: str) -> bool:
@@ -252,11 +254,9 @@ class AirStation(LdProductModel):
             return True
         return not str(v).strip()
 
-    def _data_transmit_blockers(self) -> list[str]:
-        """Human-readable reasons Air Station Wi‑Fi mode will not enqueue measurements."""
+    def _configuration_blockers(self) -> list[str]:
+        """Reasons live API upload cannot run (excluding Wi‑Fi link)."""
         reasons = []
-        if not WifiUtil.radio.connected:
-            reasons.append("WiFi not connected")
         if not Config.runtime_settings.get("rtc_is_set"):
             reasons.append("RTC not set (connect Wi‑Fi and wait for NTP)")
         if self._settings_toml_key_blank("latitude"):
@@ -266,6 +266,46 @@ class AirStation(LdProductModel):
         if self._settings_toml_key_blank("height"):
             reasons.append("height unset or empty in settings.toml")
         return reasons
+
+    def _data_transmit_blockers(self) -> list[str]:
+        """Human-readable reasons Air Station Wi‑Fi mode will not enqueue measurements."""
+        reasons = list(self._configuration_blockers())
+        if not WifiUtil.radio.connected:
+            reasons.append("WiFi not connected")
+        return reasons
+
+    def _show_offline_buffer_led(self, ok: bool) -> None:
+        if ok and Config.runtime_settings.get("rtc_is_set"):
+            self.status_led.show_led({
+                'repeat_mode': RepeatMode.PERMANENT,
+                'color': Color.GREEN_LOW,
+            })
+        elif ok:
+            logger.warning('SD log write ok but RTC not set; timestamps may be wrong')
+            self.status_led.show_led({
+                'repeat_mode': RepeatMode.PERMANENT,
+                'color': Color.YELLOW,
+            })
+        else:
+            self.status_led.show_led({
+                'repeat_mode': RepeatMode.FOREVER,
+                'elements': [
+                    {'color': Color.RED, 'duration': 0.5},
+                    {'color': Color.YELLOW, 'duration': 0.5},
+                ],
+            })
+
+    def _tick_wifi_offline(self) -> None:
+        """Wi-Fi down in normal mode: keep measuring and buffer in ``/json_queue``."""
+        cur_time = time.monotonic()
+        if (
+            not self.last_measurement
+            or cur_time - self.last_measurement >= Config.settings['measurement_interval']
+        ):
+            self.last_measurement = cur_time
+            data = self.get_json()
+            ok = append_offline_measurement(data)
+            self._show_offline_buffer_led(ok)
 
     @staticmethod
     def _api_location_dict():
@@ -360,28 +400,10 @@ class AirStation(LdProductModel):
             self.last_measurement = cur_time
             data = self.get_json()
             ok = append_measurement_jsonl(data)
-            if ok and Config.runtime_settings['rtc_is_set']:
-                self.status_led.show_led({
-                    'repeat_mode': RepeatMode.PERMANENT,
-                    'color': Color.GREEN_LOW,
-                })
-            elif ok and not Config.runtime_settings['rtc_is_set']:
-                logger.warning('Wifiless: SD write ok but RTC not set from DS3231; timestamps may be wrong')
-                self.status_led.show_led({
-                    'repeat_mode': RepeatMode.PERMANENT,
-                    'color': Color.YELLOW,
-                })
-            else:
-                self.status_led.show_led({
-                    'repeat_mode': RepeatMode.FOREVER,
-                    'elements': [
-                        {'color': Color.RED, 'duration': 0.5},
-                        {'color': Color.YELLOW, 'duration': 0.5},
-                    ],
-                })
+            self._show_offline_buffer_led(ok)
 
     def tick(self):
-        if Config.is_air_station_wifiless():
+        if Config.is_wifiless():
             self._tick_wifiless()
             # When Wi‑Fi is available (e.g. NTP / upload bootstrap), still push logs via datahub ``status/``.
             if WifiUtil.radio.connected:
@@ -396,7 +418,14 @@ class AirStation(LdProductModel):
         if not Config.runtime_settings['rtc_is_set'] and WifiUtil.radio.connected:
             WifiUtil.set_RTC()
 
-        blockers = self._data_transmit_blockers()
+        if WifiUtil.radio.connected:
+            replay_pending_to_api()
+
+        if not WifiUtil.radio.connected:
+            self._tick_wifi_offline()
+            return
+
+        blockers = self._configuration_blockers()
         if blockers:
             bkey = tuple(blockers)
             if bkey != self._last_xmit_blockers_key:

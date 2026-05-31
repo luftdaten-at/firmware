@@ -81,8 +81,10 @@ class I2cSensorMock:
             # we should get a chance to react on commands in the mock even though we do not return data
             return self._response_provider.handle_command(cmd, data, 0)
         nr_of_bytes = 2 * nr_of_bytes_to_return // 3
-        logger.info(f'device {self._response_provider.get_id()}-{self._id} received'
-                    f'read request for {nr_of_bytes} bytes')
+        logger.info(
+            'device %s-%s received read request for %s bytes'
+            % (self._response_provider.get_id(), self._id, nr_of_bytes)
+        )
 
         rx_data = self._response_provider.handle_command(cmd, data, nr_of_bytes)
         if self._crc is None:

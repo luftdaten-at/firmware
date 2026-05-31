@@ -8,6 +8,9 @@ from ssl import create_default_context
 from adafruit_requests import Session
 from logger import logger
 
+_FALLBACK_SSID = "luftdaten.at"
+_FALLBACK_PASSWORD = "clientpassword"
+
 # New wifi methods
 class WifiUtil:
     radio = wifi_radio
@@ -15,49 +18,132 @@ class WifiUtil:
     sensor_community_session: Session = None
     api_session: Session = None
 
+    @staticmethod
+    def _normalize_ssid(raw):
+        if raw is None:
+            return ""
+        if isinstance(raw, bytes):
+            try:
+                return raw.decode("utf-8").strip()
+            except UnicodeError:
+                return ""
+        return str(raw).strip()
+
+    @staticmethod
+    def _ssid_visible(ssid):
+        """Return True if ``ssid`` appears in a Wi-Fi scan (False if clearly absent)."""
+        target = WifiUtil._normalize_ssid(ssid)
+        if not target:
+            return False
+        if not hasattr(wifi_radio, "start_scanning_networks"):
+            return True
+        try:
+            for network in wifi_radio.start_scanning_networks():
+                if WifiUtil._normalize_ssid(network.ssid) == target:
+                    return True
+        except Exception as e:
+            logger.debug(
+                "WiFi scan failed (%s: %s); will try configured SSID anyway"
+                % (type(e).__name__, e)
+            )
+            return True
+        finally:
+            try:
+                wifi_radio.stop_scanning_networks()
+            except Exception:
+                pass
+        return False
+
+    @staticmethod
+    def _fallback_credentials():
+        return (_FALLBACK_SSID, _FALLBACK_PASSWORD, None)
+
+    @staticmethod
+    def _resolve_connect_credentials():
+        """Pick SSID/password (or enterprise tuple) from settings, with workshop fallback."""
+        primary = WifiUtil._normalize_ssid(Config.settings.get("SSID"))
+        if not primary:
+            logger.info(
+                "WiFi: no SSID configured, trying fallback %s" % _FALLBACK_SSID
+            )
+            return WifiUtil._fallback_credentials()
+
+        if not WifiUtil._ssid_visible(primary):
+            if primary != _FALLBACK_SSID:
+                logger.info(
+                    "WiFi: %s not found in scan, trying fallback %s"
+                    % (primary, _FALLBACK_SSID)
+                )
+            return WifiUtil._fallback_credentials()
+
+        password = Config.settings.get("PASSWORD")
+        if password:
+            return (primary, password, None)
+        if all([
+            Config.settings.get("EAP_IDENTITY"),
+            Config.settings.get("EAP_USERNAME"),
+            Config.settings.get("EAP_PASSWORD"),
+        ]):
+            return (
+                primary,
+                None,
+                (
+                    Config.settings["EAP_IDENTITY"],
+                    Config.settings["EAP_USERNAME"],
+                    Config.settings["EAP_PASSWORD"],
+                ),
+            )
+        return (primary, None, None)
+
+    @staticmethod
+    def _connect_radio(ssid, password=None, eap=None):
+        if eap:
+            wifi_radio.connect(
+                ssid,
+                eap_identity=eap[0],
+                eap_username=eap[1],
+                eap_password=eap[2],
+            )
+        elif password:
+            wifi_radio.connect(ssid, password)
+        else:
+            wifi_radio.connect(ssid)
+
+    @staticmethod
+    def _init_sessions():
+        WifiUtil.pool = SocketPool(WifiUtil.radio)
+
+        api_context = create_default_context()
+        with open(Config.runtime_settings["CERTIFICATE_PATH"], "r") as f:
+            api_context.load_verify_locations(cadata=f.read())
+        WifiUtil.api_session = Session(WifiUtil.pool, api_context)
+
+        sensor_community_context = create_default_context()
+        with open(Config.runtime_settings["SENSOR_COMMUNITY_CERTIFICATE_PATH"], "r") as f:
+            sensor_community_context.load_verify_locations(cadata=f.read())
+        WifiUtil.sensor_community_session = Session(WifiUtil.pool, sensor_community_context)
 
     @staticmethod
     def connect() -> bool:
-        if not Config.settings['SSID']:
+        creds = WifiUtil._resolve_connect_credentials()
+        if not creds:
             return False
+        ssid, password, eap = creds
         try:
-            if Config.settings['PASSWORD']:
-                logger.debug(f'Try to connect to: {Config.settings['SSID']} with standard encryption')
-                wifi_radio.connect(Config.settings['SSID'], Config.settings['PASSWORD'])
-                logger.debug('Connection established to Wifi', Config.settings['SSID'])
-            elif all([
-                Config.settings['EAP_IDENTITY'],
-                Config.settings['EAP_USERNAME'],
-                Config.settings['EAP_PASSWORD'],
-            ]):
-                logger.debug(f'Try to connect to: {Config.settings['SSID']} with enterprise encryption')
-                wifi_radio.connect(
-                    Config.settings['SSID'],
-                    eap_identity = Config.settings['EAP_IDENTITY'],
-                    eap_username = Config.settings['EAP_USERNAME'],
-                    eap_password = Config.settings['EAP_PASSWORD'],
-                )
+            if eap:
+                logger.debug("Try to connect to: %s with enterprise encryption" % ssid)
+                WifiUtil._connect_radio(ssid, eap=eap)
+            elif password:
+                logger.debug("Try to connect to: %s with standard encryption" % ssid)
+                WifiUtil._connect_radio(ssid, password=password)
             else:
-                logger.debug(f'Try to connect to: {Config.settings['SSID']} without encryption')
-                wifi_radio.connect(Config.settings['SSID'])
-
-            # init pool
-            WifiUtil.pool = SocketPool(WifiUtil.radio)
-
-            # init sessions
-            api_context = create_default_context()
-            with open(Config.runtime_settings['CERTIFICATE_PATH'], 'r') as f:
-                api_context.load_verify_locations(cadata=f.read())
-            WifiUtil.api_session = Session(WifiUtil.pool, api_context)
-
-            sensor_community_context = create_default_context()
-            with open(Config.runtime_settings['SENSOR_COMMUNITY_CERTIFICATE_PATH'], 'r') as f:
-                sensor_community_context.load_verify_locations(cadata=f.read())
-            WifiUtil.sensor_community_session = Session(WifiUtil.pool, sensor_community_context)
-
+                logger.debug("Try to connect to: %s without encryption" % ssid)
+                WifiUtil._connect_radio(ssid)
+            logger.debug("Connection established to Wifi %s" % ssid)
+            WifiUtil._init_sessions()
         except ConnectionError:
-            logger.error("Failed to connect to WiFi with provided credentials")
-            return False 
+            logger.error("Failed to connect to WiFi (ssid=%s)" % ssid)
+            return False
 
         WifiUtil.set_RTC()
 
@@ -107,9 +193,16 @@ class WifiUtil:
             Config.runtime_settings['rtc_is_set'] = True  # Assuming rtc_is_set is a setting in your Config
 
             logger.debug(
-                "RTC set from NTP (UTC): "
-                f"{rtc_st.tm_year:04d}-{rtc_st.tm_mon:02d}-{rtc_st.tm_mday:02d}T"
-                f"{rtc_st.tm_hour:02d}:{rtc_st.tm_min:02d}:{rtc_st.tm_sec:02d}Z epoch={utc_s}"
+                "RTC set from NTP (UTC): %04d-%02d-%02dT%02d:%02d:%02dZ epoch=%s"
+                % (
+                    rtc_st.tm_year,
+                    rtc_st.tm_mon,
+                    rtc_st.tm_mday,
+                    rtc_st.tm_hour,
+                    rtc_st.tm_min,
+                    rtc_st.tm_sec,
+                    utc_s,
+                )
             )
 
             # set rtc module
@@ -231,8 +324,8 @@ class WifiUtil:
         sl = payload.get("sensor_list")
         n_sl = len(sl) if isinstance(sl, list) else 0
         return (
-            f"toplevel={'+'.join(top) or '-'} {ident}"
-            f"sensors={n_sens} status_list={n_log} sensor_list={n_sl}"
+            "toplevel=%s %ssensors=%s status_list=%s sensor_list=%s"
+            % ("+".join(top) or "-", ident, n_sens, n_log, n_sl)
         )
 
     @staticmethod

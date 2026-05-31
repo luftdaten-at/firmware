@@ -15,8 +15,7 @@ def get_connected_sensors(i2c):
         from sensors.sensor_sht31 import Sht31Sensor
         from sensors.sensor_sht4x import Sht4xSensor
         from sensors.sensor_sgp40 import Sgp40Sensor
-        from sensors.sensor_bmp388 import Bmp388Sensor
-        from sensors.sensor_bmp390 import Bmp390Sensor
+        from sensors.sensor_bmp3xx import Bmp3xxSensor
         from sensors.sensor_ltr390 import Ltr390Sensor
         from sensors.sensor_lsm6ds import Lsm6dsSensor
         from sensors.sensor_sen62 import Sen62Sensor
@@ -38,8 +37,7 @@ def get_connected_sensors(i2c):
             Scd4xSensor(),
             Sht4xSensor(),
             Sgp40Sensor(),
-            Bmp388Sensor(),
-            Bmp390Sensor(),
+            Bmp3xxSensor(),
             Ltr390Sensor(),
             Lsm6dsSensor(),
             Sen62Sensor(),
@@ -111,7 +109,6 @@ def get_battery_monitor(i2c):
                 break
             except:
                 pass
-            logger.info("Waiting 0.5 seconds before retrying battery monitor initialization")
             time.sleep(0.5)
         
         return battery_monitor

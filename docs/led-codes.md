@@ -78,13 +78,15 @@ When WiFi is up, `rtc_is_set`, and latitude, longitude, and height are all set:
 | Preconditions OK | **Solid `GREEN_LOW`** while the transmit path is active. |
 | Preconditions fail | **Blue / red** 0.5 s alternating (same as startup “blocked” look). |
 
-### Wifiless mode (`WIFILESS_MODE` + Air Station model)
+### Wifiless mode (`WIFILESS_MODE` + Air Station or Air Cube)
 
 | Condition | Pattern |
 | --- | --- |
 | SD log write OK and RTC set | **Solid `GREEN_LOW`**. |
 | SD write OK, RTC **not** set from DS3231 | **Solid yellow** (timestamps may be wrong). |
 | SD mount or write fails | **Red / yellow** 0.5 s alternating. |
+
+**Button:** connect Wi-Fi (configured SSID or workshop fallback **`luftdaten.at`**) and upload buffered SD JSONL. **Blue** flash while starting; **green** pulse on success; **yellow** blink if some lines remain; **red** pulse if Wi-Fi connect fails.
 
 ---
 
@@ -112,19 +114,16 @@ Source: [`firmware/models/air_badge.py`](../firmware/models/air_badge.py).
 
 Source: [`firmware/models/air_cube.py`](../firmware/models/air_cube.py). Five NeoPixels; `LedController` is constructed with `n=5`.
 
-### BLE (`connection_update`)
+### BLE
 
-| BLE | Pattern |
+BLE is **always on** (`ble_on = True`). `connection_update` is a no-op — **connect / disconnect does not change the status LEDs** (sensor strip on indices **1–4** is unchanged).
+
+### Button
+
+| Mode | Effect |
 | --- | --- |
-| **Connected** | One **green** pulse, **1 s** (`TIMES`, single repeat). |
-| **Disconnected** | **Cyan / off** 0.5 s forever. |
-
-### Button (toggles `ble_on`)
-
-| `ble_on` | Effect |
-| --- | --- |
-| **On** | **Solid blue** on the LED strip (via `show_led` / default pattern for the controller). |
-| **Off** | Calls `turn_off_led()` — intended to turn status lighting off (see `LedController` / BLE commands for related hooks). |
+| **Wifiless** | Connect Wi-Fi and upload SD JSONL backlog (see wifiless section above). |
+| **Normal** | No effect. |
 
 ### BLE read (sensor / battery)
 

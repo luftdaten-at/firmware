@@ -30,7 +30,7 @@ All characteristics use **vendor UUIDs** (same namespace as the service). `max_l
 | `device_status_characteristic` | `77db81d9-9773-49b4-aa17-16a2f93e95f2` | READ | Four bytes: battery flag, SOC %, voltage×10, error code ([`update_ble_battery_status`](../firmware/models/ld_product_model.py)). |
 | `sensor_info_characteristic` | `13fa8751-57af-4597-a0bb-b202f6111ae6` | READ | Concatenation of each sensor’s [`get_device_info()`](../firmware/sensors/sensor.py). If no sensors: `bytes([0x06])`. |
 | `trigger_reading_characteristic_2` | `030ff8b1-1e45-4ae6-bf36-3bca4c38cdba` | WRITE, WRITE_NO_RESPONSE | **Command input:** first byte is [`BleCommands`](#ble-commands). Payload is read once per loop in [`main.py`](../firmware/main.py), then cleared. |
-| `sd_log_export_characteristic` | `51d2f8a4-91c6-53b2-a6e5-71829304a505` | READ | **Air Station wifiless:** Chunked lines from [`SD_LOG_PATH`](../firmware/sd_logger.py) JSONL ([`sd_ble_export`](../firmware/sd_ble_export.py)). Idle **READ** exposes non-empty bit; write **`0x08`** then READ to stream. |
+| `sd_log_export_characteristic` | `51d2f8a4-91c6-53b2-a6e5-71829304a505` | READ | **Wifiless Station/Cube:** Chunked lines from [`SD_LOG_PATH`](../firmware/sd_logger.py) JSONL ([`sd_ble_export`](../firmware/sd_ble_export.py)). Idle **READ** exposes non-empty bit; write **`0x08`** then READ to stream. |
 
 ---
 
@@ -54,13 +54,13 @@ Both receive the **same** byte buffer.
 | `0x05` | `TURN_ON_STATUS_LIGHT` | LED controller. |
 | `0x06` | `SET_AIR_STATION_CONFIGURATION` | [`AirStation.receive_command`](../firmware/models/air_station.py): payload after `0x06` is TLV data (next section). |
 | `0x07` | `SET_CUBE_MQTT_CONFIGURATION` | [`AirCube.receive_command`](../firmware/models/air_cube.py): payload after `0x07` is **MQTT-only** TLV records (flags `9…17` only; Station-only flags **`18…25`** use `0x06`). |
-| `0x08` | `SD_LOG_EXPORT` | [`AirStation.receive_command`](../firmware/models/air_station.py) **only** when **wifiless** ([`Config.is_air_station_wifiless()`](../firmware/config.py)): second byte is **`action`** — `0` START (open log from beginning), `1` NEXT (populate read chunk). Ignore on other models (no-op). |
+| `0x08` | `SD_LOG_EXPORT` | [`AirStation.receive_command`](../firmware/models/air_station.py) / [`AirCube.receive_command`](../firmware/models/air_cube.py) when **wifiless** ([`Config.is_wifiless()`](../firmware/config.py)): second byte is **`action`** — `0` START (open log from beginning), `1` NEXT (populate read chunk). Ignore on other models / modes (no-op). |
 
 Air Station does not implement `READ_SENSOR_DATA` in `receive_command`; Station handles `SET_AIR_STATION_CONFIGURATION` and **`SD_LOG_EXPORT`** (wifiless) as above.
 
 ### SD JSONL log export (`0x08`)
 
-**Product / mode:** **Air Station** with **`WIFILESS_MODE`** only. Logs are appended by [`sd_logger.append_measurement_jsonl`](../firmware/sd_logger.py) to **`SD_LOG_PATH`** (default `/sd/measurements.jsonl`).
+**Product / mode:** **Air Station** or **Air Cube** with **`WIFILESS_MODE`**. Logs are appended by [`sd_logger.append_measurement_jsonl`](../firmware/sd_logger.py) to **`SD_LOG_PATH`** (default `/sd/measurements.jsonl`).
 
 **Companion flow:** while connected, **READ** `sd_log_export_characteristic` to see **`status`** **`0`** (idle) and **`flags`** bit **`0`** (`0x01`): set when the JSONL file exists on the mounted SD with **size &gt; 0** (so the app can show “data available” without sending **`0x08`**). To stream: write **`[0x08, 0]`** (START). Then repeat: write **`[0x08, 1]`** (NEXT), **READ** the characteristic, concatenate UTF-8 payload bytes until **`status`** is **`2`** (end of one JSON line), parse JSON. Continue until **`status`** **`3`** (EOF). During an active **`0x08`** transfer, **`status`** is not **`0`**; idle **`flags`** are only meaningful when **`status`** **`0`**.
 

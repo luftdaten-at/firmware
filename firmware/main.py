@@ -156,9 +156,7 @@ def main():
     mqtt_loop_step = None
     if device is not None:
         _m = Config.settings.get("MODEL")
-        if _m == LdProduct.AIR_CUBE or (
-            _m == LdProduct.AIR_STATION and not Config.is_air_station_wifiless()
-        ):
+        if _m in (LdProduct.AIR_CUBE, LdProduct.AIR_STATION) and not Config.is_wifiless():
             from mqtt_ha import MqttHa as _MqttHa
 
             mqtt_loop_step = _MqttHa.loop_step
@@ -294,7 +292,7 @@ def main():
         # perforem ugm2 update mostly for upgrading ugm
         # check if update available
         if (
-            not Config.is_air_station_wifiless()
+            not Config.is_wifiless()
             and WifiUtil.radio.connected
             and (folder := Ugm.check_if_upgrade_available())
         ):
@@ -330,7 +328,7 @@ def main():
         
         device.connection_update(ble_connected)
 
-        if ble_connected and Config.is_air_station_wifiless() and export_read_value_fn is not None:
+        if ble_connected and Config.is_wifiless() and export_read_value_fn is not None:
             service.sd_log_export_characteristic = export_read_value_fn()
 
         if button.value and not button_state:

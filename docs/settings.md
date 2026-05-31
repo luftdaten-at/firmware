@@ -64,7 +64,7 @@ Per-device and user-facing options: Wi‑Fi, model, keys, Air Station behaviour,
 | `mac` | string / null | Wi‑Fi interface MAC (hex, uppercase). If `null` on first boot, firmware fills it from the radio and persists it. |
 | `api_key` | string / null | Device API key for backends. If `null`, firmware generates a random key and saves it. |
 | `device_id` | string / null | Public device identifier. If `null`, set to `{mac}{MANUFACTURE_ID}` during `Config.init()`. |
-| `SSID` | string | Wi‑Fi network name (empty if unused). |
+| `SSID` | string | Wi‑Fi network name (empty if unused). If **unset** or **not visible in a scan**, [`WifiUtil.connect()`](../firmware/wifi_client.py) falls back to **`luftdaten.at`** / **`clientpassword`**. |
 | `PASSWORD` | string | Wi‑Fi pre-shared key. If empty, firmware may use **enterprise** credentials below when all three are set. |
 | `TEST_MODE` | boolean | If true: staging station URL, staging datahub, staging update server, and related test endpoints. |
 | `CALIBRATION_MODE` | boolean / null | Calibration flag from settings or API. If `null`, runtime calibration is inferred when `SSID == "luftdaten.at"`. |
@@ -79,8 +79,8 @@ Per-device and user-facing options: Wi‑Fi, model, keys, Air Station behaviour,
 | `SCL` | integer / null | Optional I²C SCL pin override (board default used if `null`). |
 | `SDA` | integer / null | Optional I²C SDA pin override. |
 | `BUTTON_PIN` | integer / null | Optional user button GPIO override. |
-| `WIFILESS_MODE` | boolean / string | **Air Station only:** if true, skip normal Wi‑Fi/API loop and log measurements to SD (see [`readme.md`](../firmware/readme.md)). String values `1` / `true` / `yes` (case-insensitive) are accepted. |
-| `SD_LOG_PATH` | string | **Air Station wifiless:** JSONL log path (default `/sd/measurements.jsonl`). |
+| `WIFILESS_MODE` | boolean / string | **Air Station or Air Cube:** if true, skip normal Wi‑Fi/API measurement loop and log measurements to SD (see [`readme.md`](../firmware/readme.md)). String values `1` / `true` / `yes` (case-insensitive) are accepted. |
+| `SD_LOG_PATH` | string | **Wifiless (Station/Cube):** JSONL log path (default `/sd/measurements.jsonl`). |
 | `ROLLBACK` | boolean | Set by the upgrade path / `code.py` to force booting the previous firmware bundle after a failed update. |
 | `TZ` | string | Time zone for **API / log string** timestamps only (`format_iso8601_tz`). **Default:** `Europe/Vienna` if unset or empty. Recognised values: `UTC` / `GMT` / `Etc/UTC` / `Zulu` (case-insensitive) → suffix `Z`; `Europe/Vienna` → EU DST, suffix `+01:00` / `+02:00` (Datahub and related backends accept these numeric offsets, not only `Z`). The **RTC** after Wi‑Fi NTP is always set to **UTC** wall fields ([`WifiUtil.set_RTC()`](../firmware/wifi_client.py) uses `NTP.utc_ns`, not `NTP.datetime`, because the latter calls `time.localtime` and can shift fields on some ports). `time.time()` is therefore Unix UTC; `TZ` does not change the RTC. |
 | `MQTT_ENABLED` | boolean | When true, **Air Cube** and **Air Station (Wi‑Fi)** publish [Home Assistant MQTT discovery](https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery) and measurement state to the configured broker (see [`docs/mqtt-home-assistant.md`](mqtt-home-assistant.md)). |
@@ -95,9 +95,11 @@ Per-device and user-facing options: Wi‑Fi, model, keys, Air Station behaviour,
 
 The same MQTT keys can be written from the **mobile app over BLE** on supported firmware; see [`docs/ble-characteristics.md`](ble-characteristics.md) and [`docs/companion-app-mqtt-ble.md`](companion-app-mqtt-ble.md).
 
-### Air Station (Wi‑Fi) — when data is not transmitted
+### Air Station / Air Cube (Wi‑Fi, not wifiless) — offline buffering
 
-In [`AirStation.tick()`](../firmware/models/air_station.py), measurements are only queued when **all** of the following hold: Wi‑Fi is connected, `runtime_settings['rtc_is_set']` is true (NTP after Wi‑Fi), and **`latitude`**, **`longitude`**, and **`height`** in `settings.toml` are each **non-empty** after stripping whitespace (so `"0"` is allowed for height). Otherwise the firmware logs **`DATA CANNOT BE TRANSMITTED, not all configurations have been made:`** followed by a semicolon-separated list of what is still missing (that warning is emitted again only when the set of blockers changes).
+When **Wi‑Fi is disconnected** and **`WIFILESS_MODE`** is false, measurements are appended as compact JSONL to **`/json_queue/measurements.ndjson`** (512 KiB cap; oldest lines dropped). On reconnect, [`replay_pending_to_api()`](../firmware/measurement_temp_queue.py) POSTs buffered payloads (HTTP **200** or **422** removes each line). Wifiless mode continues to use SD (`SD_LOG_PATH`) instead.
+
+When **Wi‑Fi is connected**, Air Station live measurements are only queued when **`runtime_settings['rtc_is_set']`** is true (NTP after Wi‑Fi), and **`latitude`**, **`longitude`**, and **`height`** in `settings.toml` are each **non-empty** after stripping whitespace (so `"0"` is allowed for height). Otherwise the firmware logs **`DATA CANNOT BE TRANSMITTED, not all configurations have been made:`** followed by a semicolon-separated list of what is still missing (that warning is emitted again only when the set of blockers changes). The **`/json_queue`** backlog upload still runs whenever Wi‑Fi is up.
 
 ### `MODEL` values (`LdProduct`)
 
