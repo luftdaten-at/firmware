@@ -19,7 +19,7 @@ def read_bmp3xx_chip_id(i2c, address):
             buf[0] = REGISTER_CHIP_ID
             device.write_then_readinto(buf, buf, out_end=1, in_end=1)
         return buf[0]
-    except OSError:
+    except (OSError, ValueError):
         return None
 
 
