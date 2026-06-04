@@ -39,7 +39,7 @@ class LdService(Service):
     device_status_characteristic = Characteristic(
         uuid=VendorUUID("77db81d9-9773-49b4-aa17-16a2f93e95f2"),
         properties=Characteristic.READ,
-        initial_value=bytes([0, 0, 0, 0]),
+        initial_value=bytes([0, 0, 0, 0, 0]),
         max_length=512,
     )
 

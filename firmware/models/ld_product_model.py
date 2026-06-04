@@ -34,7 +34,8 @@ class LdProductModel:
         self.ble_service = ble_service
         self.sensors = sensors
         self.battery_monitor = battery_monitor
-        self.status = bytearray([0, 0, 0, 0])
+        self.status = bytearray([0, 0, 0, 0, 0])
+        self.physical_sensor_count = 0
         self.last_api_send = None
         self.api_send_interval = 30 # 30 seconds
 
@@ -251,7 +252,11 @@ class LdProductModel:
         """Callback when BLE connection status changes.
         Will be called with False at the start of main loop."""
         pass
-    
+
+    def ble_configuration_incomplete(self) -> bool:
+        """True when required settings for this model are missing (override in subclasses)."""
+        return False
+
     # The following methods do not need to be overridden by subclasses.
     def update_ble_sensor_data(self):
         """Read out sensors values and update BLE characteristic."""
@@ -264,20 +269,26 @@ class LdProductModel:
             vals_array.extend(sensor.get_current_values())
         self.ble_service.sensor_values_characteristic = vals_array
     
-    def update_ble_battery_status(self):
-        """Read battery status and update BLE characteristic."""
-        if self.battery_monitor is not None:
-            self.status[0] = 1 # Has battery status: Yes
-            self.status[1] = round(self.battery_monitor.cell_soc()) # Battery percentage
-            self.status[2] = round(self.battery_monitor.cell_voltage() * 10) # Battery voltage
-        else:
-            self.status[0] = 0 # Has battery status: No
-            self.status[1] = 0
-            self.status[2] = 0
+    def update_ble_device_status(self):
+        """Refresh battery, Wi‑Fi detail, and operational flags on the BLE characteristic."""
+        from ble_status import compute_device_status_bytes
+
+        self.status = bytearray(compute_device_status_bytes(self))
         self.ble_service.device_status_characteristic = self.status
 
+    def update_ble_battery_status(self):
+        """Read battery status and update BLE characteristic (includes operational flags)."""
+        self.update_ble_device_status()
+
     def update_ble_error_status(self, error_code):
-        """Update BLE characteristic with error status."""
-        self.status[3] = error_code
-        self.ble_service.device_status_characteristic = self.status
-        (f"Error status updated: {error_code}")
+        """Legacy: set Wi‑Fi detail byte and refresh full device status."""
+        from enums import BleWifiDetailCode
+
+        WifiUtil.last_wifi_detail = (
+            error_code if error_code in (
+                BleWifiDetailCode.SSID_NOT_SET,
+                BleWifiDetailCode.SSID_NOT_FOUND,
+                BleWifiDetailCode.CONNECT_FAILED,
+            ) else BleWifiDetailCode.CONNECT_FAILED
+        )
+        self.update_ble_device_status()

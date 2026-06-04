@@ -316,6 +316,23 @@ class BleCommands:
     SET_CUBE_MQTT_CONFIGURATION = 0x07
     SD_LOG_EXPORT = 0x08
 
+
+class BleWifiDetailCode:
+    """Byte 3 of ``device_status_characteristic`` when ``WIFI_FAILURE`` is set."""
+    NONE = 0
+    SSID_NOT_SET = 0x01
+    SSID_NOT_FOUND = 0x02
+    CONNECT_FAILED = 0x03
+
+
+class BleOperationalStatusFlags:
+    """Byte 4 bitmask on ``device_status_characteristic``."""
+    CONFIG_INCOMPLETE = 0x01
+    WIFI_FAILURE = 0x02
+    NO_SENSOR = 0x04
+    SSID_CONFIGURED = 0x08
+
+
 class AirstationConfigFlags:
     AUTO_UPDATE_MODE = 0  # Bit 0
     BATTERY_SAVE_MODE = 1  # Bit 1

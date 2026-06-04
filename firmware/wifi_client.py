@@ -2,7 +2,7 @@ import gc
 import time
 from wifi import radio as wifi_radio
 from config import Config
-from enums import LdProduct
+from enums import BleWifiDetailCode, LdProduct
 from socketpool import SocketPool
 from ssl import create_default_context
 from adafruit_requests import Session
@@ -17,6 +17,7 @@ class WifiUtil:
     pool: SocketPool = None 
     sensor_community_session: Session = None
     api_session: Session = None
+    last_wifi_detail = BleWifiDetailCode.NONE
 
     @staticmethod
     def _normalize_ssid(raw):
@@ -59,33 +60,18 @@ class WifiUtil:
         return (_FALLBACK_SSID, _FALLBACK_PASSWORD, None)
 
     @staticmethod
-    def _resolve_connect_credentials():
-        """Pick SSID/password (or enterprise tuple) from settings, with workshop fallback."""
-        primary = WifiUtil._normalize_ssid(Config.settings.get("SSID"))
-        if not primary:
-            logger.info(
-                "WiFi: no SSID configured, trying fallback %s" % _FALLBACK_SSID
-            )
-            return WifiUtil._fallback_credentials()
-
-        if not WifiUtil._ssid_visible(primary):
-            if primary != _FALLBACK_SSID:
-                logger.info(
-                    "WiFi: %s not found in scan, trying fallback %s"
-                    % (primary, _FALLBACK_SSID)
-                )
-            return WifiUtil._fallback_credentials()
-
+    def _credentials_for_ssid(ssid):
+        """Return ``(ssid, password, eap)`` tuple for a resolved SSID string."""
         password = Config.settings.get("PASSWORD")
         if password:
-            return (primary, password, None)
+            return (ssid, password, None)
         if all([
             Config.settings.get("EAP_IDENTITY"),
             Config.settings.get("EAP_USERNAME"),
             Config.settings.get("EAP_PASSWORD"),
         ]):
             return (
-                primary,
+                ssid,
                 None,
                 (
                     Config.settings["EAP_IDENTITY"],
@@ -93,7 +79,31 @@ class WifiUtil:
                     Config.settings["EAP_PASSWORD"],
                 ),
             )
-        return (primary, None, None)
+        return (ssid, None, None)
+
+    @staticmethod
+    def _resolve_connect_credentials():
+        """Pick SSID/password (or enterprise tuple) from settings, with workshop fallback."""
+        primary = WifiUtil._normalize_ssid(Config.settings.get("SSID"))
+        if not primary:
+            WifiUtil.last_wifi_detail = BleWifiDetailCode.SSID_NOT_SET
+            logger.info(
+                "WiFi: no SSID configured, trying fallback %s" % _FALLBACK_SSID
+            )
+            return WifiUtil._fallback_credentials()
+
+        if not WifiUtil._ssid_visible(primary):
+            WifiUtil.last_wifi_detail = BleWifiDetailCode.SSID_NOT_FOUND
+            if primary != _FALLBACK_SSID:
+                logger.info(
+                    "WiFi: %s not found in scan, trying fallback %s"
+                    % (primary, _FALLBACK_SSID)
+                )
+                return WifiUtil._fallback_credentials()
+            return WifiUtil._credentials_for_ssid(primary)
+
+        WifiUtil.last_wifi_detail = BleWifiDetailCode.NONE
+        return WifiUtil._credentials_for_ssid(primary)
 
     @staticmethod
     def _connect_radio(ssid, password=None, eap=None):
@@ -125,8 +135,14 @@ class WifiUtil:
 
     @staticmethod
     def connect() -> bool:
+        if WifiUtil.radio.connected:
+            WifiUtil.last_wifi_detail = BleWifiDetailCode.NONE
+            return True
+
         creds = WifiUtil._resolve_connect_credentials()
         if not creds:
+            if WifiUtil.last_wifi_detail == BleWifiDetailCode.NONE:
+                WifiUtil.last_wifi_detail = BleWifiDetailCode.SSID_NOT_SET
             return False
         ssid, password, eap = creds
         try:
@@ -142,9 +158,11 @@ class WifiUtil:
             logger.debug("Connection established to Wifi %s" % ssid)
             WifiUtil._init_sessions()
         except ConnectionError:
+            WifiUtil.last_wifi_detail = BleWifiDetailCode.CONNECT_FAILED
             logger.error("Failed to connect to WiFi (ssid=%s)" % ssid)
             return False
 
+        WifiUtil.last_wifi_detail = BleWifiDetailCode.NONE
         WifiUtil.set_RTC()
 
         return True

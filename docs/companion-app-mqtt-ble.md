@@ -10,8 +10,9 @@ This document is for the **mobile app** (separate repository). It specifies how 
 | Command (write) | `030ff8b1-1e45-4ae6-bf36-3bca4c38cdba` (`trigger_reading_characteristic_2`) |
 | Air Station config (read) | `b47b0cdf-0ced-49a9-86a5-d78a03ea7674` (`air_station_configuration`) |
 | SD log export (read, wifiless Station/Cube; command `0x08`) | `51d2f8a4-91c6-53b2-a6e5-71829304a505` (`sd_log_export_characteristic`) |
+| Device status (read) | `77db81d9-9773-49b4-aa17-16a2f93e95f2` (`device_status_characteristic`) — 5 bytes: battery, Wi‑Fi detail, operational flags (config / Wi‑Fi / no sensor) |
 
-Full GATT documentation: [`docs/ble-characteristics.md`](ble-characteristics.md).
+Full GATT documentation: [`docs/ble-characteristics.md`](ble-characteristics.md) (see **device_status_characteristic**).
 
 ## TLV encoding (shared)
 
@@ -56,9 +57,21 @@ After the **first command byte**, the payload is a sequence of records:
 - **Capability gating:** hide MQTT UI when firmware version (from `device_info` JSON or binary layout) is below the release that added flags `9…17`.
 - **Security:** prefer **LE Secure Connections / bonding** when exchanging broker passwords over BLE.
 
+## Verification (Wi‑Fi / geo on Air Station)
+
+GATT **write success ≠ settings saved**. After `0x06`:
+
+1. **Device serial** (`LOG_LEVEL = DEBUG`): look for `BLE 0x06 TLV …` and `BLE config applied: …`.
+2. **Read-back** (Station only): read `air_station_configuration` and parse TLV — **latitude/longitude/height** should match; **SSID/password are never** in this blob.
+3. **USB**: open `settings.toml` on CIRCUITPY — confirm `SSID`, `PASSWORD`, `latitude`, `longitude`, `height`.
+4. **Host tools** (this repo): `python3 tools/ble_tlv_reference.py` (valid example packets); `python3 tools/ble_tlv_verify.py <hex>` to parse an app capture.
+
+**Common app bugs:** bitmask instead of per-field TLV; command `0x06` duplicated inside TLV; wrong string `length`; payload &gt; 512 bytes truncated.
+
 ## Related firmware modules
 
-- TLV apply logic: [`firmware/mqtt_ble_tlv.py`](../firmware/mqtt_ble_tlv.py)
+- TLV parse/apply: [`firmware/ble_config_tlv.py`](../firmware/ble_config_tlv.py)
+- MQTT records: [`firmware/mqtt_ble_tlv.py`](../firmware/mqtt_ble_tlv.py)
 - MQTT / HA runtime: [`firmware/mqtt_ha.py`](../firmware/mqtt_ha.py)
 - Air Station decode/encode: [`firmware/models/air_station.py`](../firmware/models/air_station.py)
 - Air Cube command `0x07`: [`firmware/models/air_cube.py`](../firmware/models/air_cube.py)

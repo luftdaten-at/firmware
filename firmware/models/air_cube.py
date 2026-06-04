@@ -64,6 +64,18 @@ class AirCube(LdProductModel):
         
         # add virtual sensor
         sensors.append(vsen)
+
+    def ble_configuration_incomplete(self) -> bool:
+        enabled = Config.settings.get("MQTT_ENABLED")
+        if isinstance(enabled, bool):
+            mqtt_on = enabled
+        elif isinstance(enabled, (int, float)):
+            mqtt_on = bool(int(enabled))
+        else:
+            mqtt_on = str(enabled or "").strip().lower() in ("1", "true", "yes", "on")
+        if not mqtt_on:
+            return False
+        return not str(Config.settings.get("MQTT_BROKER") or "").strip()
         
     def receive_command(self, command):
         if(len(command) == 0):

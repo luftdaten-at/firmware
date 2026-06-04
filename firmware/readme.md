@@ -124,30 +124,32 @@ TURN_OFF_STATUS_LIGHT | 0x04
 TURN_ON_STATUS_LIGHT | 0x05
 SET_AIR_STATION_CONFIGURATION | 0x06
 
-### SET_AIR_STATION_CONFIGURATION Byte Structure Overview
+### SET_AIR_STATION_CONFIGURATION (TLV)
 
-### Packet Breakdown
+After command byte **`0x06`**, the payload is a **sequence of TLV records** (not a bitmask):
 
-- **Command Byte**: `0x06` - This byte indicates the start of the configuration command.
-- **Flag Byte**: A bitwise combination of flags indicating the specific configurations to be set. Each bit represents a different configuration option.
-- **Length Byte**: Indicates the number of bytes that follow the flag for the specific configuration being set.
-- **Data Bytes**: Actual configuration data corresponding to the flags set.
+```text
+[ flag: u8 ][ length: u8 ][ value: length bytes ]  (repeated)
+```
 
-## Flags
+- **Strings** (SSID, password, geo, …): `value` = UTF-8 bytes; `length` = `len(value)`.
+- **Integers** (intervals, modes): `value` = 4-byte **big-endian** signed int32; `length` = `4`.
 
-The following flags are used to indicate which configurations can be set:
+Canonical spec: [`docs/ble-characteristics.md`](../docs/ble-characteristics.md). Reference packets: `python3 tools/ble_tlv_reference.py`.
 
-| Flag Bit | Configuration            | Description                               |
-|----------|--------------------------|-------------------------------------------|
-| 0        | AUTO_UPDATE_MODE         | Enable or disable automatic updates.      |
-| 1        | BATTERY_SAVE_MODE        | Enable or disable battery-saving mode.    |
-| 2        | MEASUREMENT_INTERVAL     | Set the interval for measurements.        |
-| 3        | LONGITUDE                | Set the longitude (string value).         |
-| 4        | LATITUDE                 | Set the latitude (string value).          |
-| 5        | HEIGHT                   | Set the height (string value).            |
-| 6        | SSID                     | Set the SSID (string value).              |
-| 7        | PASSWORD                 | Set the password (string value).          |
-| 8        | DEVICE_ID                | String: {Chip Name}-{MAC}-{ManufactureID} |
+## Flags (`flag` byte value, not a bit index)
+
+| Flag (dec) | Configuration            | Description                               |
+|------------|--------------------------|-------------------------------------------|
+| 0          | AUTO_UPDATE_MODE         | int32                                     |
+| 1          | BATTERY_SAVE_MODE        | int32                                     |
+| 2          | MEASUREMENT_INTERVAL     | int32                                     |
+| 3          | LONGITUDE                | UTF-8 string                              |
+| 4          | LATITUDE                 | UTF-8 string                              |
+| 5          | HEIGHT                   | UTF-8 string                              |
+| 6          | SSID                     | UTF-8 string (not in BLE read-back)       |
+| 7          | PASSWORD                 | UTF-8 string (not in BLE read-back)       |
+| 8          | DEVICE_ID                | Read-only on write; included in read TLV  |
 
 ## Data Types
 
@@ -249,11 +251,10 @@ UUID: `77db81d9-9773-49b4-aa17-16a2f93e95f2`
 | 0 | Hat Batteriestatus | 0: nein, 1: ja |
 | 1 | Batterieladestatus (in %) |  |
 | 2 | Betriebsspannung (in 0.1V) |  |
-| 3 | Fehlerstatus | 0: OK, ≠0: Fehler |
-_Weitere Werte hängen von Gerätemodell ab (siehe unten)_
+| 3 | WLAN-Detail | 0: OK; 0x01: SSID nicht gesetzt; 0x02: SSID nicht gefunden; 0x03: Verbindung fehlgeschlagen (relevant wenn Bit `WIFI_FAILURE` in Byte 4) |
+| 4 | Status-Flags (Bitmask) | 0x01: Konfiguration unvollständig; 0x02: WLAN fehlgeschlagen; 0x04: kein Sensor; 0x08: SSID in settings.toml gesetzt |
 
-Fehlercodes:
-_Hängen von Gerätemodell ab (siehe unten)_
+Mehrere Bits können gleichzeitig gesetzt sein. Details: [`docs/ble-characteristics.md`](../docs/ble-characteristics.md).
 
 ### Sensordetails auslesen (geändert in v2)
 
@@ -337,10 +338,8 @@ _Keine Änderungen gegenüber oben definiertem Standard._
 - 0x05: Keine Verbindung zum Server
 - 0x06: Server hat Datenpaket abgelehnt
 
-### Zusätzliche Status-Bytes
-| Byte | Inhalt | Wert |
-|---|---|---|
-| 4 | Wifi-SSID gesetzt | 0: nein, 1: ja |
+### Status-Flags (Byte 4, alle BLE-Modelle)
+Siehe Tabelle unter „Gerätstatus auslesen“. Bit `0x08` entspricht „Wifi-SSID gesetzt“.
 
 ### Zusätzliche Befehle
 - Wifi-SSID und -Passwort setzen: `0x03 [SSID] 0x00 [Passwort] 0x00`
