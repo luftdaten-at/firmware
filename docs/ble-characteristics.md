@@ -27,7 +27,7 @@ All characteristics use **vendor UUIDs** (same namespace as the service). `max_l
 | `air_station_configuration` | `b47b0cdf-0ced-49a9-86a5-d78a03ea7674` | READ | **Air Station:** TLV blob built by [`AirStation.encode_configurations()`](../firmware/models/air_station.py). Other models: initial `bytes([0])` (not updated in code paths shown). |
 | `sensor_values_characteristic` | `4b439140-73cb-4776-b1f2-8f3711b3bb4f` | READ | Binary concatenation of each sensor’s [`Sensor.get_current_values()`](../firmware/sensors/sensor.py) (see [Sensor values binary](#sensor-values-binary)). Updated in [`LdProductModel.update_ble_sensor_data()`](../firmware/models/ld_product_model.py). |
 | `device_info_characteristic` | `8d473240-13cb-1776-b1f2-823711b3ffff` | READ | **JSON** (UTF-8) when `api_key` is set at boot; else **legacy binary** (see [Device info](#device-info-characteristic)). Built in [`main.py`](../firmware/main.py). |
-| `device_status_characteristic` | `77db81d9-9773-49b4-aa17-16a2f93e95f2` | READ | Four bytes: battery flag, SOC %, voltage×10, error code ([`update_ble_battery_status`](../firmware/models/ld_product_model.py)). |
+| `device_status_characteristic` | `77db81d9-9773-49b4-aa17-16a2f93e95f2` | READ | Five bytes: battery (0–2), Wi‑Fi detail (3), operational flags (4). Updated every main loop and on command `0x02` ([`ble_status.py`](../firmware/ble_status.py), [`update_ble_device_status`](../firmware/models/ld_product_model.py)). |
 | `sensor_info_characteristic` | `13fa8751-57af-4597-a0bb-b202f6111ae6` | READ | Concatenation of each sensor’s [`get_device_info()`](../firmware/sensors/sensor.py). If no sensors: `bytes([0x06])`. |
 | `trigger_reading_characteristic_2` | `030ff8b1-1e45-4ae6-bf36-3bca4c38cdba` | WRITE, WRITE_NO_RESPONSE | **Command input:** first byte is [`BleCommands`](#ble-commands). Payload is read once per loop in [`main.py`](../firmware/main.py), then cleared. |
 | `sd_log_export_characteristic` | `51d2f8a4-91c6-53b2-a6e5-71829304a505` | READ | **Wifiless Station/Cube:** Chunked lines from [`SD_LOG_PATH`](../firmware/sd_logger.py) JSONL ([`sd_ble_export`](../firmware/sd_ble_export.py)). Idle **READ** exposes non-empty bit; write **`0x08`** then READ to stream. |
@@ -180,14 +180,39 @@ The `device` object in JSON comes from [`LdProductModel.get_info()`](../firmware
 
 ### `device_status_characteristic`
 
-Four bytes (extended by error code in [`update_ble_error_status`](../firmware/models/ld_product_model.py)):
+Five bytes on all BLE-capable models. Refreshed in the main loop and when the central writes command **`0x02`** (`READ_SENSOR_DATA_AND_BATTERY_STATUS`).
 
 | Index | Meaning |
 |-------|---------|
 | 0 | `1` = battery monitor present, `0` = absent |
 | 1 | Battery SOC % (rounded) |
 | 2 | Battery voltage × 10 (rounded) |
-| 3 | Error code (`0` = none) |
+| 3 | **Wi‑Fi detail** — meaningful when byte 4 has `WIFI_FAILURE` (`0x02`); otherwise `0` |
+| 4 | **Operational flags** (bitmask, multiple bits may be set) |
+
+**Byte 3 — `BleWifiDetailCode`** ([`enums.py`](../firmware/enums.py)):
+
+| Value | Meaning |
+|-------|---------|
+| `0` | OK (or Wi‑Fi not expected) |
+| `0x01` | SSID / credentials not configured |
+| `0x02` | Configured SSID not seen in scan |
+| `0x03` | Connection failed (wrong password, timeout, etc.) |
+
+Legacy Air Station codes `0x04`–`0x06` (internet/server) are **not** implemented on the device yet.
+
+**Byte 4 — `BleOperationalStatusFlags`** ([`enums.py`](../firmware/enums.py)):
+
+| Bit | Name | When set |
+|-----|------|----------|
+| `0x01` | `CONFIG_INCOMPLETE` | Model-specific required settings missing (Air Station: geo/RTC; wifiless Station: RTC only; Air Cube: MQTT enabled but empty broker) |
+| `0x02` | `WIFI_FAILURE` | Wi‑Fi expected (non-wifiless, or wifiless with SSID configured) but radio not connected |
+| `0x04` | `NO_SENSOR` | No physical I²C sensor at boot (VirtualSensor on Cube does not clear this) |
+| `0x08` | `SSID_CONFIGURED` | Non-empty `SSID` in `settings.toml` (replaces legacy “byte 4 = SSID set” as a single bit) |
+
+**Companion UI (suggested):** show one notice per set flag — e.g. “Configuration incomplete”, “Wi‑Fi login failed” (use byte 3 for detail), “No sensor connected”. Poll by READ every ~2 s while connected, or after `0x02`.
+
+**Also:** empty sensor list is still indicated on `sensor_info_characteristic` as `bytes([0x06])` (see below).
 
 ### `air_station_configuration` (read)
 

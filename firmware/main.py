@@ -152,6 +152,8 @@ def main():
         logger.error(
             f"main: device is None for MODEL={Config.settings.get('MODEL')!r} — no matching device class"
         )
+    else:
+        device.physical_sensor_count = len(connected_sensors)
 
     mqtt_loop_step = None
     if device is not None:
@@ -218,20 +220,11 @@ def main():
     else:
         service.sensor_info_characteristic = bytes([0x06])
 
-    # Load battery status for the first time
-    if battery_monitor is not None:  # First none should be battery_monitor
-        service.device_status_characteristic = bytes([
-            1,  # Has battery status: Yes
-            round(battery_monitor.cell_soc()),  # Battery percentage
-            round(battery_monitor.cell_voltage() * 10),  # Battery voltage
-            0,  # Error status: 0 = no error
-        ])
+    # Initial device status (battery + operational flags)
+    if device is not None:
+        device.update_ble_device_status()
     else:
-        service.device_status_characteristic = bytes([
-            0,  # Has battery status: No
-            0, 0,  # Battery percentage, voltage
-            0,  # Error status: 0 = no error
-        ])
+        service.device_status_characteristic = bytes([0, 0, 0, 0, 0])
 
     # Allow BLE stack to register characteristic values before advertising
     time.sleep(0.2)
@@ -347,6 +340,8 @@ def main():
             device.status_led.receive_command(command)
 
         device.tick()
+        if device is not None:
+            device.update_ble_device_status()
         device.status_led.tick()
 
         if mqtt_loop_step is not None:

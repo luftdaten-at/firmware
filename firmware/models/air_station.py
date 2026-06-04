@@ -13,7 +13,7 @@ from logger import logger
 from led_controller import RepeatMode
 from sd_logger import append_measurement_jsonl
 from measurement_temp_queue import append_offline_measurement, replay_pending_to_api
-from startup_actions import is_startup_flag_true, set_startup_flag
+from startup_actions import is_startup_flag_true
 
 _AIR_STATION_BLE_STARTUP_TOML = (
     (AirstationConfigFlags.SYNC_RTC_FROM_NTP, "SYNC_RTC_FROM_NTP"),
@@ -123,67 +123,11 @@ class AirStation(LdProductModel):
             self.send_configuration()
 
     def decode_configuration(self, data):
-        wifi_config_changed = False
-        mqtt_changed = False
-        idx = 0
-        while idx < len(data):
-            flag = data[idx]                
-            idx += 1
-            length = data[idx]
-            idx += 1
+        from ble_config_tlv import decode_air_station_tlv
 
-            if flag == AirstationConfigFlags.AUTO_UPDATE_MODE:
-                Config.settings['auto_update_mode'] = struct.unpack('>i', data[idx:idx + length])[0]
-
-            if flag == AirstationConfigFlags.BATTERY_SAVE_MODE:
-                Config.settings['battery_save_mode'] = struct.unpack('>i', data[idx:idx + length])[0]
-
-            if flag == AirstationConfigFlags.MEASUREMENT_INTERVAL:
-                Config.settings['measurement_interval'] = struct.unpack('>i', data[idx:idx + length])[0]
-
-            if flag == AirstationConfigFlags.LONGITUDE:
-                Config.settings['longitude'] = data[idx:idx + length].decode('utf-8')  # Decode as string
-
-            if flag == AirstationConfigFlags.LATITUDE:
-                Config.settings['latitude'] = data[idx:idx + length].decode('utf-8')  # Decode as string
-
-            if flag == AirstationConfigFlags.HEIGHT:
-                Config.settings['height'] = data[idx:idx + length].decode('utf-8')  # Decode as string
-
-            if flag == AirstationConfigFlags.SSID:
-                Config.settings['SSID'] = data[idx:idx + length].decode('utf-8')  # Decode as string
-                wifi_config_changed = True
-
-            if flag == AirstationConfigFlags.PASSWORD:
-                Config.settings['PASSWORD'] = data[idx:idx + length].decode('utf-8')  # Decode as string
-                wifi_config_changed = True
-
-            if flag == AirstationConfigFlags.TZ:
-                Config.settings['TZ'] = data[idx:idx + length].decode('utf-8')
-
-            if flag == AirstationConfigFlags.LOG_LEVEL:
-                Config.settings['LOG_LEVEL'] = data[idx:idx + length].decode('utf-8')
-
-            if flag == AirstationConfigFlags.API_KEY:
-                Config.settings['api_key'] = data[idx:idx + length].decode('utf-8')
-
-            for startup_flag, startup_key in _AIR_STATION_BLE_STARTUP_TOML:
-                if flag == startup_flag:
-                    if length == 4:
-                        v_raw = struct.unpack('>i', data[idx : idx + length])[0]
-                        set_startup_flag(startup_key, bool(v_raw))
-
-            if (
-                AirstationConfigFlags.MQTT_ENABLED
-                <= flag
-                <= AirstationConfigFlags.MQTT_CERTIFICATE_PATH
-            ):
-                from mqtt_ble_tlv import apply_mqtt_tlv_record
-                chunk = bytes(data[idx:idx + length])
-                if apply_mqtt_tlv_record(flag, chunk):
-                    mqtt_changed = True
-            
-            idx += length
+        wifi_config_changed, mqtt_changed, _applied = decode_air_station_tlv(
+            data, _AIR_STATION_BLE_STARTUP_TOML
+        )
 
         if mqtt_changed:
             from mqtt_ha import MqttHa
@@ -253,6 +197,11 @@ class AirStation(LdProductModel):
         if v is None:
             return True
         return not str(v).strip()
+
+    def ble_configuration_incomplete(self) -> bool:
+        if Config.is_wifiless():
+            return not Config.runtime_settings.get("rtc_is_set")
+        return bool(self._configuration_blockers())
 
     def _configuration_blockers(self) -> list[str]:
         """Reasons live API upload cannot run (excluding Wi‑Fi link)."""

@@ -75,25 +75,29 @@ def decode_mqtt_settings_tlv(data) -> bool:
     Walk a full TLV buffer (no leading command byte) for MQTT flags only.
     Used by Air Cube ``0x07`` payload.
     """
-    changed = False
-    idx = 0
+    from ble_config_tlv import format_tlv_payload_for_log, iter_tlv_records
+
     data = bytes(data)
-    while idx < len(data):
-        flag = data[idx]
-        idx += 1
-        if idx >= len(data):
-            break
-        length = data[idx]
-        idx += 1
-        if idx + length > len(data):
-            logger.warning("mqtt_ble_tlv: truncated TLV")
-            break
-        chunk = data[idx : idx + length]
-        idx += length
+    logger.debug(
+        "BLE 0x07 MQTT TLV %d bytes: %s"
+        % (len(data), format_tlv_payload_for_log(data))
+    )
+    changed = False
+    applied = []
+    for flag, chunk in iter_tlv_records(data):
         if (
             AirstationConfigFlags.MQTT_ENABLED
             <= flag
             <= AirstationConfigFlags.MQTT_CERTIFICATE_PATH
         ):
-            changed |= apply_mqtt_tlv_record(flag, chunk)
+            if apply_mqtt_tlv_record(flag, chunk):
+                changed = True
+            applied.append(flag)
+        else:
+            logger.warning(
+                "mqtt_ble_tlv: flag %d ignored on 0x07 (MQTT flags 9-17 only)"
+                % flag
+            )
+    if applied:
+        logger.info("BLE MQTT config applied: flags %s" % applied)
     return changed
