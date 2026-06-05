@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CIRCUITPY Firmware Deploy</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <h1>CIRCUITPY Firmware Deploy</h1>
+        <p class="subtitle">
+          Copy the newest firmware tree from your workspace onto a mounted
+          <code>CIRCUITPY</code> drive.
+        </p>
+      </header>
+
+      <section id="compat-panel" class="panel compat" aria-live="polite"></section>
+
+      <section class="panel">
+        <h2>1. Firmware source</h2>
+        <p class="hint">
+          Select the repo <code>firmware/</code> folder (must contain
+          <code>code.py</code>).
+        </p>
+        <div class="row">
+          <button type="button" id="btn-pick-source" class="primary" disabled>
+            Choose source folder
+          </button>
+          <label class="fallback-label hidden" id="source-fallback-label">
+            <span class="btn secondary">Choose source (folder upload)</span>
+            <input
+              type="file"
+              id="input-source-dir"
+              webkitdirectory
+              directory
+              multiple
+              hidden
+            />
+          </label>
+        </div>
+        <p id="source-summary" class="summary muted">No source selected.</p>
+      </section>
+
+      <section class="panel">
+        <h2>2. Destination (CIRCUITPY)</h2>
+        <p class="hint">
+          Pick the mounted <code>CIRCUITPY</code> volume root (e.g.
+          <code>/Volumes/CIRCUITPY</code> on macOS).
+        </p>
+        <button type="button" id="btn-pick-dest" class="primary" disabled>
+          Choose CIRCUITPY folder
+        </button>
+        <p id="dest-summary" class="summary muted">No destination selected.</p>
+        <p id="dest-validation" class="validation" hidden></p>
+      </section>
+
+      <section class="panel">
+        <h2>3. Options</h2>
+        <label class="checkbox">
+          <input type="checkbox" id="opt-preserve-settings" checked />
+          Preserve <code>settings.toml</code> and <code>startup.toml</code> on
+          the device (recommended for updates)
+        </label>
+        <label class="checkbox">
+          <input type="checkbox" id="opt-install-tools-settings" />
+          After copy, install default <code>tools/settings.toml</code> from this
+          page (new-board helper; only if you loaded this tool from the repo)
+        </label>
+        <p class="hint small">
+          Matches the notebook: if <code>boot.toml</code> exists on the device,
+          this run is treated as an <strong>update</strong>; otherwise a
+          <strong>new board</strong> copy.
+        </p>
+      </section>
+
+      <section class="panel actions">
+        <button type="button" id="btn-deploy" class="primary large" disabled>
+          Copy firmware to device
+        </button>
+        <button type="button" id="btn-download-zip" class="secondary" disabled>
+          Download firmware ZIP (manual copy fallback)
+        </button>
+      </section>
+
+      <section class="panel progress-panel hidden" id="progress-panel">
+        <h2>Progress</h2>
+        <progress id="progress-bar" max="100" value="0"></progress>
+        <p id="progress-text" class="summary muted"></p>
+        <pre id="log" class="log" aria-live="polite"></pre>
+      </section>
+
+      <section class="panel report hidden" id="report-panel">
+        <h2>Result</h2>
+        <dl id="report-stats" class="stats"></dl>
+        <p id="report-note" class="hint"></p>
+      </section>
+
+      <footer>
+        <p>
+          See
+          <a href="README.md">README.md</a>
+          for browser support. Python workflow:
+          <code>tools/deploy.ipynb</code>.
+        </p>
+      </footer>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

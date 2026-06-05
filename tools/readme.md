@@ -56,12 +56,17 @@ The notebook is organized as **three steps**: (1) **flash the board** (`flash_wi
 
 4. Serial port: the notebook **Configuration** section runs **`pick_serial_port_interactive(CFG)`** to list ports and choose one (default **`/dev/tty.usbmodem101`**). Examples: macOS `/dev/tty.usbmodem*`, Linux `/dev/ttyACM*` or `/dev/ttyUSB*`, Windows `COM*`. You can also call **`list_serial_ports()`** from `utils` without changing **`CFG`**.
 
+## Web deploy (browser)
+
+For copying the `firmware/` tree to a mounted `CIRCUITPY` drive without Jupyter, use the static tool in [`web-deploy/`](web-deploy/) (Chrome/Edge on desktop). See [`web-deploy/README.md`](web-deploy/README.md) for browser support and `python3 -m http.server` setup.
+
 ## Layout
 
 | Path | Purpose |
 |------|---------|
 | [`../pyproject.toml`](../pyproject.toml) (repo root) | Declares dependencies for **`uv sync`**; venv lives at **`<repo>/.venv`** |
 | `deploy.ipynb` | Notebook — config, Step 1 flash, Step 2 copy-or-update (uses `boot.toml` on `CIRCUITPY` to choose) |
+| `web-deploy/` | Browser tool — copy `firmware/` to `CIRCUITPY` (Chromium desktop; see README) |
 | `notebook_env.py` | Shared **`activate()`** so setup and serial cells find **`deploy/`** after a kernel restart |
 | `utils.py` | Esptool wrapper, mount wait, tree copy, full flash / update |
 | `settings.toml` | Copied to the device on **full flash** |
