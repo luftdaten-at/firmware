@@ -51,6 +51,8 @@ Führe nun Circup aus, um die benötigten Bibliotheken zu installieren:
 circup install --auto
 ```
 
+Der **Bosch BMP581**-Treiber (`lib/bmp581.py`, v0.2.0) und die Abhängigkeit `lib/adafruit_register/` sind in der Firmware enthalten. Ein separates `circup install bmp581` ist nur nötig, wenn du die gebündelte Version überschreiben willst.
+
 Für **Air Station im Wifiless-Modus** (Messdaten auf SD-Karte) zusätzlich:
 
 ```bash
@@ -217,6 +219,7 @@ Aktuell unterstützte Sensor-IDs:
 | 7 | SHT31 | Temp, Hum |
 | 8 | AGS02MA | VOCs (absolut), Gaswiderstand |
 | 9 | SHT4X | Temp, Hum |
+| 28 | BMP581 | Temp, Druck, Höhe |
 
 
 ### Luftdaten-Gerät-Details auslesen (geändert in v2)

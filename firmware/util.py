@@ -16,6 +16,7 @@ def get_connected_sensors(i2c):
         from sensors.sensor_sht4x import Sht4xSensor
         from sensors.sensor_sgp40 import Sgp40Sensor
         from sensors.sensor_bmp3xx import Bmp3xxSensor
+        from sensors.sensor_bmp581 import Bmp581Sensor
         from sensors.sensor_ltr390 import Ltr390Sensor
         from sensors.sensor_lsm6ds import Lsm6dsSensor
         from sensors.sensor_sen62 import Sen62Sensor
@@ -38,6 +39,7 @@ def get_connected_sensors(i2c):
             Sht4xSensor(),
             Sgp40Sensor(),
             Bmp3xxSensor(),
+            Bmp581Sensor(),
             Ltr390Sensor(),
             Lsm6dsSensor(),
             Sen62Sensor(),
