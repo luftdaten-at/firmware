@@ -53,6 +53,8 @@ circup install --auto
 
 Der **Bosch BMP581**-Treiber (`lib/bmp581.py`, v0.2.0) und die Abhängigkeit `lib/adafruit_register/` sind in der Firmware enthalten. Ein separates `circup install bmp581` ist nur nötig, wenn du die gebündelte Version überschreiben willst.
 
+Der **Sensirion SHTC3**-Treiber (`lib/adafruit_shtc3.py`, v1.1.22) ist ebenfalls gebündelt; `circup install adafruit_shtc3` ist optional.
+
 Für **Air Station im Wifiless-Modus** (Messdaten auf SD-Karte) zusätzlich:
 
 ```bash
@@ -220,6 +222,7 @@ Aktuell unterstützte Sensor-IDs:
 | 8 | AGS02MA | VOCs (absolut), Gaswiderstand |
 | 9 | SHT4X | Temp, Hum |
 | 28 | BMP581 | Temp, Druck, Höhe |
+| 29 | SHTC3 | Temp, Hum |
 
 
 ### Luftdaten-Gerät-Details auslesen (geändert in v2)
