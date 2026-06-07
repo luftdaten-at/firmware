@@ -37,7 +37,12 @@ class Sgp40Sensor(Sensor):
     def on_start_main_loop(self, device):
         # Link with SHT3/4X sensor
         for sensor in device.sensors:
-            if sensor.model_id in [SensorModel.SHT4X, SensorModel.SHT30, SensorModel.SHT31]:
+            if sensor.model_id in [
+                SensorModel.SHT4X,
+                SensorModel.SHT30,
+                SensorModel.SHT31,
+                SensorModel.SHTC3,
+            ]:
                 self.temperature_provider = sensor
                 logger.debug('Linked SGP40 with sensor model ', sensor.model_id)
                 return
