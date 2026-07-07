@@ -91,7 +91,7 @@ After the leading `0x06`, the payload is a sequence of records:
 | Flag | Name | `Config.settings` key | Value type |
 |------|------|----------------------|------------|
 | `0` | `AUTO_UPDATE_MODE` | `auto_update_mode` | int32 |
-| `1` | `BATTERY_SAVE_MODE` | `battery_save_mode` | int32 |
+| `1` | `BATTERY_SAVE_MODE` | `battery_save_mode` | int32 (`0` off, `1` normal, `3` ultra). **Runtime:** Air Station and Air aRound / Bike enter ESP32 deep sleep between measurements when non-zero; see [`docs/settings.md`](settings.md#energy-saving-battery_save_mode). |
 | `2` | `MEASUREMENT_INTERVAL` | `measurement_interval` | int32 |
 | `3` | `LONGITUDE` | `longitude` | UTF-8 string |
 | `4` | `LATITUDE` | `latitude` | UTF-8 string |

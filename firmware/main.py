@@ -29,6 +29,7 @@ from startup_actions import (
     run_startup_actions,
     run_startup_actions_after_sensors,
 )
+from energy_saving import EnergySaving
 
 def main():
     logger.debug('loaded main.py')
@@ -156,12 +157,14 @@ def main():
         device.physical_sensor_count = len(connected_sensors)
 
     mqtt_loop_step = None
+    energy_saving = None
     if device is not None:
         _m = Config.settings.get("MODEL")
         if _m in (LdProduct.AIR_CUBE, LdProduct.AIR_STATION) and not Config.is_wifiless():
             from mqtt_ha import MqttHa as _MqttHa
 
             mqtt_loop_step = _MqttHa.loop_step
+        energy_saving = EnergySaving(device, button_pin, button)
 
     # Use JSON format when api_key is set so the app can read it for workshop uploads.
     # Binary format is used when no api_key (backward compat / first boot).
@@ -346,6 +349,9 @@ def main():
 
         if mqtt_loop_step is not None:
             mqtt_loop_step()
+
+        if energy_saving is not None:
+            energy_saving.maybe_sleep(ble_connected)
 
         time.sleep(device.polling_interval)
 
