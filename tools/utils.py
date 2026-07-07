@@ -6,6 +6,7 @@ import ast
 import copy
 import errno
 import os
+import stat
 import re
 import shutil
 import subprocess
@@ -249,6 +250,80 @@ def _collect_firmware_copy_jobs(
     return jobs
 
 
+def _path_stat_mode(path: Path) -> int | None:
+    """Return ``st_mode`` from ``os.lstat``, or ``None`` if the path is absent."""
+    try:
+        return os.lstat(path).st_mode
+    except OSError:
+        return None
+
+
+def _is_under_deploy_path(path: Path, deploy_root: Path) -> bool:
+    """True if ``path`` is ``deploy_root`` or a path inside it."""
+    try:
+        path.resolve().relative_to(deploy_root.resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def _remove_blocking_path(path: Path) -> None:
+    """Delete a file or directory at ``path`` if present (FAT-safe via ``lstat``)."""
+    mode = _path_stat_mode(path)
+    if mode is None:
+        return
+    if stat.S_ISDIR(mode):
+        print(f"Removing directory blocking deploy: {path}", flush=True)
+        shutil.rmtree(path)
+        if hasattr(os, "sync"):
+            os.sync()
+        return
+    print(f"Removing file blocking deploy: {path}", flush=True)
+    path.unlink()
+
+
+def _ensure_directory(path: Path, *, deploy_root: Path) -> None:
+    """Create ``path`` under ``deploy_root``, fixing same-named files only on the volume."""
+    path = path.resolve()
+    root = deploy_root.resolve()
+    if _is_under_deploy_path(path, root):
+        mode = _path_stat_mode(path)
+        if mode is not None and not stat.S_ISDIR(mode):
+            _remove_blocking_path(path)
+    if path == root:
+        root.mkdir(parents=True, exist_ok=True)
+        return
+    if path.parent != path:
+        if _is_under_deploy_path(path.parent, root):
+            _ensure_directory(path.parent, deploy_root=root)
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+    path.mkdir(parents=True, exist_ok=True)
+
+
+def _prepare_dest_path(dest_file: Path, *, deploy_root: Path) -> None:
+    """Ensure parent dirs exist; remove a file or directory at ``dest_file`` if it blocks copy."""
+    parent = dest_file.parent
+    if parent != dest_file:
+        _ensure_directory(parent, deploy_root=deploy_root)
+    if _is_under_deploy_path(dest_file, deploy_root):
+        _remove_blocking_path(dest_file)
+
+
+def _copy_deploy_file(src: Path, dest: Path, *, deploy_root: Path) -> None:
+    """Copy one firmware file, clearing FAT path-type conflicts and retrying once."""
+    _prepare_dest_path(dest, deploy_root=deploy_root)
+    try:
+        shutil.copy2(src, dest)
+    except (IsADirectoryError, NotADirectoryError, FileNotFoundError):
+        if _is_under_deploy_path(dest, deploy_root):
+            _remove_blocking_path(dest)
+        if parent := dest.parent:
+            if parent != dest:
+                _ensure_directory(parent, deploy_root=deploy_root)
+        shutil.copy2(src, dest)
+
+
 def _format_copy_progress_line(
     index: int, total: int, src_file: Path, src_root: Path, *, width: int = 100
 ) -> str:
@@ -304,8 +379,7 @@ def copy_firmware_tree(
     if tqdm_cls is not None:
         with tqdm_cls(jobs, desc="Firmware copy", unit="file", leave=True) as pbar:
             for sub, sub_dst in pbar:
-                sub_dst.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(sub, sub_dst)
+                _copy_deploy_file(sub, sub_dst, deploy_root=dst)
                 try:
                     rel = str(sub.relative_to(src))
                 except ValueError:
@@ -319,8 +393,7 @@ def copy_firmware_tree(
             report_every = max(1, total // 60)
 
         for i, (sub, sub_dst) in enumerate(jobs, start=1):
-            sub_dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(sub, sub_dst)
+            _copy_deploy_file(sub, sub_dst, deploy_root=dst)
             if show_progress and (i == 1 or i == total or i % report_every == 0):
                 line = _format_copy_progress_line(i, total, sub, src)
                 end = "\n" if i == total else "\r"
@@ -332,8 +405,7 @@ def copy_firmware_tree(
 
 
 def copy_file(src: Path, dst: Path) -> None:
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(src, dst)
+    _copy_deploy_file(src, dst, deploy_root=dst.parent)
     print(f"Copied {src} -> {dst}", flush=True)
 
 

@@ -62,22 +62,32 @@ class Sen5xSensor(Sensor):
             logger.debug("SEN5x sensor not detected")
             return False
 
-        logger.debug("SEN5x initialised, resetting, waiting 1.1 seconds before read")
-        self.sen5x_device.device_reset()
-        time.sleep(1.1)
-        logger.debug(f"SEN5x device found on I2C bus {i2c}, product type: {self.sen5x_device.get_product_name()}, #{self.sen5x_device.get_serial_number()}")
-        self.sensor_details = bytearray([
-            self.sen5x_device.get_version().firmware.major,
-            self.sen5x_device.get_version().firmware.minor,
-            self.sen5x_device.get_version().hardware.major,
-            self.sen5x_device.get_version().hardware.minor,
-            self.sen5x_device.get_version().protocol.major,
-            self.sen5x_device.get_version().protocol.minor,
-        ])
-        self.sensor_details.extend(self.sen5x_device.get_serial_number().encode('ascii'))
-        self.sen5x_device.start_measurement()
-        self.is_sen54 = self.sensor_details[2] == 4
-        return True
+        try:
+            logger.debug("SEN5x initialised, resetting, waiting 1.1 seconds before read")
+            self.sen5x_device.device_reset()
+            time.sleep(1.1)
+            product = self.sen5x_device.get_product_name()
+            serial = self.sen5x_device.get_serial_number()
+            version = self.sen5x_device.get_version()
+            logger.debug(
+                "SEN5x device found on I2C bus %s, product type: %s, #%s"
+                % (i2c, product, serial)
+            )
+            self.sensor_details = bytearray([
+                version.firmware.major,
+                version.firmware.minor,
+                version.hardware.major,
+                version.hardware.minor,
+                version.protocol.major,
+                version.protocol.minor,
+            ])
+            self.sensor_details.extend(serial.encode("ascii"))
+            self.sen5x_device.start_measurement()
+            self.is_sen54 = self.sensor_details[2] == 4
+            return True
+        except Exception as e:
+            logger.debug("SEN5x probe failed: %s: %s" % (type(e).__name__, e))
+            return False
 
     def read(self):
         try:
