@@ -94,6 +94,10 @@ Per [Adafruit — CircuitPython on ESP32 Quick Start (esptool)](https://learn.ad
 - After copying, **sync / eject** before unplugging to protect the FAT filesystem.
 - Avoid heavy host writes while `code.py` is running if you see corruption; prefer a clean boot or REPL when needed.
 
+### Deploy copy fails with `NotADirectoryError` (`models/...`)
+
+If Step 2 fails with **`Not a directory`** (often at `models/…`) or **`Is a directory`** / **`Directory does not exist`** (e.g. at `mqtt_ha.py`), the USB volume has **stale paths with the wrong type** — a **file** where a folder is needed, or a **folder** where a `.py` file should be. **`copy_firmware_tree`** clears these via `lstat` and retries the copy; look for log lines `Removing file blocking deploy:` / `Removing directory blocking deploy:`. Re-run Step 2 after updating `tools/utils.py`, or delete the blocking entry on `CIRCUITPY` manually on older deploy tools.
+
 ### Libraries
 
 This flow copies the whole [`../firmware/`](../firmware/) tree. For day-to-day libraries, consider **`circup`** (see [`../firmware/readme.md`](../firmware/readme.md)).

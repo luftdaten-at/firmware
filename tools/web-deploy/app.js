@@ -339,20 +339,67 @@ async function getAllJobs() {
 }
 
 /**
+ * @param {FileSystemDirectoryHandle} parentDir
+ * @param {string} part
+ * @returns {Promise<FileSystemDirectoryHandle>}
+ */
+async function ensureDirectoryHandle(parentDir, part) {
+  try {
+    return await parentDir.getDirectoryHandle(part);
+  } catch {
+    try {
+      await parentDir.getFileHandle(part);
+      await parentDir.removeEntry(part);
+      logLine(`Removing file blocking deploy: ${part}`);
+    } catch {
+      /* not a file — create directory below */
+    }
+    return await parentDir.getDirectoryHandle(part, { create: true });
+  }
+}
+
+/**
  * @param {FileSystemDirectoryHandle} root
  * @param {string} relPath
  */
+async function removeBlockingEntry(parentDir, name) {
+  try {
+    await parentDir.getDirectoryHandle(name);
+    await parentDir.removeEntry(name, { recursive: true });
+    logLine(`Removing directory blocking deploy: ${name}`);
+    return;
+  } catch {
+    /* not a directory */
+  }
+  try {
+    await parentDir.getFileHandle(name);
+    await parentDir.removeEntry(name);
+    logLine(`Removing file blocking deploy: ${name}`);
+  } catch {
+    /* absent or already cleared */
+  }
+}
+
 async function writeFileToDest(root, relPath, blob) {
   const parts = relPath.split("/");
   const fileName = parts.pop();
   let dir = root;
   for (const part of parts) {
-    dir = await dir.getDirectoryHandle(part, { create: true });
+    dir = await ensureDirectoryHandle(dir, part);
   }
-  const fileHandle = await dir.getFileHandle(fileName, { create: true });
-  const writable = await fileHandle.createWritable();
-  await writable.write(blob);
-  await writable.close();
+  await removeBlockingEntry(dir, fileName);
+  try {
+    const fileHandle = await dir.getFileHandle(fileName, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+  } catch (e) {
+    await removeBlockingEntry(dir, fileName);
+    const fileHandle = await dir.getFileHandle(fileName, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+  }
 }
 
 /**
