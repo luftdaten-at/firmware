@@ -19,6 +19,11 @@ BOOT_COMPENSATION_S = 10
 # Do not deep-sleep for shorter stretches (overhead not worth it).
 MIN_SLEEP_S = 15
 
+# Short status blinks instead of always-on LED while energy saving is active.
+SHORT_BLINK_ON_S = 0.08
+SHORT_BLINK_OFF_S = 0.05
+STATUS_BLINK_COOLDOWN_S = 30
+
 _SUPPORTED_MODELS = (
     LdProduct.AIR_STATION,
     LdProduct.AIR_AROUND,
@@ -41,6 +46,64 @@ def should_skip_ota_on_wake() -> bool:
     if wake is None:
         return False
     return isinstance(wake, alarm.TimeAlarm)
+
+
+def _primary_led_color(pattern: dict):
+    from led_controller import RepeatMode
+
+    if pattern.get("repeat_mode") == RepeatMode.PERMANENT:
+        return pattern.get("color")
+    elements = pattern.get("elements")
+    if elements:
+        return elements[0].get("color")
+    return pattern.get("color")
+
+
+def _pattern_status_key(pattern: dict):
+    from led_controller import RepeatMode
+
+    return (pattern.get("repeat_mode"), _primary_led_color(pattern))
+
+
+def short_blink_pattern(color) -> dict:
+    from enums import Color
+    from led_controller import RepeatMode
+
+    return {
+        "repeat_mode": RepeatMode.TIMES,
+        "repeat_times": 1,
+        "elements": [
+            {"color": color, "duration": SHORT_BLINK_ON_S},
+            {"color": Color.OFF, "duration": SHORT_BLINK_OFF_S},
+        ],
+    }
+
+
+def adapt_led_pattern(pattern: dict) -> dict:
+    """Map always-on / looping status patterns to a single short blink."""
+    if not is_energy_saving_enabled():
+        return pattern
+
+    from led_controller import RepeatMode
+
+    mode = pattern.get("repeat_mode")
+    if mode == RepeatMode.TIMES:
+        return pattern
+
+    color = _primary_led_color(pattern)
+    if color is None:
+        return pattern
+
+    return short_blink_pattern(color)
+
+
+def show_battery_startup_blink(status_led, percent: int) -> None:
+    """One brief battery hint at boot instead of the long pulse sequence."""
+    from enums import Color
+
+    color = Color.RED if percent < 10 else Color.GREEN
+    status_led.show_led(short_blink_pattern(color))
+    time.sleep(SHORT_BLINK_ON_S + SHORT_BLINK_OFF_S)
 
 
 class EnergySaving:

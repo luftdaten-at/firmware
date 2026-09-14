@@ -19,7 +19,7 @@ def _prepareline(line) -> str:
         )
     ):  # Without the -1 check eats a char
         line = line[: line.rfind("#")]
-    while line.endswith(" ") or line.endswith("\n"):
+    while line.endswith(" ") or line.endswith("\n") or line.endswith("\r"):
         line = line[:-1]
     while line.startswith(" "):
         line = line[1:]
@@ -68,8 +68,13 @@ def _linevalue(line):
     elif result == "false":
         result = False
     else:
-        del line, result
-        raise TypeError("Invalid value.")
+        try:
+            result = float(result)
+            if result.is_integer():
+                result = int(result)
+        except (ValueError, OverflowError):
+            # Bare unquoted string (e.g. identifiers); keep as str.
+            pass
     del line
     return result
 
@@ -262,47 +267,68 @@ def fetch(item, subtable=None, toml="/settings.toml"):
         raise OSError("Toml file not found")
 
 
+def _sync_fs() -> None:
+    try:
+        import os
+
+        if hasattr(os, "sync"):
+            os.sync()
+    except Exception:
+        pass
+
+
+def _put_into_data(data, item, value, subtable=None, comment=None):
+    start = 0
+    if subtable is not None:
+        start = _tablefind(data, subtable)
+    if start == -1:
+        data.append(f"[{subtable}]")
+        data.append(_linemake(item, value, comment))
+    else:
+        if start:
+            start += 1
+        tr = _linefind(data, item, start)
+        if tr == -1:
+            data.insert(start, _linemake(item, value, comment))
+        else:
+            data[tr] = _linemake(item, value, comment)
+    return data
+
+
+def _write_toml_lines(toml, data) -> None:
+    data = _applyformatting(data)
+    with open(toml, "w") as tomlw:
+        for line in data:
+            tomlw.write(f"{line}\n")
+        tomlw.flush()
+    _sync_fs()
+
+
 def put(item, value, subtable=None, toml="/settings.toml", comment=None) -> None:
     """
     Store / Update a value. You can also place a comment.
 
     The existing comment will be removed.
     """
-    data = None
-    ro = False
-
     try:
         with open(toml) as tomlr:
             data = _dataformat(tomlr.read())
     except OSError:
         raise OSError("Toml file not found")
-    if data is not None:
-        # Find target line
-        start = 0
-        if subtable is not None:
-            start = _tablefind(data, subtable)  # find table offset
-        if start == -1:  # Need to create new subtable
-            data.append(f"[{subtable}]")
-            data.append(_linemake(item, value, comment))
-        else:  # Whatever start says
-            if start:
-                start += 1
-            tr = _linefind(data, item, start)  # fetch item index
-            if tr == -1:  # New key
-                data.insert(start, _linemake(item, value, comment))
-            else:  # Existing key
-                data[tr] = _linemake(item, value, comment)
-        del start
+    data = _put_into_data(data, item, value, subtable, comment)
+    _write_toml_lines(toml, data)
 
-        # Reapply formatting
-        data = _applyformatting(data)
 
-        # Write to file
-        with open(toml, "w") as tomlw:
-            for line in data:
-                tomlw.write(f"{line}\n")
-                del line
-    del item, value, subtable, toml, comment, data, ro
+def put_many(items, toml="/settings.toml") -> None:
+    """Store / update several keys in one read-modify-write."""
+    try:
+        with open(toml) as tomlr:
+            data = _dataformat(tomlr.read())
+    except OSError:
+        raise OSError("Toml file not found")
+    for item, value in items.items():
+        data = _put_into_data(data, item, value)
+    _write_toml_lines(toml, data)
 
 
 def delete(item, subtable=None, toml="/settings.toml") -> None:

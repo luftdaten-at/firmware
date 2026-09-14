@@ -1,25 +1,67 @@
-from lib.cptoml import put, fetch
-from storage import remount
+from lib.cptoml import fetch
 from enums import AutoUpdateMode, AirStationMeasurementInterval, BatterySaverMode, LdProduct
+from fs_rw import persist_toml_value, persist_toml_values
+
+_GEO_STRING_KEYS = frozenset(("longitude", "latitude", "height"))
+
 
 class AutoSaveDict(dict):
     def __init__(self, *args, **kwargs):
         self.toml_file = kwargs.pop('toml_file', 'settings.toml')
         super().__init__(*args, **kwargs)
+        self._batch_depth = 0
+        self._dirty = {}
 
         for key in self:
             val = fetch(key, toml=self.toml_file.get(key, 'settings.toml'))
             if val is not None:
+                if key in _GEO_STRING_KEYS:
+                    val = str(val)
                 super().__setitem__(key, val)
 
     def __setitem__(self, key, value):
+        if key in _GEO_STRING_KEYS and value is not None:
+            value = str(value)
         super().__setitem__(key, value)
-        remount('/', False)
-        put(key, value, toml=f'/{self.toml_file.get(key, 'settings.toml')}')
-        remount('/', True)
+        if self._batch_depth > 0:
+            self._dirty[key] = value
+            return
+        persist_toml_value(key, value, self.toml_file.get(key, "settings.toml"))
+
+    def batch_persist(self):
+        return _BatchPersist(self)
+
+    def _flush_dirty(self) -> bool:
+        by_file = {}
+        for key, value in self._dirty.items():
+            path = self.toml_file.get(key, "settings.toml")
+            if path not in by_file:
+                by_file[path] = {}
+            by_file[path][key] = value
+        self._dirty = {}
+        ok = True
+        for path, items in by_file.items():
+            if not persist_toml_values(items, path):
+                ok = False
+        return ok
 
     def set_toml_file(self, filepath):
         self.toml_file = filepath
+
+
+class _BatchPersist:
+    def __init__(self, store):
+        self._store = store
+
+    def __enter__(self):
+        self._store._batch_depth += 1
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self._store._batch_depth -= 1
+        if self._store._batch_depth == 0:
+            self._store._flush_dirty()
+        return False
 
 
 class Config:

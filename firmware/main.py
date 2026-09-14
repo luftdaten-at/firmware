@@ -29,7 +29,7 @@ from startup_actions import (
     run_startup_actions,
     run_startup_actions_after_sensors,
 )
-from energy_saving import EnergySaving
+from energy_saving import EnergySaving, is_energy_saving_enabled, show_battery_startup_blink
 
 def main():
     logger.debug('loaded main.py')
@@ -239,28 +239,32 @@ def main():
 
     # If a battery monitor is connected, indicate battery percentage
     if battery_monitor is not None:
-        logger.debug('show battery state in 2 seconds')
-        time.sleep(2)
-        CRITICAL = 10
         percent = round(battery_monitor.cell_soc())
-        points = [25, 50, 75]
-        # critical
-        if percent < CRITICAL:
-            device.status_led.status_led.fill(Color.RED)
-            device.status_led.status_led.show()
-            time.sleep(0.2)
-            device.status_led.status_led.fill(Color.OFF)
-            device.status_led.status_led.show()
+        if is_energy_saving_enabled():
+            logger.debug('energy saving: short battery blink')
+            show_battery_startup_blink(device.status_led, percent)
         else:
-            for point in points:
-                if percent > point:
-                    device.status_led.status_led.fill(Color.GREEN)
-                    device.status_led.status_led.show()
-                    time.sleep(0.5)
-                    device.status_led.status_led.fill(Color.OFF)
-                    device.status_led.status_led.show()
-                    time.sleep(0.5)
-        time.sleep(2)
+            logger.debug('show battery state in 2 seconds')
+            time.sleep(2)
+            CRITICAL = 10
+            points = [25, 50, 75]
+            # critical
+            if percent < CRITICAL:
+                device.status_led.status_led.fill(Color.RED)
+                device.status_led.status_led.show()
+                time.sleep(0.2)
+                device.status_led.status_led.fill(Color.OFF)
+                device.status_led.status_led.show()
+            else:
+                for point in points:
+                    if percent > point:
+                        device.status_led.status_led.fill(Color.GREEN)
+                        device.status_led.status_led.show()
+                        time.sleep(0.5)
+                        device.status_led.status_led.fill(Color.OFF)
+                        device.status_led.status_led.show()
+                        time.sleep(0.5)
+            time.sleep(2)
 
     log_sensors_startup_summary(sensors, battery_monitor)
 
