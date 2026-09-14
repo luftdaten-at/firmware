@@ -123,32 +123,45 @@ def _download_to(url: str, dest: Path) -> None:
     print(f"Downloaded {url} -> {dest}", flush=True)
 
 
+def _bin_sort_key(path: Path) -> tuple:
+    """Prefer a parsed ``major.minor.patch`` from the filename, then file mtime."""
+    ver = _version_tuple_from_bin_filename(path.name)
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        mtime = 0.0
+    if ver is None:
+        return (0, (0, 0, 0), mtime)
+    return (1, ver, mtime)
+
+
 def _pick_newest_bin_in_dir(board_id: str, directory: Path) -> Path | None:
+    """Newest ``.bin`` in ``directory``: board-id match first, then any CircuitPython image, then any ``.bin``."""
+    if not directory.is_dir():
+        return None
+    bins = [p for p in directory.glob("*.bin") if p.is_file()]
+    if not bins:
+        return None
     prefix = f"adafruit-circuitpython-{board_id}"
-    best: tuple[tuple[int, int, int], Path] | None = None
-    for p in directory.glob("*.bin"):
-        if not p.name.startswith(prefix):
-            continue
-        ver = _version_tuple_from_bin_filename(p.name)
-        if ver is None:
-            continue
-        if best is None or ver > best[0]:
-            best = (ver, p)
-    return best[1] if best else None
+    matching = [p for p in bins if p.name.startswith(prefix)]
+    generic = [p for p in bins if p.name.startswith("adafruit-circuitpython-")]
+    pool = matching or generic or bins
+    return max(pool, key=_bin_sort_key)
 
 
 def ensure_circuitpython_bin(cfg: DeployConfig) -> Path:
-    """Use existing `cfg.circuitpython_bin`, newest matching file in `BIN_DIR`, or download from index / fallback."""
-    if cfg.circuitpython_bin.is_file():
-        return cfg.circuitpython_bin.resolve()
-
+    """Prefer the newest ``.bin`` in ``BIN_DIR``, else ``cfg.circuitpython_bin``, else download."""
     BIN_DIR.mkdir(parents=True, exist_ok=True)
 
     existing = _pick_newest_bin_in_dir(cfg.circuitpython_board_id, BIN_DIR)
     if existing is not None:
         cfg.circuitpython_bin = existing
-        print(f"Using existing firmware: {existing}", flush=True)
+        print(f"Using newest firmware in {BIN_DIR}: {existing.name}", flush=True)
         return existing.resolve()
+
+    if cfg.circuitpython_bin.is_file():
+        print(f"Using cfg.circuitpython_bin: {cfg.circuitpython_bin}", flush=True)
+        return cfg.circuitpython_bin.resolve()
 
     candidates: list[tuple[tuple[int, int, int], str, str]] = []
     try:
@@ -500,6 +513,17 @@ def _merge_toml_add_missing_keys(old: dict, new: dict) -> dict:
     return merged
 
 
+_SETTINGS_GEO_STRING_KEYS = frozenset(("longitude", "latitude", "height"))
+
+
+def _coerce_settings_geo_strings(data: dict) -> dict:
+    """Firmware ``cptoml`` expects geo coordinates as quoted strings, not TOML floats."""
+    for key in _SETTINGS_GEO_STRING_KEYS:
+        if key in data and data[key] is not None:
+            data[key] = str(data[key])
+    return data
+
+
 def _deep_overlay_toml_dict(template: dict, overlay: dict) -> dict:
     """Start from ``template``; for every key in ``overlay``, attach its value (recursive for dict pairs)."""
 
@@ -648,6 +672,7 @@ def _write_merged_settings_toml(dest: Path, template: Path, preserved: dict[str,
         print(f"Could not read template {template}: {ex}; skipping overlay.", flush=True)
         return
     merged = _deep_overlay_toml_dict(base, preserved)
+    merged = _coerce_settings_geo_strings(merged)
     if merged == base:
         return
     tmp = dest.with_suffix(".toml.merged.tmp")
@@ -665,11 +690,16 @@ def _write_merged_settings_toml(dest: Path, template: Path, preserved: dict[str,
 
 
 def flash_with_esptool(cfg: DeployConfig) -> None:
-    """Erase (optional) and write the CircuitPython `.bin` over serial; does not touch `CIRCUITPY`."""
+    """Erase (optional) and write the newest CircuitPython `.bin` in ``tools/bin/`` over serial.
+
+    Does not copy the repo onto ``CIRCUITPY``. Resolution: newest ``.bin`` in ``BIN_DIR``
+    (version in the filename, then mtime), else ``cfg.circuitpython_bin``, else download.
+    """
     if cfg.do_erase_flash:
         run_esptool(["--port", cfg.serial_port, "erase_flash"])
     if cfg.do_write_firmware:
         bin_path = ensure_circuitpython_bin(cfg)
+        print(f"Flashing {bin_path}", flush=True)
         run_esptool(
             ["--port", cfg.serial_port, "write_flash", "-z", "0x0", str(bin_path)]
         )

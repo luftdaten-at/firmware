@@ -146,7 +146,7 @@ Canonical spec: [`docs/ble-characteristics.md`](../docs/ble-characteristics.md).
 | Flag (dec) | Configuration            | Description                               |
 |------------|--------------------------|-------------------------------------------|
 | 0          | AUTO_UPDATE_MODE         | int32                                     |
-| 1          | BATTERY_SAVE_MODE        | int32                                     |
+| 1          | BATTERY_SAVE_MODE        | int32 (`0` off, `1` normal, `3` ultra)    |
 | 2          | MEASUREMENT_INTERVAL     | int32                                     |
 | 3          | LONGITUDE                | UTF-8 string                              |
 | 4          | LATITUDE                 | UTF-8 string                              |
@@ -351,7 +351,7 @@ Siehe Tabelle unter „Gerätstatus auslesen“. Bit `0x08` entspricht „Wifi-S
 - Wifi-SSID und -Passwort setzen: `0x03 [SSID] 0x00 [Passwort] 0x00`
 - Messintervall setzten: `0x04 [Intervall in Sekunden]`
 - Bluetooth ausschalten: `0x05`
-_In Zukunft: z. B. Server-URL, Auto-Update oder Batteriesparmodus setzten._
+- Batteriesparmodus (`battery_save_mode`): über Air-Station-Konfiguration TLV Flag `1` — `0` aus, `1` normal (~60 s BLE nach Messung, dann Deep Sleep), `3` ultra (sofort Deep Sleep nach Messung). Button weckt; ~2 min Aufwachfenster nach Boot/Button/BLE-Trennung für App-Konfiguration. Siehe [`docs/settings.md`](../docs/settings.md#energy-saving-battery_save_mode).
 
 ## Air Cube
 _TBD_

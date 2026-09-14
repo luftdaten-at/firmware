@@ -9,7 +9,9 @@ class LedController:
         self.n = n 
         self.status_led = status_led
         self.default_pattern = [None] * n
-        self.pattern_queue = [[] for _ in range(n)] 
+        self.pattern_queue = [[] for _ in range(n)]
+        self._last_status_led_key = None
+        self._last_status_blink_at = 0.0
          
     def tick(self):
         for i in range(self.n):
@@ -46,6 +48,30 @@ class LedController:
                     self.pattern_queue[i][0] = pattern
     
     def show_led(self, pattern, led_id = 0):
+        from energy_saving import (
+            STATUS_BLINK_COOLDOWN_S,
+            adapt_led_pattern,
+            is_energy_saving_enabled,
+            _pattern_status_key,
+        )
+
+        if is_energy_saving_enabled():
+            mode = pattern.get("repeat_mode")
+            if mode in (RepeatMode.PERMANENT, RepeatMode.FOREVER):
+                key = _pattern_status_key(pattern)
+                now = time.monotonic()
+                if (
+                    key == self._last_status_led_key
+                    and now - self._last_status_blink_at < STATUS_BLINK_COOLDOWN_S
+                ):
+                    return
+                pattern = adapt_led_pattern(pattern)
+                self._last_status_led_key = key
+                self._last_status_blink_at = now
+                self.default_pattern[led_id] = None
+            else:
+                pattern = adapt_led_pattern(pattern)
+
         if pattern['repeat_mode'] == RepeatMode.FOREVER:
             self.default_pattern[led_id] = pattern
         elif pattern['repeat_mode'] == RepeatMode.PERMANENT:

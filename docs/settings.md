@@ -74,7 +74,7 @@ Per-device and user-facing options: Wi‑Fi, model, keys, Air Station behaviour,
 | `latitude` | string | Air Station / location: latitude. |
 | `height` | string | Air Station / location: height above sea level. |
 | `auto_update_mode` | integer | [`AutoUpdateMode`](../firmware/enums.py): `off = 0`, `critical = 2`, `on = 3`. Writable over BLE on Air Station. |
-| `battery_save_mode` | integer | [`BatterySaverMode`](../firmware/enums.py): `off = 0`, `normal = 1`, `ultra = 3`. |
+| `battery_save_mode` | integer | [`BatterySaverMode`](../firmware/enums.py): `off = 0`, `normal = 1`, `ultra = 3`. **Air Station and Air aRound / Bike only.** When `normal` or `ultra`, the device deep-sleeps between measurement intervals to save power. See **Energy saving** below. Writable over BLE on Air Station (TLV flag `1`). |
 | `measurement_interval` | integer | Seconds between measurements. Use values from [`AirStationMeasurementInterval`](../firmware/enums.py) (e.g. `30`, `60`, `180`, …). |
 | `SCL` | integer / null | Optional I²C SCL pin override (board default used if `null`). |
 | `SDA` | integer / null | Optional I²C SDA pin override. |
@@ -114,6 +114,28 @@ When **Wi‑Fi is connected**, Air Station live measurements are only queued whe
 ### `measurement_interval` (`AirStationMeasurementInterval`)
 
 Common values (seconds): `30`, `60`, `180`, `300`, `600`, `900`, `1800`, `3600` (see enum names `sec30`, `min1`, `min3`, … in [`enums.py`](../firmware/enums.py)).
+
+### Energy saving (`battery_save_mode`)
+
+Implemented for **Air Station** (`MODEL = 3`) and **Air aRound / Bike** (`MODEL = 1` / `5`) in [`energy_saving.py`](../firmware/energy_saving.py). Other models ignore this setting.
+
+| Value | Mode | Behaviour |
+|------:|------|-----------|
+| `0` | off | Continuous main loop (default). |
+| `1` | normal | After each measurement and upload flush, stay awake with BLE advertising for ~60 s, then deep-sleep until the next measurement is due. |
+| `3` | ultra | Deep-sleep immediately after each measurement and upload flush. |
+
+**Wake and configuration**
+
+- **Button** (`BUTTON_PIN`, default GPIO9): wakes the device from deep sleep (`PinAlarm`).
+- **Grace window** (~2 min after power-on, reset, button wake, or BLE disconnect): device stays awake so the companion app can connect. Never sleeps while a BLE central is connected.
+- On timed wake, boot runs `main.py` directly (OTA check in `code.py` is skipped); the first `tick()` takes a measurement because `last_measurement` resets on reboot.
+
+**Trade-offs**
+
+- Air aRound has no BLE config-write command today; set `battery_save_mode` in `settings.toml` (or use Air Station BLE TLV flag `1` on Station hardware).
+- Unsent in-RAM measurements on Air aRound while Wi‑Fi is down are lost on deep sleep (Air Station offline queue in `/json_queue` survives reboot).
+- With `normal` and a 30 s `measurement_interval`, the post-measurement window leaves little time for deep sleep; longer intervals (e.g. 5–30 min) benefit most.
 
 ### How URLs are chosen at runtime
 

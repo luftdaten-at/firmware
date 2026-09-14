@@ -114,6 +114,10 @@ class AirStation(LdProductModel):
             return
 
         if cmd == BleCommands.SET_AIR_STATION_CONFIGURATION:
+            logger.debug(
+                "BLE SET_AIR_STATION_CONFIGURATION payload %d bytes"
+                % len(data)
+            )
             wifi_config_changed = self.decode_configuration(data) 
 
             if wifi_config_changed:
